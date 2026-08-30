@@ -1,0 +1,232 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .tab { padding: 0 15px; height: 44px; display: flex; align-items: center; font-size: 12px; color: #565f89; border-bottom: 2px solid transparent; }
+    .tab-on { color: #c0caf5; border-bottom-color: #7aa2f7; }
+    .lbl { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .item { display: flex; flex-direction: column; gap: 3px; padding: 9px 14px; border-bottom: 1px solid #1a1b26; }
+    .btn { font-size: 11px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); background: rgba(169,177,214,0.04); padding: 5px 11px; }
+    .meta-k { color: #565f89; font-size: 10px; }
+    .meta-v { color: #a9b1d6; font-size: 11px; }
+    .step { display: flex; align-items: baseline; gap: 12px; }
+    .stepk { color: #565f89; font-size: 10px; width: 104px; flex-shrink: 0; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #1a1b26; border: 2px solid #7aa2f7; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; background: #13141c; border-bottom: 1px solid #24283b; padding-left: 18px;">
+    <div style="display: flex; align-items: center; gap: 22px;">
+      <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.26em;">OMAVOI</span>
+      <div style="display: flex; align-self: stretch;"><span class="tab tab-on">History</span><span class="tab">Modes</span><span class="tab">Models</span><span class="tab">Dictionary</span><span class="tab">Settings</span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; padding-right: 18px; font-size: 10px; color: #565f89;">
+      <span style="display: flex; align-items: center; gap: 6px;"><svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#9ece6a"></circle></svg><span style="color:#9ece6a;">Ready</span></span>
+      <span>large-v3 · cuda/fp16</span>
+      <span>RTF 0.03</span>
+      <span>RIGHTALT</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <div style="width: 420px; flex-shrink: 0; border-right: 1px solid #24283b; display: flex; flex-direction: column; background: #16171f;">
+      <div style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #24283b;">
+        <span class="lbl">47 takes · 6.4% empty</span>
+        <span style="display: flex; gap: 5px;">
+          <span style="font-size: 10px; color: #c0caf5; border: 1px solid #a9b1d6; background: rgba(169,177,214,0.18); padding: 2px 8px;">All</span>
+          <span style="font-size: 10px; color: #565f89; border: 1px solid rgba(169,177,214,0.25); padding: 2px 8px;">Flagged</span>
+        </span>
+      </div>
+
+      <div style="flex-grow: 1; overflow: hidden;">
+        <div class="item" style="background: rgba(122,162,247,0.10); border-left: 2px solid #7aa2f7; padding-left: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="color: #c0caf5; font-size: 10px;">14:32:07</span>
+            <span style="color: #565f89; font-size: 10px;">3.1s · Alacritty</span>
+          </div>
+          <span style="color: #c0caf5; font-size: 12px;">Restart the Hyprland service</span>
+        </div>
+
+        <div class="item">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="color: #565f89; font-size: 10px;">14:31:44</span>
+            <span style="color: #565f89; font-size: 10px;">5.8s · Claude</span>
+          </div>
+          <span style="color: #a9b1d6; font-size: 12px;">This function needs a code review before I open the PR</span>
+        </div>
+
+        <div class="item">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="color: #565f89; font-size: 10px;">14:29:12</span>
+            <span style="color: #e0af68; font-size: 10px; display: flex; align-items: center; gap: 4px;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#e0af68" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              low level
+            </span>
+          </div>
+          <span style="color: #a9b1d6; font-size: 12px;">Bump the pre-roll in the config to zero point eight</span>
+        </div>
+
+        <div class="item">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="color: #565f89; font-size: 10px;">14:28:03</span>
+            <span style="color: #565f89; font-size: 10px;">1.2s</span>
+          </div>
+          <span style="color: #414868; font-size: 12px;">No speech — hallucination blocked</span>
+        </div>
+
+        <div class="item">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="color: #565f89; font-size: 10px;">14:26:51</span>
+            <span style="color: #565f89; font-size: 10px;">4.4s · Chromium</span>
+          </div>
+          <span style="color: #a9b1d6; font-size: 12px;">Look up how to configure a Kubernetes service</span>
+        </div>
+
+        <div class="item">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="color: #565f89; font-size: 10px;">14:24:18</span>
+            <span style="color: #565f89; font-size: 10px;">7.9s · Claude</span>
+          </div>
+          <span style="color: #a9b1d6; font-size: 12px;">The problem is it reloads the model on every take, it should stay resident</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+
+      <div style="padding: 22px 26px 16px; border-bottom: 1px solid #24283b;">
+        <div style="color: #c0caf5; font-size: 20px; line-height: 1.5;">Restart the Hyprland service</div>
+        <div style="display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap;">
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">audio</span><span class="meta-v">3.10s</span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">decode</span><span class="meta-v">0.09s</span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">RTF</span><span class="meta-v">0.029</span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">language</span><span class="meta-v">en 0.98</span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">level</span><span class="meta-v">−28.4 dBFS</span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">window</span><span class="meta-v">Alacritty</span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">profile</span><span class="meta-v">alacritty</span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px;"><span class="meta-k">injected via</span><span class="meta-v">wtype</span></span>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; padding: 20px 26px; display: flex; flex-direction: column; gap: 22px; min-height: 0;">
+
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <span class="lbl">POST-PROCESSING &nbsp;— what each rule changed, from model output to what was typed</span>
+          <div style="display: flex; flex-direction: column; gap: 7px; border-left: 2px solid #24283b; padding-left: 14px;">
+            <div class="step">
+              <span class="stepk">model output</span>
+              <span style="color: #565f89; font-size: 12px;"><span style="color:#f7768e; text-decoration: line-through;">Um,</span> restart the <span style="color:#f7768e; text-decoration: line-through;">hyperland</span> service<span style="color:#f7768e; text-decoration: line-through;">.</span></span>
+            </div>
+            <div class="step">
+              <span class="stepk">fillers</span>
+              <span style="color: #a9b1d6; font-size: 12px;">Restart the hyperland service.</span>
+            </div>
+            <div class="step">
+              <span class="stepk">dictionary</span>
+              <span style="color: #a9b1d6; font-size: 12px;">Restart the <span style="color:#9ece6a;">Hyprland</span> service.</span>
+            </div>
+            <div class="step">
+              <span class="stepk">punctuation</span>
+              <span style="color: #c0caf5; font-size: 12px;">Restart the Hyprland service</span>
+              <span style="color: #565f89; font-size: 10px;">terminal profile drops the trailing stop</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <span class="lbl">WAVEFORM</span>
+          <svg width="900" height="56" viewBox="0 0 900 56" style="display:block;">
+            <rect x="0" y="0" width="118" height="46" fill="rgba(65,72,104,0.18)"></rect>
+            <g fill="#414868">
+              <rect x="4" y="21" width="3" height="4"/><rect x="12" y="19" width="3" height="8"/><rect x="20" y="22" width="3" height="2"/><rect x="28" y="20" width="3" height="6"/><rect x="36" y="21" width="3" height="4"/><rect x="44" y="18" width="3" height="10"/><rect x="52" y="21" width="3" height="4"/><rect x="60" y="20" width="3" height="6"/><rect x="68" y="22" width="3" height="2"/><rect x="76" y="19" width="3" height="8"/><rect x="84" y="21" width="3" height="4"/><rect x="92" y="20" width="3" height="6"/><rect x="100" y="22" width="3" height="2"/><rect x="108" y="19" width="3" height="8"/>
+            </g>
+            <g fill="#7aa2f7">
+              <rect x="124" y="8" width="3" height="30"/><rect x="132" y="2" width="3" height="42"/><rect x="140" y="12" width="3" height="22"/><rect x="148" y="5" width="3" height="36"/><rect x="156" y="0" width="3" height="46"/><rect x="164" y="9" width="3" height="28"/><rect x="172" y="15" width="3" height="16"/><rect x="180" y="4" width="3" height="38"/><rect x="188" y="1" width="3" height="44"/><rect x="196" y="11" width="3" height="24"/><rect x="204" y="7" width="3" height="32"/><rect x="212" y="17" width="3" height="12"/><rect x="220" y="3" width="3" height="40"/><rect x="228" y="10" width="3" height="26"/><rect x="236" y="14" width="3" height="18"/><rect x="244" y="6" width="3" height="34"/><rect x="252" y="1" width="3" height="44"/><rect x="260" y="12" width="3" height="22"/><rect x="268" y="8" width="3" height="30"/><rect x="276" y="18" width="3" height="10"/>
+              <rect x="300" y="5" width="3" height="36"/><rect x="308" y="0" width="3" height="46"/><rect x="316" y="9" width="3" height="28"/><rect x="324" y="13" width="3" height="20"/><rect x="332" y="3" width="3" height="40"/><rect x="340" y="7" width="3" height="32"/><rect x="348" y="16" width="3" height="14"/><rect x="356" y="2" width="3" height="42"/><rect x="364" y="11" width="3" height="24"/><rect x="372" y="6" width="3" height="34"/><rect x="380" y="15" width="3" height="16"/><rect x="388" y="4" width="3" height="38"/><rect x="396" y="10" width="3" height="26"/><rect x="404" y="1" width="3" height="44"/><rect x="412" y="14" width="3" height="18"/><rect x="420" y="8" width="3" height="30"/><rect x="428" y="18" width="3" height="10"/><rect x="436" y="5" width="3" height="36"/><rect x="444" y="12" width="3" height="22"/><rect x="452" y="9" width="3" height="28"/><rect x="460" y="17" width="3" height="12"/><rect x="468" y="6" width="3" height="34"/><rect x="476" y="13" width="3" height="20"/><rect x="484" y="19" width="3" height="8"/><rect x="492" y="11" width="3" height="24"/><rect x="500" y="16" width="3" height="14"/>
+              <rect x="540" y="7" width="3" height="32"/><rect x="548" y="2" width="3" height="42"/><rect x="556" y="12" width="3" height="22"/><rect x="564" y="5" width="3" height="36"/><rect x="572" y="15" width="3" height="16"/><rect x="580" y="9" width="3" height="28"/><rect x="588" y="3" width="3" height="40"/><rect x="596" y="14" width="3" height="18"/><rect x="604" y="8" width="3" height="30"/><rect x="612" y="17" width="3" height="12"/><rect x="620" y="6" width="3" height="34"/><rect x="628" y="11" width="3" height="24"/><rect x="636" y="19" width="3" height="8"/><rect x="644" y="13" width="3" height="20"/><rect x="652" y="10" width="3" height="26"/><rect x="660" y="18" width="3" height="10"/><rect x="668" y="20" width="3" height="6"/>
+            </g>
+            <g fill="#24283b">
+              <rect x="700" y="22" width="3" height="2"/><rect x="708" y="22" width="3" height="2"/><rect x="716" y="22" width="3" height="2"/><rect x="724" y="22" width="3" height="2"/><rect x="732" y="22" width="3" height="2"/><rect x="740" y="22" width="3" height="2"/><rect x="748" y="22" width="3" height="2"/><rect x="756" y="22" width="3" height="2"/><rect x="764" y="22" width="3" height="2"/><rect x="772" y="22" width="3" height="2"/><rect x="780" y="22" width="3" height="2"/><rect x="788" y="22" width="3" height="2"/><rect x="796" y="22" width="3" height="2"/><rect x="804" y="22" width="3" height="2"/><rect x="812" y="22" width="3" height="2"/><rect x="820" y="22" width="3" height="2"/><rect x="828" y="22" width="3" height="2"/><rect x="836" y="22" width="3" height="2"/><rect x="844" y="22" width="3" height="2"/><rect x="852" y="22" width="3" height="2"/><rect x="860" y="22" width="3" height="2"/><rect x="868" y="22" width="3" height="2"/><rect x="876" y="22" width="3" height="2"/><rect x="884" y="22" width="3" height="2"/>
+            </g>
+            <text x="4" y="54" fill="#414868" font-size="9" font-family="JetBrains Mono, monospace">pre-roll 0.6s</text>
+            <text x="124" y="54" fill="#565f89" font-size="9" font-family="JetBrains Mono, monospace">0.00</text>
+            <text x="300" y="54" fill="#565f89" font-size="9" font-family="JetBrains Mono, monospace">1.12</text>
+            <text x="540" y="54" fill="#565f89" font-size="9" font-family="JetBrains Mono, monospace">2.04</text>
+            <text x="700" y="54" fill="#414868" font-size="9" font-family="JetBrains Mono, monospace">tail 0.25s</text>
+          </svg>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span class="lbl">SEGMENT CONFIDENCE &nbsp;— dropped words usually show up here first</span>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 14px; font-size: 10px; color: #565f89;">
+              <span style="width: 96px;">span</span><span style="width: 150px;">avg_logprob</span>
+              <span style="width: 150px;">no_speech</span><span>text</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <span style="width: 96px; color: #565f89; font-size: 11px;">0.00–1.08</span>
+              <span style="width: 150px; display: flex; align-items: center; gap: 7px;">
+                <span style="width: 92px; height: 5px; background: #24283b; display: block;"><span style="display:block; width: 82px; height: 5px; background: #9ece6a;"></span></span>
+                <span style="color: #a9b1d6; font-size: 10px;">−0.18</span>
+              </span>
+              <span style="width: 150px; display: flex; align-items: center; gap: 7px;">
+                <span style="width: 92px; height: 5px; background: #24283b; display: block;"><span style="display:block; width: 4px; height: 5px; background: #565f89;"></span></span>
+                <span style="color: #565f89; font-size: 10px;">0.004</span>
+              </span>
+              <span style="color: #a9b1d6; font-size: 11px;">Um, restart the</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <span style="width: 96px; color: #565f89; font-size: 11px;">1.12–2.01</span>
+              <span style="width: 150px; display: flex; align-items: center; gap: 7px;">
+                <span style="width: 92px; height: 5px; background: #24283b; display: block;"><span style="display:block; width: 48px; height: 5px; background: #e0af68;"></span></span>
+                <span style="color: #e0af68; font-size: 10px;">−0.74</span>
+              </span>
+              <span style="width: 150px; display: flex; align-items: center; gap: 7px;">
+                <span style="width: 92px; height: 5px; background: #24283b; display: block;"><span style="display:block; width: 8px; height: 5px; background: #565f89;"></span></span>
+                <span style="color: #565f89; font-size: 10px;">0.011</span>
+              </span>
+              <span style="color: #a9b1d6; font-size: 11px;">hyperland <span style="color: #565f89;">← the model was least sure exactly here</span></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <span style="width: 96px; color: #565f89; font-size: 11px;">2.04–2.88</span>
+              <span style="width: 150px; display: flex; align-items: center; gap: 7px;">
+                <span style="width: 92px; height: 5px; background: #24283b; display: block;"><span style="display:block; width: 86px; height: 5px; background: #9ece6a;"></span></span>
+                <span style="color: #a9b1d6; font-size: 10px;">−0.12</span>
+              </span>
+              <span style="width: 150px; display: flex; align-items: center; gap: 7px;">
+                <span style="width: 92px; height: 5px; background: #24283b; display: block;"><span style="display:block; width: 3px; height: 5px; background: #565f89;"></span></span>
+                <span style="color: #565f89; font-size: 10px;">0.002</span>
+              </span>
+              <span style="color: #a9b1d6; font-size: 11px;">service.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex-shrink: 0; border-top: 1px solid #24283b; background: #13141c; padding: 12px 26px; display: flex; align-items: center; gap: 9px;">
+        <span class="btn">Copy</span>
+        <span class="btn">Re-inject</span>
+        <span class="btn" style="display: flex; align-items: center; gap: 6px;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="#a9b1d6"><polygon points="6 4 20 12 6 20"></polygon></svg>Play
+        </span>
+        <span class="btn">Re-run on another model</span>
+        <span style="flex-grow: 1;"></span>
+        <span class="btn" style="color: #7aa2f7; border-color: #7aa2f7;">Add &ldquo;hyperland&rdquo; to dictionary</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

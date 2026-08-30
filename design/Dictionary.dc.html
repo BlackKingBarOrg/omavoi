@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .tab { padding: 0 15px; height: 44px; display: flex; align-items: center; font-size: 12px; color: #565f89; border-bottom: 2px solid transparent; }
+    .tab-on { color: #c0caf5; border-bottom-color: #7aa2f7; }
+    .lbl { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .btn { font-size: 10px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); background: rgba(169,177,214,0.04); padding: 3px 9px; }
+    .n { color: #565f89; font-size: 10px; }
+    .c { color: #a9b1d6; font-size: 11px; }
+    .row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #1a1b26; }
+    .heard { width: 152px; color: #a9b1d6; font-size: 11px; flex-shrink: 0; }
+    .meant { width: 152px; color: #c0caf5; font-size: 11px; flex-shrink: 0; }
+    .arrow { color: #414868; font-size: 11px; width: 14px; flex-shrink: 0; }
+    .pill { font-size: 9px; color: #565f89; border: 1px solid #24283b; padding: 1px 6px; }
+    .sug { border: 1px solid #24283b; background: #16171f; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #1a1b26; border: 2px solid #7aa2f7; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; background: #13141c; border-bottom: 1px solid #24283b; padding-left: 18px;">
+    <div style="display: flex; align-items: center; gap: 22px;">
+      <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.26em;">OMAVOI</span>
+      <div style="display: flex; align-self: stretch;">
+        <span class="tab">History</span><span class="tab">Modes</span><span class="tab">Models</span>
+        <span class="tab tab-on">Dictionary</span><span class="tab">Settings</span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; padding-right: 18px; font-size: 10px; color: #565f89;">
+      <span style="display: flex; align-items: center; gap: 6px;"><svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#9ece6a"></circle></svg><span style="color:#9ece6a;">Ready</span></span>
+      <span>Prose · large-v3 + qwen3-4b</span><span>RIGHTALT</span>
+    </div>
+  </div>
+
+  <div style="padding: 14px 26px 12px; border-bottom: 1px solid #24283b; display: flex; align-items: center; gap: 16px;">
+    <span class="lbl">A decoder prompt is a hint the model may ignore. This is the guarantee.</span>
+    <span style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+      <span style="border: 1px solid #24283b; background: #13141c; padding: 4px 10px; color: #414868; font-size: 10px; width: 168px;">filter entries&hellip;</span>
+      <span class="btn" style="color: #7aa2f7; border-color: #7aa2f7;">+ Add entry</span>
+    </span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <!-- Entries -->
+    <div style="width: 790px; flex-shrink: 0; border-right: 1px solid #24283b; padding: 15px 22px; display: flex; flex-direction: column; min-width: 0;">
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px;">
+        <span class="lbl">ENTRIES &nbsp;— 24, tried longest first</span>
+        <span style="display: flex; gap: 5px;">
+          <span class="btn" style="color:#c0caf5; border-color:#a9b1d6; background:rgba(169,177,214,0.18);">by hits</span>
+          <span class="btn">A&ndash;Z</span><span class="btn">unused</span>
+        </span>
+      </div>
+
+      <div style="display: flex; gap: 8px; padding-bottom: 4px;">
+        <span class="n" style="width: 152px;">heard</span><span class="n" style="width: 14px;"></span>
+        <span class="n" style="width: 152px;">meant</span><span class="n" style="width: 92px;">match</span>
+        <span class="n" style="width: 116px;">modes</span><span class="n" style="width: 46px;">hits</span>
+        <span class="n" style="flex-grow: 1;">last</span>
+      </div>
+
+      <div class="row">
+        <span class="heard">hyperland</span><span class="arrow">&rarr;</span><span class="meant">Hyprland</span>
+        <span style="width: 92px;"><span class="pill">word &middot; aA</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px; color: #9ece6a; font-size: 11px;">12</span>
+        <span style="flex-grow: 1;" class="n">14:32 today</span>
+      </div>
+
+      <div class="row">
+        <span class="heard">quick shell</span><span class="arrow">&rarr;</span><span class="meant">Quickshell</span>
+        <span style="width: 92px;"><span class="pill">phrase &middot; aA</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px; color: #9ece6a; font-size: 11px;">9</span>
+        <span style="flex-grow: 1;" class="n">11:04 today</span>
+      </div>
+
+      <div class="row">
+        <span class="heard">get hub</span><span class="arrow">&rarr;</span><span class="meant">GitHub</span>
+        <span style="width: 92px;"><span class="pill">phrase &middot; aA</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px; color: #a9b1d6; font-size: 11px;">7</span>
+        <span style="flex-grow: 1;" class="n">yesterday</span>
+      </div>
+
+      <div class="row">
+        <span class="heard">kubernetes</span><span class="arrow">&rarr;</span><span class="meant">Kubernetes</span>
+        <span style="width: 92px;"><span class="pill">word &middot; aA</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px; color: #a9b1d6; font-size: 11px;">6</span>
+        <span style="flex-grow: 1;" class="n">yesterday</span>
+      </div>
+
+      <div class="row" style="background: rgba(224,175,104,0.07);">
+        <span class="heard">hyper</span><span class="arrow">&rarr;</span><span class="meant">Hypr</span>
+        <span style="width: 92px;"><span class="pill">word &middot; aA</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px; color: #e0af68; font-size: 11px;">0</span>
+        <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#e0af68" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span style="color: #e0af68; font-size: 10px;">shadowed by &ldquo;hyperland&rdquo;</span>
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="heard">post grass</span><span class="arrow">&rarr;</span><span class="meant">PostgreSQL</span>
+        <span style="width: 92px;"><span class="pill">phrase &middot; aA</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px;" class="c">4</span>
+        <span style="flex-grow: 1;" class="n">3 days ago</span>
+      </div>
+
+      <div class="row">
+        <span class="heard">no js</span><span class="arrow">&rarr;</span><span class="meant">Node.js</span>
+        <span style="width: 92px;"><span class="pill">phrase &middot; aA</span></span>
+        <span style="width: 116px; color: #7aa2f7; font-size: 10px;">Code only</span>
+        <span style="width: 46px;" class="c">3</span>
+        <span style="flex-grow: 1;" class="n">3 days ago</span>
+      </div>
+
+      <div class="row">
+        <span class="heard">哈普兰德</span><span class="arrow">&rarr;</span><span class="meant">Hyprland</span>
+        <span style="width: 92px;"><span class="pill">substring</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px;" class="c">2</span>
+        <span style="flex-grow: 1;" class="n">last week</span>
+      </div>
+
+      <div class="row" style="opacity: 0.55;">
+        <span class="heard">wayland</span><span class="arrow">&rarr;</span><span class="meant">Wayland</span>
+        <span style="width: 92px;"><span class="pill">word &middot; aA</span></span>
+        <span style="width: 116px;" class="n">all</span>
+        <span style="width: 46px;" class="n">0</span>
+        <span style="flex-grow: 1;" class="n">shipped default, never fired</span>
+      </div>
+
+      <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid #24283b; display: flex; align-items: center; justify-content: space-between;">
+        <span class="n">Longest key wins, so &ldquo;hyper land&rdquo; is tried before &ldquo;hyper&rdquo;. Shadowed entries are flagged, not silently dead.</span>
+        <span style="display: flex; gap: 6px;"><span class="btn">Import</span><span class="btn">Export</span></span>
+      </div>
+    </div>
+
+    <!-- Suggestions + test -->
+    <div style="flex-grow: 1; padding: 15px 22px; display: flex; flex-direction: column; gap: 13px; min-width: 0;">
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <span class="lbl">SUGGESTIONS</span>
+        <span class="n">mined from 47 takes</span>
+      </div>
+      <span class="n" style="line-height: 1.6; margin-top: -6px;">Words the model keeps producing at low confidence, or that you edited by hand after they landed. You should not have to remember what it got wrong.</span>
+
+      <div class="sug">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="color: #a9b1d6; font-size: 11px;">psycho pg</span>
+          <span class="arrow">&rarr;</span>
+          <span style="color: #c0caf5; font-size: 11px;">psycopg</span>
+          <span style="margin-left: auto; color: #e0af68; font-size: 10px;">6&times;</span>
+        </div>
+        <span class="n" style="line-height: 1.55;">Appeared in 6 takes, avg_logprob &minus;0.81. You retyped it by hand in 4 of them.</span>
+        <div style="display: flex; gap: 6px;">
+          <span class="btn" style="color: #7aa2f7; border-color: #7aa2f7;">Add</span>
+          <span class="btn">Edit first</span><span class="btn">Dismiss</span>
+        </div>
+      </div>
+
+      <div class="sug">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="color: #a9b1d6; font-size: 11px;">see translate two</span>
+          <span class="arrow">&rarr;</span>
+          <span style="color: #c0caf5; font-size: 11px;">CTranslate2</span>
+          <span style="margin-left: auto; color: #565f89; font-size: 10px;">4&times;</span>
+        </div>
+        <span class="n" style="line-height: 1.55;">Appeared in 4 takes, avg_logprob &minus;1.12 &mdash; the model was guessing every time.</span>
+        <div style="display: flex; gap: 6px;">
+          <span class="btn" style="color: #7aa2f7; border-color: #7aa2f7;">Add</span>
+          <span class="btn">Edit first</span><span class="btn">Dismiss</span>
+        </div>
+      </div>
+
+      <div class="sug">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="color: #a9b1d6; font-size: 11px;">wee type</span>
+          <span class="arrow">&rarr;</span>
+          <span style="color: #c0caf5; font-size: 11px;">wtype</span>
+          <span style="margin-left: auto; color: #565f89; font-size: 10px;">3&times;</span>
+        </div>
+        <span class="n" style="line-height: 1.55;">Appeared in 3 takes, all inside Alacritty.</span>
+        <div style="display: flex; gap: 6px;">
+          <span class="btn" style="color: #7aa2f7; border-color: #7aa2f7;">Add</span>
+          <span class="btn">Edit first</span><span class="btn">Dismiss</span>
+        </div>
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #24283b; padding-top: 13px;">
+        <span class="lbl">TRY IT</span>
+        <div style="border: 1px solid #24283b; background: #13141c; padding: 9px 11px; color: #a9b1d6; font-size: 11px; line-height: 1.6;">the quick shell config lives next to the hyperland one<span style="color: #414868;">&#9612;</span></div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#414868" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+          <span class="n">2 entries fired</span>
+        </div>
+        <div style="border: 1px solid #24283b; background: rgba(158,206,106,0.06); padding: 9px 11px; color: #c0caf5; font-size: 11px; line-height: 1.6;">the <span style="color: #9ece6a;">Quickshell</span> config lives next to the <span style="color: #9ece6a;">Hyprland</span> one</div>
+        <span class="n" style="line-height: 1.55;">Paste a bad transcript here before you trust a new entry. A too-greedy rule is worse than no rule &mdash; it corrupts text that was already right.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

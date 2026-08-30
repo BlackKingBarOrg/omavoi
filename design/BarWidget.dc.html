@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .cap { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .row { display: flex; align-items: center; justify-content: space-between; padding: 5px 12px; }
+  </style>
+</helmet>
+
+<div style="width: 1000px; height: 700px; background: #0e0e14; box-sizing: border-box; display: flex; flex-direction: column;">
+
+  <!-- The real 26px bar -->
+  <div style="height: 26px; background: #1a1b26; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; box-sizing: border-box; flex-shrink: 0; font-size: 11px; color: #a9b1d6;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="color: #7aa2f7;">◆</span>
+      <span style="letter-spacing: 0.14em; color: #565f89;">1 2 3 4 <span style="color:#c0caf5;">5</span> 6</span>
+    </div>
+    <span style="color: #565f89;">14:32</span>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <!-- Omavoi module, recording -->
+      <span style="display: flex; align-items: center; gap: 4px; color: #f7768e; background: rgba(247,118,142,0.12); padding: 0 5px; height: 18px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="#f7768e" stroke="none"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0 1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0z"></path><rect x="11" y="18" width="2" height="4"></rect></svg>
+        0:03
+      </span>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#565f89" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#565f89" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14 0"></path><path d="M8.5 16.1a6 6 0 0 1 7 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+      <span style="color: #565f89;">%</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; gap: 28px; padding: 26px 28px; box-sizing: border-box;">
+
+    <!-- Left: widget states -->
+    <div style="width: 380px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <span style="color: #c0caf5; font-size: 14px; letter-spacing: 0.18em;">BAR WIDGET</span>
+        <span style="color: #565f89; font-size: 11px; line-height: 1.6;">Inside the 26px bar. Left = popup · right = start/stop<br>middle = console · scroll = cycle language</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span class="cap">States</span>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 92px; height: 26px; background: #1a1b26; display: flex; align-items: center; justify-content: center; gap: 5px; color: #565f89; font-size: 11px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#565f89" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><line x1="12" y1="18" x2="12" y2="22"></line></svg>
+          </div>
+          <span style="color: #565f89; font-size: 11px;">Idle — outline only, no shouting</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 92px; height: 26px; background: #1a1b26; display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <span style="display: flex; align-items: center; gap: 4px; color: #f7768e; background: rgba(247,118,142,0.12); padding: 0 5px; height: 18px; font-size: 11px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#f7768e"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0 1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0z"></path><rect x="11" y="18" width="2" height="4"></rect></svg>
+              0:03
+            </span>
+          </div>
+          <span style="color: #a9b1d6; font-size: 11px;">Recording — <span style="color:#f7768e;">bar.active</span> + timer</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 92px; height: 26px; background: #1a1b26; display: flex; align-items: center; justify-content: center;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"></path></svg>
+          </div>
+          <span style="color: #a9b1d6; font-size: 11px;">Transcribing — spinning arc</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 92px; height: 26px; background: #1a1b26; display: flex; align-items: center; justify-content: center;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e0af68" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </div>
+          <span style="color: #a9b1d6; font-size: 11px;">Trouble — daemon down, or the mic is muted</span>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #24283b; padding-top: 12px; color: #565f89; font-size: 11px; line-height: 1.7;">
+        plugin id <span style="color:#7aa2f7;">ai.bkblab.omavoi</span><br>
+        kinds <span style="color:#a9b1d6;">service · bar-widget · overlay</span><br>
+        same manifest contract as displaywright
+      </div>
+    </div>
+
+    <!-- Right: popup -->
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <span class="cap">Left-click popup · 340px · 2px accent border</span>
+      <div style="width: 340px; background: #1a1b26; border: 2px solid #7aa2f7; box-sizing: border-box;">
+
+        <div style="padding: 12px 12px 10px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between;">
+            <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.2em;">OMAVOI</span>
+            <span style="color: #9ece6a; font-size: 10px; display: flex; align-items: center; gap: 5px;">
+              <svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#9ece6a"></circle></svg>Ready
+            </span>
+          </div>
+          <div style="color: #565f89; font-size: 10px; margin-top: 4px;">large-v3 · cuda/fp16 · RTF 0.03 · 47 takes</div>
+        </div>
+
+        <div style="border-top: 1px solid #24283b;">
+          <div style="padding: 8px 12px 4px; color: #565f89; font-size: 10px; letter-spacing: 0.1em;">Recent</div>
+          <div class="row" style="gap: 10px;">
+            <span style="color: #565f89; font-size: 10px; flex-shrink: 0;">14:32</span>
+            <span style="color: #a9b1d6; font-size: 11px; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">restart the Hyprland service</span>
+          </div>
+          <div class="row" style="gap: 10px;">
+            <span style="color: #565f89; font-size: 10px; flex-shrink: 0;">14:31</span>
+            <span style="color: #a9b1d6; font-size: 11px; flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">this function needs a code review</span>
+          </div>
+          <div class="row" style="gap: 10px;">
+            <span style="color: #565f89; font-size: 10px; flex-shrink: 0;">14:28</span>
+            <span style="color: #414868; font-size: 11px; flex-grow: 1;">No speech</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#e0af68" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #24283b; padding: 10px 12px; display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #565f89; font-size: 11px;">Language</span>
+            <div style="display: flex;">
+              <span style="font-size: 10px; padding: 3px 9px; color: #c0caf5; background: rgba(169,177,214,0.18); border: 1px solid #a9b1d6;">Auto</span>
+              <span style="font-size: 10px; padding: 3px 9px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); border-left: 0;">中文</span>
+              <span style="font-size: 10px; padding: 3px 9px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); border-left: 0;">English</span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #565f89; font-size: 11px;">Post</span>
+            <div style="display: flex; align-items: center; gap: 7px;">
+              <span style="color: #7aa2f7; font-size: 10px;">on</span>
+              <div style="width: 30px; height: 14px; background: rgba(122,162,247,0.28); border: 1px solid #7aa2f7; display: flex; align-items: center; justify-content: flex-end; padding: 0 1px; box-sizing: border-box;">
+                <div style="width: 10px; height: 10px; background: #7aa2f7;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #24283b; display: flex;">
+          <div style="flex-grow: 1; text-align: center; padding: 8px 0; color: #a9b1d6; font-size: 11px; background: rgba(169,177,214,0.04);">Console</div>
+          <div style="flex-grow: 1; text-align: center; padding: 8px 0; color: #a9b1d6; font-size: 11px; background: rgba(169,177,214,0.04); border-left: 1px solid #24283b;">Doctor</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

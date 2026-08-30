@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .tab { padding: 0 15px; height: 44px; display: flex; align-items: center; font-size: 12px; color: #565f89; border-bottom: 2px solid transparent; }
+    .tab-on { color: #c0caf5; border-bottom-color: #7aa2f7; }
+    .lbl { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .btn { font-size: 10px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); background: rgba(169,177,214,0.04); padding: 3px 9px; }
+    .be { border: 1px solid rgba(169,177,214,0.3); padding: 9px 11px; display: flex; align-items: center; gap: 10px; }
+    .be-on { border-color: #7aa2f7; background: rgba(122,162,247,0.10); }
+    .dot { width: 9px; height: 9px; border: 1px solid #414868; flex-shrink: 0; }
+    .dot-on { width: 9px; height: 9px; border: 1px solid #7aa2f7; background: #7aa2f7; flex-shrink: 0; }
+    .mrow { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid #1a1b26; gap: 8px; }
+    .c { color: #a9b1d6; font-size: 11px; }
+    .n { color: #565f89; font-size: 10px; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #1a1b26; border: 2px solid #7aa2f7; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; background: #13141c; border-bottom: 1px solid #24283b; padding-left: 18px;">
+    <div style="display: flex; align-items: center; gap: 22px;">
+      <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.26em;">OMAVOI</span>
+      <div style="display: flex; align-self: stretch;">
+        <span class="tab">History</span><span class="tab">Modes</span><span class="tab tab-on">Models</span>
+        <span class="tab">Dictionary</span><span class="tab">Settings</span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; padding-right: 18px; font-size: 10px; color: #565f89;">
+      <span style="display: flex; align-items: center; gap: 6px;"><svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#9ece6a"></circle></svg><span style="color:#9ece6a;">Ready</span></span>
+      <span>Prose · large-v3 + qwen3-4b</span><span>RIGHTALT</span>
+    </div>
+  </div>
+
+  <div style="padding: 15px 26px 12px; border-bottom: 1px solid #24283b;">
+    <span class="lbl">Two model families. Set them up here once; Modes chains them and gives each one a prompt.</span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <!-- SPEECH -->
+    <div style="width: 720px; flex-shrink: 0; border-right: 1px solid #24283b; padding: 16px 22px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><line x1="12" y1="18" x2="12" y2="22"></line></svg>
+        <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.14em;">SPEECH</span>
+        <span class="n">audio &rarr; text · one is required</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div class="be be-on">
+          <span class="dot-on"></span>
+          <span style="width: 120px; color: #c0caf5; font-size: 11px;">Local &middot; CUDA</span>
+          <span class="n" style="flex-grow: 1;">faster-whisper &middot; ct2 weights &middot; NVIDIA only</span>
+          <span style="color: #9ece6a; font-size: 10px;">RTF 0.027 here</span>
+        </div>
+        <div class="be">
+          <span class="dot"></span>
+          <span style="width: 120px;" class="c">Local &middot; Vulkan</span>
+          <span class="n" style="flex-grow: 1;">whisper.cpp &middot; ggml weights &middot; NVIDIA, AMD, Intel</span>
+          <span style="color: #e0af68; font-size: 10px;">needs whisper-cpp ggml-vulkan</span>
+        </div>
+        <div class="be">
+          <span class="dot"></span>
+          <span style="width: 120px;" class="c">Remote API</span>
+          <span class="n" style="flex-grow: 1;">OpenAI-compatible &middot; OpenAI, Groq, SiliconFlow, local</span>
+          <span class="n">key in secrets.toml</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px;">
+        <span class="lbl">MODELS &nbsp;— ct2, what the selected backend runs</span>
+        <span style="display: flex; gap: 5px;"><span class="btn" style="color:#c0caf5; border-color:#a9b1d6; background:rgba(169,177,214,0.18);">ct2</span><span class="btn">ggml</span><span class="btn">all</span></span>
+      </div>
+
+      <div style="display: flex; flex-direction: column;">
+        <div style="display: flex; gap: 8px; padding-bottom: 5px;">
+          <span class="n" style="width: 22px;"></span><span class="n" style="width: 168px;">model</span>
+          <span class="n" style="width: 54px;">size</span><span class="n" style="width: 72px;">state</span>
+          <span class="n" style="flex-grow: 1;">notes</span><span class="n" style="width: 106px;"></span>
+        </div>
+
+        <div class="mrow" style="background: rgba(122,162,247,0.10); border-left: 2px solid #7aa2f7; padding-left: 8px;">
+          <span style="width: 14px; color: #7aa2f7; font-size: 11px;">&bull;</span>
+          <span style="width: 168px; color: #c0caf5; font-size: 11px;">large-v3</span>
+          <span style="width: 54px;" class="c">3.0G</span>
+          <span style="width: 72px; color: #9ece6a; font-size: 10px;">in use</span>
+          <span style="flex-grow: 1;" class="n">best all-round; no_speech_prob is trustworthy</span>
+          <span style="width: 106px; text-align: right; display: flex; gap: 5px; justify-content: flex-end;"><span class="btn">Test</span><span class="btn">Remove</span></span>
+        </div>
+
+        <div class="mrow">
+          <span style="width: 22px;"></span>
+          <span style="width: 168px;" class="c">large-v3-turbo</span>
+          <span style="width: 54px;" class="c">1.6G</span>
+          <span style="width: 72px;" class="c">local</span>
+          <span style="flex-grow: 1; color: #e0af68; font-size: 10px;">2&times; faster; no_speech_prob always 0</span>
+          <span style="width: 106px; text-align: right; display: flex; gap: 5px; justify-content: flex-end;"><span class="btn">Use</span><span class="btn">Remove</span></span>
+        </div>
+
+        <div class="mrow">
+          <span style="width: 22px;"></span>
+          <span style="width: 168px;" class="c">large-v2</span>
+          <span style="width: 54px;" class="c">3.0G</span>
+          <span style="width: 72px; color: #7aa2f7; font-size: 10px;">34%</span>
+          <span style="flex-grow: 1; display: flex; align-items: center; gap: 9px;">
+            <span style="flex-grow: 1; max-width: 150px; height: 5px; background: #24283b; display: block;"><span style="display:block; width: 51px; height: 5px; background: #7aa2f7;"></span></span>
+            <span class="n">1.0G of 3.0G &middot; 18 MB/s</span>
+          </span>
+          <span style="width: 106px; text-align: right;"><span class="btn">Cancel</span></span>
+        </div>
+
+        <div class="mrow">
+          <span style="width: 22px;"></span>
+          <span style="width: 168px;" class="c">medium</span>
+          <span style="width: 54px;" class="c">1.5G</span>
+          <span style="width: 72px;" class="n">remote</span>
+          <span style="flex-grow: 1;" class="n">floor of usable; fallback when VRAM is tight</span>
+          <span style="width: 106px; text-align: right;"><span class="btn">Download</span></span>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #414868; background: rgba(65,72,104,0.14); padding: 10px 12px; display: flex; align-items: center; gap: 11px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <span style="color: #c0caf5; font-size: 10px;">Weights already on this machine: <span style="color:#7aa2f7;">ggml:large-v3</span> &middot; 3.0G</span>
+          <span class="n">~/.local/share/voxtype/models/ &middot; usable as-is on Vulkan, no re-download</span>
+        </div>
+        <span class="btn" style="color: #7aa2f7; border-color: #7aa2f7;">Use it</span>
+      </div>
+    </div>
+
+    <!-- LLM -->
+    <div style="flex-grow: 1; padding: 16px 22px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 1 4 4v1a3 3 0 0 1 0 6v1a4 4 0 0 1-8 0v-1a3 3 0 0 1 0-6V7a4 4 0 0 1 4-4z"></path></svg>
+        <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.14em;">LLM</span>
+        <span class="n">text &rarr; text · optional, per mode</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div class="be be-on">
+          <span class="dot-on"></span>
+          <span style="width: 96px; color: #c0caf5; font-size: 11px;">Local</span>
+          <span class="n" style="flex-grow: 1;">llama.cpp &middot; gguf &middot; shares the GPU with speech</span>
+        </div>
+        <div class="be be-on">
+          <span class="dot-on"></span>
+          <span style="width: 96px; color: #c0caf5; font-size: 11px;">Anthropic</span>
+          <span class="n" style="flex-grow: 1;">Claude API &middot; ANTHROPIC_API_KEY</span>
+        </div>
+        <div class="be">
+          <span class="dot"></span>
+          <span style="width: 96px;" class="c">Custom</span>
+          <span class="n" style="flex-grow: 1;">OpenAI-compatible: ollama, vLLM, LM Studio</span>
+        </div>
+      </div>
+
+      <span class="lbl" style="margin-top: 3px;">MODELS &nbsp;— several backends can be on at once</span>
+
+      <div style="display: flex; flex-direction: column;">
+        <div class="mrow">
+          <span style="width: 14px; color: #7aa2f7; font-size: 11px;">&bull;</span>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+            <span style="color: #c0caf5; font-size: 11px;">qwen3-4b-instruct</span>
+            <span class="n">local &middot; 2.4G VRAM &middot; <span style="color:#9ece6a;">+0.4s</span> &middot; used by Prose</span>
+          </div>
+          <span class="btn">Remove</span>
+        </div>
+
+        <div class="mrow">
+          <span style="width: 14px; color: #7aa2f7; font-size: 11px;">&bull;</span>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+            <span style="color: #c0caf5; font-size: 11px;">claude-haiku-4-5</span>
+            <span class="n">anthropic &middot; key <span style="color:#9ece6a;">sk-a&hellip;7f2c</span> &middot; <span style="color:#e0af68;">+0.9s</span> &middot; used by Email</span>
+          </div>
+          <span class="btn">Test</span>
+        </div>
+
+        <div class="mrow">
+          <span style="width: 22px;"></span>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+            <span class="c">qwen3-8b-instruct</span>
+            <span class="n">local &middot; 5.1G VRAM &middot; remote</span>
+          </div>
+          <span class="btn">Download</span>
+        </div>
+
+        <div style="padding: 9px 0;"><span class="btn" style="display: block; text-align: center; border-style: dashed;">+ Add a model</span></div>
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 9px;">
+        <div style="border-top: 1px solid #24283b; padding-top: 11px; display: flex; flex-direction: column; gap: 5px;">
+          <span class="lbl">VRAM</span>
+          <div style="display: flex; height: 16px; width: 100%;">
+            <div style="width: 19%; background: rgba(122,162,247,0.55); display: flex; align-items: center; padding-left: 6px; color: #13141c; font-size: 9px;">whisper 3.0</div>
+            <div style="width: 15%; background: rgba(158,206,106,0.5); display: flex; align-items: center; padding-left: 6px; color: #13141c; font-size: 9px;">qwen 2.4</div>
+            <div style="width: 66%; background: #24283b;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span class="n">both models resident</span><span class="c">5.4 / 16.3 GB</span>
+          </div>
+        </div>
+        <span class="n" style="line-height: 1.6;">Keeping both loaded is the point: a chain that loads weights per take costs seconds, not milliseconds.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

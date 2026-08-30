@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .lbl { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .n { color: #565f89; font-size: 10px; line-height: 1.6; }
+    .btn { font-size: 10px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); background: rgba(169,177,214,0.04); padding: 5px 12px; flex-shrink: 0; }
+    .go { color: #7aa2f7; border-color: #7aa2f7; }
+    .step { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #1a1b26; }
+    .mk { width: 18px; height: 18px; border: 1px solid #414868; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .ttl { color: #c0caf5; font-size: 12px; }
+    .cmd { border: 1px solid #24283b; background: #13141c; padding: 6px 10px; color: #7aa2f7; font-size: 10px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+    .root { font-size: 9px; color: #e0af68; border: 1px solid rgba(224,175,104,0.5); padding: 1px 6px; }
+    .opt { font-size: 9px; color: #565f89; border: 1px solid #24283b; padding: 1px 6px; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #1a1b26; border: 2px solid #7aa2f7; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; background: #13141c; border-bottom: 1px solid #24283b; padding: 0 18px;">
+    <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.26em;">OMAVOI</span>
+    <span style="display: flex; align-items: center; gap: 9px;">
+      <svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#e0af68"></circle></svg>
+      <span style="color: #e0af68; font-size: 10px;">Setup — 2 of 5 done</span>
+    </span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <div style="width: 880px; flex-shrink: 0; border-right: 1px solid #24283b; padding: 22px 30px; display: flex; flex-direction: column; min-width: 0; overflow: hidden;">
+
+      <div style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px;">
+        <span style="color: #c0caf5; font-size: 17px;">Two more pieces to install</span>
+        <span class="n">Nothing here runs until you press it, and every step shows the exact command first.</span>
+      </div>
+
+      <!-- 1 done -->
+      <div class="step">
+        <span class="mk" style="border-color: #9ece6a;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ece6a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+          <span class="ttl">Plugin</span>
+          <span class="n">Installed and running inside omarchy-shell. This screen is it.</span>
+        </div>
+      </div>
+
+      <!-- 2 done -->
+      <div class="step">
+        <span class="mk" style="border-color: #9ece6a;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ece6a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+          <span class="ttl">Typing and clipboard</span>
+          <span class="n"><span style="color:#a9b1d6;">wtype</span>, <span style="color:#a9b1d6;">wl-clipboard</span> and <span style="color:#a9b1d6;">pipewire</span> are already on this system — Omarchy ships all three.</span>
+        </div>
+      </div>
+
+      <!-- 3 engine -->
+      <div class="step">
+        <span class="mk" style="border-color: #7aa2f7; color: #7aa2f7; font-size: 10px;">3</span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span class="ttl">Speech engine</span><span class="root">needs root</span>
+          </div>
+          <div style="display: flex; gap: 9px;">
+            <div style="flex-grow: 1; border: 1px solid #7aa2f7; background: rgba(122,162,247,0.10); padding: 9px 11px; display: flex; flex-direction: column; gap: 3px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="color: #c0caf5; font-size: 11px;">Vulkan</span>
+                <span style="color: #9ece6a; font-size: 10px;">8 MB</span></div>
+              <span class="n">Any GPU — NVIDIA, AMD, Intel. Recommended.</span>
+            </div>
+            <div style="flex-grow: 1; border: 1px solid rgba(169,177,214,0.35); padding: 9px 11px; display: flex; flex-direction: column; gap: 3px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="color: #a9b1d6; font-size: 11px;">CUDA</span>
+                <span style="color: #e0af68; font-size: 10px;">2.2 GB</span></div>
+              <span class="n">NVIDIA only, about twice as fast. You have an RTX 5070 Ti.</span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="cmd" style="flex-grow: 1;">sudo pacman -S --needed whisper-cpp ggml-vulkan</span>
+            <span class="btn go">Install</span>
+          </div>
+          <span class="n">Runs through Omarchy&rsquo;s polkit agent, so you authenticate in the usual dialog.</span>
+        </div>
+      </div>
+
+      <!-- 4 daemon -->
+      <div class="step">
+        <span class="mk" style="border-color: #414868; color: #565f89; font-size: 10px;">4</span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span class="ttl">Omavoi daemon</span><span class="opt">no root</span>
+          </div>
+          <span class="n">The part that holds the model, watches the key, and types into your window. It cannot live in the plugin — omarchy-shell is one process and would have to load CUDA into your bar.</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="cmd" style="flex-grow: 1;">uv tool install omavoi &amp;&amp; systemctl --user enable --now omavoid</span>
+            <span class="btn go">Install</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 model -->
+      <div class="step">
+        <span class="mk" style="border-color: #414868; color: #565f89; font-size: 10px;">5</span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span class="ttl">Model weights</span><span class="opt">no root</span><span class="n">large-v3 · 3.0 GB</span>
+          </div>
+          <span class="n">Downloaded to ~/.local/share/omavoi/models. Too large to ship in a plugin repository.</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="flex-grow: 1; height: 5px; background: #24283b; display: block;"></span>
+            <span class="btn">Download</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 hotkey -->
+      <div class="step" style="border-bottom: 0;">
+        <span class="mk" style="border-color: #414868; color: #565f89; font-size: 10px;">6</span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0;">
+          <span class="ttl">Hotkey</span>
+          <div style="border: 1px solid #24283b; background: #16171f; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <span style="width: 9px; height: 9px; border: 1px solid #7aa2f7; background: #7aa2f7; flex-shrink: 0;"></span>
+              <span style="color: #c0caf5; font-size: 11px;">Bind F9 through Hyprland</span>
+              <span class="opt">works now</span>
+            </div>
+            <span class="n" style="padding-left: 19px;">No group change, no logout. Modifier keys cannot be used this way — pressing one changes the modmask and fires the release binding instantly, recording 0.0s.</span>
+            <div style="display: flex; align-items: center; gap: 9px; margin-top: 3px;">
+              <span style="width: 9px; height: 9px; border: 1px solid #414868; flex-shrink: 0;"></span>
+              <span class="c" style="color: #a9b1d6; font-size: 11px;">Hold RIGHTALT, read from evdev</span>
+              <span class="root">needs root + logout</span>
+            </div>
+            <span class="n" style="padding-left: 19px;"><span style="color:#7aa2f7;">sudo usermod -aG input $USER</span> — the better key, but the group only takes effect next login. You can switch to this later from Settings.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- right rail -->
+    <div style="flex-grow: 1; padding: 22px 24px; display: flex; flex-direction: column; gap: 15px; min-width: 0;">
+
+      <span class="lbl">WHY THREE PIECES</span>
+      <span class="n">omarchy-shell is a single process hosting your bar, notifications, polkit and lock screen. A plugin is QML inside it — so a speech model, CUDA and a microphone reader cannot go there. Omavoi is therefore a daemon that does the work, plus a thin plugin that draws it.</span>
+
+      <div style="border: 1px solid #24283b; background: #16171f; padding: 12px 13px; display: flex; flex-direction: column; gap: 9px;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <span style="width: 62px; color: #7aa2f7; font-size: 10px;">plugin</span>
+          <span class="n">bar module, HUD, this console</span></div>
+        <div style="display: flex; align-items: center; gap: 9px; padding-left: 20px;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#414868" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="4" x2="12" y2="20"></line><polyline points="7 15 12 20 17 15"></polyline></svg>
+          <span class="n">unix socket · json lines</span></div>
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <span style="width: 62px; color: #9ece6a; font-size: 10px;">daemon</span>
+          <span class="n">model, microphone, hotkey, typing</span></div>
+      </div>
+
+      <span class="n">The plugin never installs anything on its own. Omarchy runs nothing from inside a plugin folder — deliberately — so this screen asks instead, and shows you every command before it runs.</span>
+
+      <div style="border-top: 1px solid #24283b; padding-top: 14px; display: flex; flex-direction: column; gap: 9px;">
+        <span class="lbl">IF YOU PREFER A TERMINAL</span>
+        <div class="cmd" style="white-space: pre-wrap; line-height: 1.7;">omavoi setup</div>
+        <span class="n">Same steps, same order, no GUI. The setup screen is a front-end for this command, not a separate path.</span>
+      </div>
+
+      <div style="margin-top: auto; border: 1px solid #414868; background: rgba(65,72,104,0.14); padding: 11px 12px; display: flex; gap: 10px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7aa2f7" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0; margin-top:1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span class="n">You can stop after step 4 and dictate with F9 today. Steps 5 and 6 only change which model runs and which key holds it.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,380 @@
+"""The resident daemon: model stays hot, mic stays open, key stays watched."""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+import signal
+import socket
+import threading
+import time
+from pathlib import Path
+from typing import Any
+
+from . import asr, config, modes, notify, paths
+from .audio import RingCapture
+from .history import History
+from .hotkey import HotkeyListener, HotkeyUnavailable
+from .inject import Injector
+from .pipeline import Pipeline
+from .window import active_window
+
+log = logging.getLogger(__name__)
+
+IDLE, RECORDING, BUSY = "idle", "recording", "transcribing"
+
+
+class AlreadyRunning(RuntimeError):
+    pass
+
+
+def ping(sock_path: Path | None = None, timeout: float = 1.0) -> dict[str, Any] | None:
+    """Ask a running daemon for its status. None if nothing is listening."""
+    sock_path = sock_path or paths.socket_file()
+    if not sock_path.exists():
+        return None
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+            client.settimeout(timeout)
+            client.connect(str(sock_path))
+            client.sendall(json.dumps({"cmd": "status"}).encode() + b"\n")
+            data = client.makefile("rb").readline()
+        return json.loads(data) if data else None
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def request(payload: dict[str, Any], timeout: float = 30.0) -> dict[str, Any]:
+    sock_path = paths.socket_file()
+    if not sock_path.exists():
+        raise ConnectionError("the omavoi daemon is not running (start it with `omavoi daemon`)")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+        client.settimeout(timeout)
+        client.connect(str(sock_path))
+        client.sendall(json.dumps(payload).encode() + b"\n")
+        line = client.makefile("rb").readline()
+    if not line:
+        raise ConnectionError("the daemon did not answer")
+    return json.loads(line)
+
+
+class Daemon:
+    def __init__(self, cfg: dict[str, Any]) -> None:
+        self.cfg = cfg
+        self.sock_path = paths.socket_file()
+        self.state_file = paths.state_dir() / "state"
+
+        self.audio = RingCapture(cfg)
+        self.backend = asr.build(cfg)
+        self.pipeline = Pipeline(cfg, self.backend, Injector(cfg), History(cfg))
+        self.forced_mode = ""
+        self._mode_hint = "default"
+        self.hotkey: HotkeyListener | None = None
+
+        self._lock = threading.Lock()
+        self._state = IDLE
+        self._mark = 0
+        self._started_at = 0.0
+        self._stop = threading.Event()
+        self._server: socket.socket | None = None
+        self._takes = 0
+        self._boot = time.time()
+        self._last: dict[str, Any] = {}
+        # Connections that asked to be told about state changes. The HUD has
+        # to appear the instant the key goes down, so it is pushed to, never
+        # polled by.
+        self._subs: list[socket.socket] = []
+        self._subs_lock = threading.Lock()
+        self._ticker: threading.Thread | None = None
+
+    # -- state -------------------------------------------------------------
+
+    def _broadcast(self, payload: dict[str, Any]) -> None:
+        line = (json.dumps(payload, ensure_ascii=False) + "\n").encode()
+        with self._subs_lock:
+            dead = []
+            for sock in self._subs:
+                try:
+                    sock.sendall(line)
+                except OSError:
+                    dead.append(sock)
+            for sock in dead:
+                self._subs.remove(sock)
+                try:
+                    sock.close()
+                except OSError:
+                    pass
+
+    def _tick(self) -> None:
+        """Feed the HUD a level while recording. ~20 Hz is enough to read."""
+        while self._state == RECORDING and not self._stop.is_set():
+            self._broadcast({
+                "event": "level",
+                "level": round(self.audio.level(0.08), 4),
+                "seconds": round(time.monotonic() - self._started_at, 2),
+            })
+            time.sleep(0.05)
+
+    def _set_state(self, state: str) -> None:
+        previous = self._state
+        self._state = state
+        # A plain file so waybar/omarchy-shell can poll without a socket client.
+        try:
+            self.state_file.parent.mkdir(parents=True, exist_ok=True)
+            self.state_file.write_text(state + "\n", encoding="utf-8")
+        except OSError:
+            pass
+        if state != previous:
+            self._broadcast({"event": "state", "state": state, "mode": self._mode_hint})
+            if state == RECORDING:
+                self._ticker = threading.Thread(target=self._tick, name="omavoi-level",
+                                                daemon=True)
+                self._ticker.start()
+
+    def status(self) -> dict[str, Any]:
+        return {
+            "ok": True,
+            "state": self._state,
+            "pid": os.getpid(),
+            "uptime": round(time.time() - self._boot, 1),
+            "takes": self._takes,
+            "backend": self.backend.describe(),
+            "hotkey": {
+                "enabled": bool(self.hotkey),
+                "key": self.cfg["hotkey"]["key"],
+                "mode": self.cfg["hotkey"]["mode"],
+                "devices": self.hotkey.device_names if self.hotkey else [],
+            },
+            "audio": {
+                "healthy": self.audio.healthy,
+                "level": round(self.audio.level(), 4),
+                "preroll": self.audio.preroll,
+                "tail": self.audio.tail,
+            },
+            "recording_seconds": (
+                round(time.monotonic() - self._started_at, 2) if self._state == RECORDING else 0.0
+            ),
+        }
+
+    # -- recording ---------------------------------------------------------
+
+    def begin(self) -> dict[str, Any]:
+        with self._lock:
+            if self._state == RECORDING:
+                return {"ok": True, "state": RECORDING, "note": "already recording"}
+            if self._state == BUSY:
+                return {"ok": False, "state": BUSY, "error": "still transcribing the previous take"}
+            if not self.audio.healthy:
+                return {"ok": False, "state": self._state, "error": "audio capture is not healthy"}
+            # The mark reaches back preroll seconds, so the first syllable
+            # spoken before the key registered is already included.
+            self._mark = self.audio.mark()
+            self._started_at = time.monotonic()
+            self._mode_hint = modes.resolve(self.cfg, active_window(), self.forced_mode).name
+            self._set_state(RECORDING)
+        log.debug("recording started")
+        return {"ok": True, "state": RECORDING}
+
+    def end(self, *, discard: bool = False) -> dict[str, Any]:
+        with self._lock:
+            if self._state != RECORDING:
+                return {"ok": False, "state": self._state, "error": "not recording"}
+            mark = self._mark
+            self._set_state(IDLE if discard else BUSY)
+        if discard:
+            log.debug("recording cancelled")
+            return {"ok": True, "state": IDLE, "discarded": True}
+
+        threading.Thread(target=self._process, args=(mark,), name="omavoi-asr", daemon=True).start()
+        return {"ok": True, "state": BUSY}
+
+    def toggle(self) -> dict[str, Any]:
+        return self.end() if self._state == RECORDING else self.begin()
+
+    def _process(self, mark: int) -> None:
+        try:
+            capture = self.audio.take(mark)
+            entry = self.pipeline.process(
+                capture, window=active_window(), forced_mode=self.forced_mode
+            )
+            self._takes += 1
+            self._last = entry
+            self._broadcast({
+                "event": "result",
+                "text": entry.get("text", ""),
+                "rejected": entry.get("rejected", ""),
+                "changes": len(entry.get("post", {}).get("changes") or []),
+                "warnings": entry.get("warnings", []),
+                "mode": entry.get("mode", {}).get("name", ""),
+                "seconds": entry.get("total_seconds", 0.0),
+            })
+        except Exception:
+            log.exception("processing failed")
+        finally:
+            with self._lock:
+                self._set_state(IDLE)
+
+    # -- server ------------------------------------------------------------
+
+    def _handle(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cmd = str(payload.get("cmd", ""))
+        if cmd == "status":
+            return self.status()
+        if cmd == "setup":
+            from . import setup as setup_mod
+
+            return {"ok": True, **setup_mod.check(self.cfg).as_dict()}
+        if cmd == "last":
+            return {"ok": True, "entry": self._last}
+        if cmd == "mode":
+            name = str(payload.get("name", ""))
+            if name and name not in self.cfg.get("modes", {}):
+                return {"ok": False, "error": f"no such mode: {name}"}
+            self.forced_mode = name
+            return {"ok": True, "forced_mode": name}
+        if cmd == "start":
+            return self.begin()
+        if cmd == "stop":
+            return self.end()
+        if cmd == "cancel":
+            return self.end(discard=True)
+        if cmd == "toggle":
+            return self.toggle()
+        if cmd == "reload":
+            return self.reload()
+        if cmd == "quit":
+            self._stop.set()
+            return {"ok": True, "state": "stopping"}
+        return {"ok": False, "error": f"unknown command {cmd!r}"}
+
+    def reload(self) -> dict[str, Any]:
+        """Re-read config. Anything but the model can change without a restart."""
+        try:
+            new = config.load()
+        except SystemExit as exc:
+            return {"ok": False, "error": str(exc)}
+
+        model_changed = (
+            new["speech"] != self.cfg["speech"]
+        )
+        self.cfg = new
+        self.pipeline = Pipeline(new, self.backend, Injector(new), History(new))
+        log.info("config reloaded%s", "; speech settings changed, restart the daemon" if model_changed else "")
+        return {"ok": True, "reloaded": True, "model_restart_required": model_changed}
+
+    def _serve(self) -> None:
+        assert self._server is not None
+        self._server.settimeout(0.5)
+        while not self._stop.is_set():
+            try:
+                conn, _ = self._server.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            try:
+                conn.settimeout(5.0)
+                line = conn.makefile("rb").readline()
+                payload = json.loads(line) if line else {}
+                if str(payload.get("cmd", "")) == "subscribe":
+                    conn.settimeout(None)
+                    conn.sendall(
+                        (json.dumps({"ok": True, **self.status()}) + "\n").encode()
+                    )
+                    with self._subs_lock:
+                        self._subs.append(conn)
+                    continue  # the socket stays open and is closed by _broadcast
+                reply = self._handle(payload)
+            except json.JSONDecodeError as exc:
+                reply = {"ok": False, "error": f"not valid JSON: {exc}"}
+            except Exception as exc:
+                log.exception("command handler error")
+                reply = {"ok": False, "error": str(exc)}
+            try:
+                conn.sendall(json.dumps(reply, ensure_ascii=False).encode() + b"\n")
+            except OSError:
+                pass
+            finally:
+                conn.close()
+
+    # -- lifecycle ---------------------------------------------------------
+
+    def start(self) -> None:
+        if ping(self.sock_path) is not None:
+            raise AlreadyRunning(f"a daemon is already listening on {self.sock_path}")
+        # A socket left behind by a crash is safe to clear: nothing answered it.
+        self.sock_path.unlink(missing_ok=True)
+        self.sock_path.parent.mkdir(parents=True, exist_ok=True)
+
+        self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._server.bind(str(self.sock_path))
+        os.chmod(self.sock_path, 0o600)
+        self._server.listen(8)
+
+        log.info("loading %s ...", self.cfg["speech"]["model"])
+        self.backend.load()
+        log.info("speech ready: %s", self.backend.describe())
+
+        self.audio.start()
+        log.info("ring capture running (pre-roll %.2fs, tail %.2fs)",
+                 self.audio.preroll, self.audio.tail)
+
+        if self.cfg["hotkey"].get("enabled", True):
+            try:
+                self.hotkey = HotkeyListener(
+                    self.cfg,
+                    on_press=lambda: self.begin(),
+                    on_release=lambda: self.end(),
+                    on_toggle=lambda: self.toggle(),
+                )
+                self.hotkey.start()
+            except HotkeyUnavailable as exc:
+                log.error("hotkey unavailable: %s", exc)
+                notify.send("Omavoi: hotkey unavailable", str(exc), urgency="critical")
+
+        self._set_state(IDLE)
+        notify.send("Omavoi ready", self.backend.describe(), urgency="low")
+
+    def run(self) -> None:
+        self.start()
+
+        def on_signal(signum: int, _frame: Any) -> None:
+            if signum == signal.SIGHUP:
+                self.reload()
+            else:
+                self._stop.set()
+
+        signal.signal(signal.SIGINT, on_signal)
+        signal.signal(signal.SIGTERM, on_signal)
+        signal.signal(signal.SIGHUP, on_signal)
+
+        thread = threading.Thread(target=self._serve, name="omavoi-ipc", daemon=True)
+        thread.start()
+        try:
+            while not self._stop.is_set():
+                time.sleep(0.2)
+        finally:
+            self.shutdown()
+
+    def shutdown(self) -> None:
+        log.info("shutting down")
+        self._stop.set()
+        if self.hotkey is not None:
+            self.hotkey.stop()
+        close = getattr(self.backend, "close", None)
+        if callable(close):
+            close()
+        self.audio.stop()
+        if self._server is not None:
+            self._server.close()
+        self.sock_path.unlink(missing_ok=True)
+        self._broadcast({"event": "state", "state": "stopped"})
+        with self._subs_lock:
+            for sock in self._subs:
+                try:
+                    sock.close()
+                except OSError:
+                    pass
+            self._subs.clear()
+        self._set_state("stopped")

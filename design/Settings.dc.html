@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .tab { padding: 0 15px; height: 44px; display: flex; align-items: center; font-size: 12px; color: #565f89; border-bottom: 2px solid transparent; }
+    .tab-on { color: #c0caf5; border-bottom-color: #7aa2f7; }
+    .lbl { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .btn { font-size: 10px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); background: rgba(169,177,214,0.04); padding: 3px 9px; }
+    .n { color: #565f89; font-size: 10px; }
+    .k { color: #565f89; font-size: 11px; }
+    .v { color: #c0caf5; font-size: 11px; }
+    .r { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .sel { border: 1px solid rgba(169,177,214,0.4); background: rgba(169,177,214,0.04); padding: 3px 9px; color: #c0caf5; font-size: 10px; }
+    .seg-on { font-size: 10px; padding: 3px 9px; color: #c0caf5; background: rgba(169,177,214,0.18); border: 1px solid #a9b1d6; }
+    .seg { font-size: 10px; padding: 3px 9px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); border-left: 0; }
+    .col { display: flex; flex-direction: column; gap: 15px; padding: 16px 20px; min-width: 0; }
+    .sec { display: flex; flex-direction: column; gap: 9px; }
+    .why { color: #414868; font-size: 10px; line-height: 1.55; }
+    .tog-on { width: 26px; height: 13px; border: 1px solid #7aa2f7; background: rgba(122,162,247,0.28); display: flex; align-items: center; justify-content: flex-end; padding: 0 1px; box-sizing: border-box; flex-shrink: 0; }
+    .tog-off { width: 26px; height: 13px; border: 1px solid #414868; display: flex; align-items: center; padding: 0 1px; box-sizing: border-box; flex-shrink: 0; }
+    .kn-on { width: 9px; height: 9px; background: #7aa2f7; }
+    .kn-off { width: 9px; height: 9px; background: #414868; }
+    .track { flex-grow: 1; height: 3px; background: #24283b; position: relative; }
+    .fill { position: absolute; left: 0; top: 0; height: 3px; background: #7aa2f7; }
+    .knob { position: absolute; top: -3px; width: 3px; height: 9px; background: #c0caf5; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #1a1b26; border: 2px solid #7aa2f7; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; background: #13141c; border-bottom: 1px solid #24283b; padding-left: 18px;">
+    <div style="display: flex; align-items: center; gap: 22px;">
+      <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.26em;">OMAVOI</span>
+      <div style="display: flex; align-self: stretch;">
+        <span class="tab">History</span><span class="tab">Modes</span><span class="tab">Models</span>
+        <span class="tab">Dictionary</span><span class="tab tab-on">Settings</span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; padding-right: 18px; font-size: 10px; color: #565f89;">
+      <span style="display: flex; align-items: center; gap: 6px;"><svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#9ece6a"></circle></svg><span style="color:#9ece6a;">Ready</span></span>
+      <span>Prose · large-v3 + qwen3-4b</span><span>RIGHTALT</span>
+    </div>
+  </div>
+
+  <div style="padding: 11px 26px; border-bottom: 1px solid #24283b;">
+    <span class="n">One key, one microphone, one overlay, and what stays on disk. Anything that varies by what you are writing lives in Modes instead.</span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <!-- col 1 -->
+    <div class="col" style="width: 470px; flex-shrink: 0; border-right: 1px solid #24283b;">
+
+      <div class="sec">
+        <span class="lbl">HOTKEY</span>
+        <div class="r"><span class="k">key</span>
+          <span style="display: flex; gap: 7px; align-items: center;">
+            <span class="v">RIGHTALT</span><span class="btn">Press a key&hellip;</span></span></div>
+        <div class="r"><span class="k">behaviour</span>
+          <span style="display: flex;"><span class="seg-on">hold to talk</span><span class="seg">toggle</span></span></div>
+        <div class="r"><span class="k">force a mode</span>
+          <span style="display: flex; gap: 7px; align-items: center;">
+            <span class="v">SHIFT+RIGHTALT</span><span class="sel">Prose ▾</span></span></div>
+        <div class="r"><span class="k">devices</span>
+          <span style="display: flex; gap: 7px; align-items: center;">
+            <span class="sel">auto ▾</span><span class="n">2 found</span></span></div>
+        <span class="why">Read from evdev, below xkb &mdash; the key stays where it physically is even if your layout remaps it. Binding a modifier in Hyprland does not work here: pressing it changes the modmask, which fires the release binding instantly and records 0.0s.</span>
+      </div>
+
+      <div class="sec" style="border-top: 1px solid #24283b; padding-top: 14px;">
+        <span class="lbl">AUDIO</span>
+        <div class="r"><span class="k">input</span><span class="sel">RØDE NT-USB Mini ▾</span></div>
+        <div class="r"><span class="k">level</span>
+          <span style="display: flex; align-items: center; gap: 8px; width: 210px;">
+            <span style="flex-grow: 1; height: 7px; background: #24283b; display: block; position: relative;">
+              <span style="display: block; width: 62%; height: 7px; background: #9ece6a;"></span>
+              <span style="position: absolute; left: 34%; top: -2px; width: 1px; height: 11px; background: #e0af68;"></span>
+            </span>
+            <span class="n">−26 dBFS</span></span></div>
+
+        <div class="r"><span class="k">pre-roll</span>
+          <span style="display: flex; align-items: center; gap: 9px; width: 210px;">
+            <span class="track"><span class="fill" style="width: 40%;"></span><span class="knob" style="left: 40%;"></span></span>
+            <span class="v" style="width: 34px; text-align: right;">0.6s</span></span></div>
+        <span class="why" style="margin-top: -4px;">Audio kept from before the key went down. Lower it and the first syllable starts going missing while PipeWire opens the stream.</span>
+
+        <div class="r"><span class="k">tail</span>
+          <span style="display: flex; align-items: center; gap: 9px; width: 210px;">
+            <span class="track"><span class="fill" style="width: 25%;"></span><span class="knob" style="left: 25%;"></span></span>
+            <span class="v" style="width: 34px; text-align: right;">0.25s</span></span></div>
+        <div class="r"><span class="k">warn below</span>
+          <span style="display: flex; align-items: center; gap: 9px; width: 210px;">
+            <span class="track"><span class="fill" style="width: 55%;"></span><span class="knob" style="left: 55%;"></span></span>
+            <span class="v" style="width: 46px; text-align: right;">−45 dB</span></span></div>
+        <div class="r"><span class="k">max take</span><span class="v">300s</span></div>
+        <div class="r"><span class="k">ignore under</span><span class="v">0.35s</span></div>
+        <div class="r"><span class="n">ring buffer</span><span class="n">9.6 MB resident</span></div>
+      </div>
+    </div>
+
+    <!-- col 2 -->
+    <div class="col" style="width: 450px; flex-shrink: 0; border-right: 1px solid #24283b;">
+
+      <div class="sec">
+        <span class="lbl">HUD</span>
+        <div class="r"><span class="k">show while recording</span><span class="tog-on"><span class="kn-on"></span></span></div>
+        <div class="r"><span class="k">position</span>
+          <span style="display: flex;"><span class="seg-on">bottom</span><span class="seg">cursor</span><span class="seg">window</span></span></div>
+        <div class="r"><span class="k">size</span>
+          <span style="display: flex;"><span class="seg" style="border-left: 1px solid rgba(169,177,214,0.4);">XS</span><span class="seg-on" style="border-left: 0;">S</span><span class="seg">M</span></span></div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 3px;">
+          <span class="k">keep the result on screen</span>
+          <div style="display: flex; flex-direction: column; gap: 5px; padding-left: 2px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 9px; height: 9px; border: 1px solid #414868; flex-shrink: 0;"></span>
+              <span class="n">always, 1.2s</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 9px; height: 9px; border: 1px solid #7aa2f7; background: #7aa2f7; flex-shrink: 0;"></span>
+              <span style="color: #a9b1d6; font-size: 10px;">only when it was changed or flagged</span></div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 9px; height: 9px; border: 1px solid #414868; flex-shrink: 0;"></span>
+              <span class="n">never, fade at once</span></div>
+          </div>
+          <span class="why">The middle one is the default because a dwell you always pay for turns into noise the moment you dictate two sentences in a row &mdash; but a silent correction you never saw is worse.</span>
+        </div>
+
+        <div class="r" style="margin-top: 2px;"><span class="k">sound on start / stop</span><span class="tog-off"><span class="kn-off"></span></span></div>
+        <div class="r"><span class="k">bar module</span><span class="tog-on"><span class="kn-on"></span></span></div>
+      </div>
+
+      <div class="sec" style="border-top: 1px solid #24283b; padding-top: 14px;">
+        <span class="lbl">STARTUP</span>
+        <div class="r"><span class="k">start with the session</span><span class="tog-on"><span class="kn-on"></span></span></div>
+        <div class="r"><span class="k">load the model at start</span><span class="tog-on"><span class="kn-on"></span></span></div>
+        <span class="why">Off, the first take of the day waits ~2s for 3 GB of weights. On, that cost moves to login and the GPU holds them all session.</span>
+        <div class="r"><span class="n">unit</span><span class="n">omavoi.service &middot; user</span></div>
+        <div class="r"><span class="n">pause while a call is on</span><span class="tog-off"><span class="kn-off"></span></span></div>
+      </div>
+    </div>
+
+    <!-- col 3 -->
+    <div class="col" style="flex-grow: 1;">
+
+      <div class="sec">
+        <span class="lbl">HISTORY</span>
+        <div class="r"><span class="k">keep takes</span><span class="v">500</span></div>
+        <div class="r"><span class="k">keep audio for the last</span>
+          <span style="display: flex; align-items: center; gap: 9px; width: 190px;">
+            <span class="track"><span class="fill" style="width: 20%;"></span><span class="knob" style="left: 20%;"></span></span>
+            <span class="v" style="width: 46px; text-align: right;">20</span></span></div>
+        <span class="why">Stored audio is what makes Test, Re-run on another model, and the Names dry run possible. Set it to 0 and those go away.</span>
+        <div class="r"><span class="n">on disk</span><span class="n">history 210 KB &middot; audio 34 MB</span></div>
+      </div>
+
+      <div class="sec" style="border-top: 1px solid #24283b; padding-top: 14px;">
+        <span class="lbl">WHERE YOUR VOICE GOES</span>
+
+        <div style="border: 1px solid #24283b; background: #16171f; padding: 10px 12px; display: flex; gap: 10px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ece6a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <span style="color: #c0caf5; font-size: 10px;">Audio never leaves this machine</span>
+            <span class="why">Speech runs on the local GPU in every mode. No recording is uploaded anywhere, ever.</span>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #e0af68; background: rgba(224,175,104,0.07); padding: 10px 12px; display: flex; gap: 10px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e0af68" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="color: #e0af68; font-size: 10px;">1 mode sends transcribed text off the machine</span>
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <span style="color: #a9b1d6; font-size: 11px;">Email</span>
+              <span class="n">&rarr; claude-haiku-4-5 &middot; api.anthropic.com</span>
+            </div>
+            <span class="why">Its cleanup step is a remote model, so whatever you dictate in Thunderbird is sent as text. Swap it for a local LLM under Models to stop that.</span>
+            <div style="display: flex; gap: 6px;"><span class="btn">Review</span><span class="btn">Make everything local</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec" style="border-top: 1px solid #24283b; padding-top: 14px; margin-top: auto;">
+        <span class="lbl">FILES</span>
+        <div class="r"><span class="n">config</span><span class="n">~/.config/omavoi/config.toml</span></div>
+        <div class="r"><span class="n">keys</span><span class="n">~/.config/omavoi/secrets.toml &middot; 0600</span></div>
+        <div class="r"><span class="n">history</span><span class="n">~/.local/state/omavoi/</span></div>
+        <div class="r"><span class="n">models</span><span class="n">~/.local/share/omavoi/models/</span></div>
+        <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <span class="btn">Open config</span>
+          <span class="btn">Purge history</span>
+          <span class="btn">Delete stored audio</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,1126 @@
+"""Command line: `omavoi <command>`."""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import json
+import logging
+import os
+import shutil
+import subprocess
+import sys
+import wave
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from . import __version__, config, daemon, models, paths
+
+log = logging.getLogger("omavoi")
+
+GREEN, RED, YELLOW, DIM, BOLD, RESET = (
+    "\033[32m", "\033[31m", "\033[33m", "\033[2m", "\033[1m", "\033[0m"
+)
+
+
+def _color(enabled: bool) -> None:
+    if not enabled:
+        globals().update(GREEN="", RED="", YELLOW="", DIM="", BOLD="", RESET="")
+
+
+def setup_logging(level: str = "INFO", to_file: bool = False) -> None:
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stderr)]
+    if to_file:
+        paths.state_dir().mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(paths.log_file(), encoding="utf-8"))
+    logging.basicConfig(
+        level=getattr(logging, level.upper(), logging.INFO),
+        format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=handlers,
+        force=True,
+    )
+
+
+def load_wav(path: Path, want_rate: int = 16000) -> tuple[np.ndarray, int]:
+    """Read an audio file to float32 mono at `want_rate`, via ffmpeg if needed."""
+    try:
+        with wave.open(str(path), "rb") as wav:
+            if wav.getnchannels() == 1 and wav.getsampwidth() == 2 and wav.getframerate() == want_rate:
+                raw = wav.readframes(wav.getnframes())
+                return np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768.0, want_rate
+    except (wave.Error, OSError):
+        pass
+
+    if shutil.which("ffmpeg") is None:
+        raise SystemExit(f"{path} is not 16 kHz mono WAV and ffmpeg is not installed")
+    proc = subprocess.run(
+        ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
+         "-i", str(path), "-f", "s16le", "-ac", "1", "-ar", str(want_rate), "-"],
+        capture_output=True, check=False,
+    )
+    if proc.returncode != 0:
+        raise SystemExit(f"ffmpeg failed: {proc.stderr.decode('utf-8', 'replace')[:300]}")
+    return np.frombuffer(proc.stdout, dtype="<i2").astype(np.float32) / 32768.0, want_rate
+
+
+# -- commands ----------------------------------------------------------------
+
+def cmd_daemon(args: argparse.Namespace) -> int:
+    cfg = config.load()
+    setup_logging(args.log_level or cfg["ui"].get("log_level", "INFO"), to_file=True)
+    try:
+        daemon.Daemon(cfg).run()
+    except daemon.AlreadyRunning as exc:
+        print(f"{RED}{exc}{RESET}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+def cmd_record(args: argparse.Namespace) -> int:
+    try:
+        reply = daemon.request({"cmd": args.action})
+    except (ConnectionError, OSError) as exc:
+        print(f"{RED}{exc}{RESET}", file=sys.stderr)
+        return 1
+    if not reply.get("ok"):
+        print(f"{RED}{reply.get('error', reply)}{RESET}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(reply, ensure_ascii=False))
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    info = daemon.ping()
+    if info is None:
+        if args.json:
+            print(json.dumps({"state": "stopped", "text": "", "class": "stopped"}))
+        else:
+            print(f"{DIM}daemon not running{RESET}")
+        return 1
+
+    if args.json:
+        # Shaped for a bar module: text / tooltip / class.
+        state = info["state"]
+        label = {"idle": "", "recording": "recording", "transcribing": "transcribing"}
+        print(json.dumps({
+            "text": label.get(state, state),
+            "tooltip": info["backend"],
+            "class": state,
+            "state": state,
+        }, ensure_ascii=False))
+        return 0
+
+    print(f"{BOLD}state{RESET}     {info['state']}")
+    print(f"{BOLD}pid{RESET}       {info['pid']}  up {info['uptime']:.0f}s  {info['takes']} takes")
+    print(f"{BOLD}backend{RESET}   {info['backend']}")
+    hk = info["hotkey"]
+    print(f"{BOLD}hotkey{RESET}    {hk['key']} ({hk['mode']})")
+    for dev in hk["devices"]:
+        print(f"          {DIM}{dev}{RESET}")
+    au = info["audio"]
+    mark = f"{GREEN}ok{RESET}" if au["healthy"] else f"{RED}unhealthy{RESET}"
+    print(f"{BOLD}audio{RESET}     {mark}  level {au['level']:.3f}  "
+          f"pre-roll {au['preroll']}s / tail {au['tail']}s")
+    return 0
+
+
+def _print_entry(entry: dict[str, Any], verbose: bool) -> None:
+    import datetime
+
+    ts = datetime.datetime.fromtimestamp(entry.get("ts", 0)).strftime("%m-%d %H:%M:%S")
+    text = entry.get("text") or ""
+    rejected = entry.get("rejected") or ""
+    head = text if text else f"{DIM}(dropped: {rejected}){RESET}"
+    print(f"{DIM}{ts}{RESET}  {head}")
+    if not verbose:
+        return
+
+    audio = entry.get("audio", {})
+    asr_info = entry.get("asr", {})
+    print(f"          {DIM}audio{RESET}   {audio.get('seconds', 0):.2f}s  "
+          f"rms {audio.get('rms_dbfs', 0):.1f} dBFS  peak {audio.get('peak_dbfs', 0):.1f} dBFS")
+    if asr_info:
+        print(f"          {DIM}model{RESET}   {asr_info.get('model', '?')} "
+              f"[{asr_info.get('device', '?')}]  "
+              f"decode {asr_info.get('decode_seconds', 0):.2f}s  RTF {asr_info.get('rtf', 0):.3f}  "
+              f"lang {asr_info.get('language', '?')}")
+        for seg in asr_info.get("segments", []):
+            flag = RED if seg.get("avg_logprob", 0) < -1.0 else DIM
+            print(f"            {flag}[{seg.get('start', 0):5.2f}-{seg.get('end', 0):5.2f}] "
+                  f"logprob={seg.get('avg_logprob', 0):6.2f} "
+                  f"no_speech={seg.get('no_speech_prob', 0):.3f}{RESET} {seg.get('text', '')}")
+    raw = entry.get("raw_text") or ""
+    if raw and raw != text:
+        print(f"          {DIM}raw{RESET}     {raw}")
+    changes = entry.get("post", {}).get("changes") or []
+    if changes:
+        print(f"          {DIM}post{RESET}    {' | '.join(changes)}")
+    win = entry.get("window", {})
+    if win:
+        print(f"          {DIM}window{RESET}  {win.get('class', '?')} "
+              f"profile={win.get('profile') or '-'}")
+    inj = entry.get("inject", {})
+    if inj:
+        print(f"          {DIM}inject{RESET}  {inj.get('method')} "
+              f"{'ok' if inj.get('ok') else 'FAILED ' + inj.get('error', '')}")
+    for warning in entry.get("warnings", []):
+        print(f"          {YELLOW}! {warning}{RESET}")
+
+
+def cmd_history(args: argparse.Namespace) -> int:
+    from .history import History
+
+    entries = History(config.load()).entries(args.number)
+    if args.json:
+        print(json.dumps(entries, ensure_ascii=False, indent=2))
+        return 0
+    if not entries:
+        print(f"{DIM}no takes recorded yet{RESET}")
+        return 0
+    for entry in entries:
+        _print_entry(entry, args.verbose)
+    return 0
+
+
+def cmd_last(args: argparse.Namespace) -> int:
+    from .history import History
+
+    entry = History(config.load()).last()
+    if entry is None:
+        print(f"{DIM}no takes recorded yet{RESET}")
+        return 1
+    if args.json:
+        print(json.dumps(entry, ensure_ascii=False, indent=2))
+    elif args.raw:
+        print(entry.get("raw_text", ""))
+    else:
+        _print_entry(entry, verbose=True)
+    return 0
+
+
+def cmd_stats(args: argparse.Namespace) -> int:
+    from .history import History
+
+    stats = History(config.load()).stats()
+    if args.json:
+        print(json.dumps(stats, ensure_ascii=False, indent=2))
+        return 0
+    if not stats.get("count"):
+        print(f"{DIM}no takes recorded yet{RESET}")
+        return 0
+    print(f"{BOLD}takes{RESET}         {stats['count']}")
+    print(f"{BOLD}empty{RESET}         {stats['empty']} ({stats['empty_rate']:.1%})")
+    if stats.get("median_rtf") is not None:
+        print(f"{BOLD}median RTF{RESET}    {stats['median_rtf']:.4f}")
+    if stats.get("median_rms_dbfs") is not None:
+        print(f"{BOLD}median level{RESET}  {stats['median_rms_dbfs']:.1f} dBFS")
+    print(f"{BOLD}injected via{RESET}  {stats['inject_methods']}")
+    return 0
+
+
+def _is_remote(backend: str, base_url: str) -> bool:
+    """Whether using this model sends text off the machine."""
+    if backend == "anthropic":
+        return True
+    if not base_url:
+        # An OpenAI-compatible backend with no base_url means api.openai.com.
+        return backend != "llama-cpp"
+    host = base_url.split("//", 1)[-1].split("/", 1)[0].split(":", 1)[0]
+    return host not in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+
+def cmd_model(args: argparse.Namespace) -> int:
+    if args.action == "list":
+        cfg = config.load()
+        active = cfg["speech"]["model"]
+        if args.json:
+            rows = []
+            for spec in models.CATALOG:
+                rows.append({
+                    "key": spec.key, "id": spec.id, "fmt": spec.fmt,
+                    "backend": spec.backend, "size_mb": spec.size_mb,
+                    "note": spec.note, "tags": list(spec.tags),
+                    "downloaded": models.is_downloaded(spec.key),
+                    "path": str(models.local_path(spec.key) or ""),
+                    "ours": models.owned_by_us(spec.key),
+                    "active": spec.key == active or (spec.fmt == models.CT2 and spec.id == active),
+                })
+            from . import gpu, secrets
+
+            # Which modes name which LLM, so removing one shows what breaks.
+            used_by: dict[str, list[str]] = {}
+            for mode_name, mode in cfg.get("modes", {}).items():
+                for step in mode.get("steps") or []:
+                    used_by.setdefault(str(step.get("llm", "")), []).append(mode_name)
+
+            llms = []
+            for name, entry in sorted(cfg.get("llm", {}).items()):
+                backend = str(entry.get("backend", "openai"))
+                key_env = str(entry.get("key_env", ""))
+                key = secrets.resolve(key_env, str(entry.get("key_name", "") or name))
+                llms.append({
+                    "name": name,
+                    "backend": backend,
+                    "model": entry.get("model", ""),
+                    "base_url": entry.get("base_url", ""),
+                    "remote": _is_remote(backend, str(entry.get("base_url", ""))),
+                    "key_env": key_env,
+                    "key": secrets.redact(key) if key_env else "",
+                    "has_key": bool(key) or not key_env,
+                    "used_by": sorted(used_by.get(name, [])),
+                })
+
+            print(json.dumps({"active": active,
+                              "backend": cfg["speech"]["backend"],
+                              "root": str(models.model_root()),
+                              "models": rows,
+                              "llm": llms,
+                              "vram": gpu.vram()}, ensure_ascii=False, indent=2))
+            return 0
+        print(f"{BOLD}  {'model':<24}{'size':>7}  {'state':<10}notes{RESET}")
+        for fmt in (models.CT2, models.GGML):
+            entries = [s for s in models.CATALOG if s.fmt == fmt]
+            engine = "local-whisper (CUDA)" if fmt == models.CT2 else "local-whispercpp (Vulkan)"
+            print(f"\n{DIM}{fmt}  —  {engine}{RESET}")
+            for spec in entries:
+                here = models.is_downloaded(spec.key)
+                current = spec.key == active or (fmt == models.CT2 and spec.id == active)
+                mark = f"{GREEN}*{RESET}" if current else (f"{DIM}.{RESET}" if here else " ")
+                state = f"{GREEN}local{RESET}" if here else f"{DIM}remote{RESET}"
+                tag = f" {YELLOW}[recommended]{RESET}" if "recommended" in spec.tags else ""
+                print(f"{mark} {spec.key:<24}{spec.size_mb / 1024:>6.1f}G  {state:<18}{spec.note}{tag}")
+        print(f"\n{DIM}* = in use   . = downloaded   stored in {models.model_root()}{RESET}")
+        return 0
+
+    if args.action == "pull":
+        for key in args.models:
+            spec = models.spec(key)
+            if spec is None:
+                print(f"{RED}unknown model {key}{RESET}", file=sys.stderr)
+                return 1
+            if models.is_downloaded(key):
+                print(f"{DIM}{key} already present{RESET}")
+                continue
+            print(f"downloading {key} (~{spec.size_mb / 1024:.1f}G) ...")
+            models.pull(key)
+            print(f"{GREEN}ok{RESET} {key}")
+        return 0
+
+    if args.action == "rm":
+        for key in args.models:
+            if models.remove(key):
+                print(f"{GREEN}removed{RESET} {key}")
+            elif models.is_downloaded(key):
+                print(f"{YELLOW}{key} lives outside our store, left alone:{RESET} "
+                      f"{models.local_path(key)}")
+            else:
+                print(f"{DIM}{key} is not downloaded{RESET}")
+        return 0
+
+    if args.action == "use":
+        key = args.models[0]
+        spec = models.spec(key)
+        if spec is None:
+            print(f"{RED}unknown model {key}{RESET}", file=sys.stderr)
+            return 1
+        if not models.is_downloaded(key):
+            print(f"{YELLOW}{key} is not downloaded yet, fetching{RESET}")
+            models.pull(key)
+        config.set_path("speech.backend", spec.backend)
+        config.set_path("speech.model", spec.key if spec.fmt == models.GGML else spec.id)
+        print(f"{GREEN}ok{RESET} using {key} via {spec.backend} "
+              f"{DIM}(restart the daemon to apply){RESET}")
+        return 0
+    return 1
+
+
+def cmd_config(args: argparse.Namespace) -> int:
+    path = paths.config_file()
+    if args.action == "path":
+        print(path)
+        return 0
+    if args.action == "init":
+        if path.exists() and not args.force:
+            print(f"{YELLOW}{path} exists; pass --force to overwrite{RESET}", file=sys.stderr)
+            return 1
+        config.write(config.defaults(), path)
+        print(f"{GREEN}wrote{RESET} {path}")
+        return 0
+    if args.action == "show":
+        if args.json:
+            print(json.dumps(config.load(), ensure_ascii=False, indent=2))
+        else:
+            print(config.dumps(config.load()))
+        return 0
+    if args.action == "get":
+        try:
+            print(json.dumps(config.get_path(config.load(), args.key), ensure_ascii=False))
+        except KeyError:
+            print(f"{RED}no such setting: {args.key}{RESET}", file=sys.stderr)
+            return 1
+        return 0
+    if args.action == "set":
+        try:
+            value = config.set_path(args.key, args.value)
+        except KeyError:
+            print(f"{RED}no such setting: {args.key}{RESET}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
+            print(f"{RED}{exc}{RESET}", file=sys.stderr)
+            return 1
+        print(f"{GREEN}ok{RESET} {args.key} = {json.dumps(value, ensure_ascii=False)}")
+        return 0
+    if args.action == "edit":
+        if not path.exists():
+            config.write(config.defaults(), path)
+        editor = os.environ.get("EDITOR") or os.environ.get("VISUAL") or "nano"
+        return subprocess.call([editor, str(path)])
+    return 1
+
+
+def cmd_dict(args: argparse.Namespace) -> int:
+    cfg = config.load()
+    dictionary: dict[str, str] = dict(cfg.setdefault("dictionary", {}).get("rules", {}))
+    if args.action == "list":
+        if args.json:
+            order = sorted(dictionary, key=len, reverse=True)
+            rows = []
+            for i, src in enumerate(order):
+                shadow = next((o for o in order[:i] if o.lower() in src.lower()
+                               or src.lower().startswith(o.lower())), "")
+                rows.append({"heard": src, "meant": dictionary[src], "shadowed_by": shadow})
+            print(json.dumps({"rules": rows}, ensure_ascii=False, indent=2))
+            return 0
+        for src in sorted(dictionary, key=len, reverse=True):
+            print(f"  {src}  ->  {dictionary[src]}")
+        print(f"\n{DIM}{len(dictionary)} entries{RESET}")
+        return 0
+    if args.action == "add":
+        if not args.heard or not args.meant:
+            print(f"{RED}usage: omavoi dict add <heard> <meant>{RESET}", file=sys.stderr)
+            return 1
+        dictionary[args.heard] = args.meant
+        cfg["dictionary"]["rules"] = dictionary
+        config.write(cfg)
+        print(f"{GREEN}ok{RESET} {args.heard} -> {args.meant}  "
+              f"{DIM}(omavoi reload to apply){RESET}")
+        return 0
+    if args.action == "rm":
+        if dictionary.pop(args.heard, None) is None:
+            print(f"{DIM}{args.heard} is not in the dictionary{RESET}")
+            return 1
+        cfg["dictionary"]["rules"] = dictionary
+        config.write(cfg)
+        print(f"{GREEN}removed{RESET} {args.heard}")
+        return 0
+    return 1
+
+
+def cmd_reload(args: argparse.Namespace) -> int:
+    try:
+        reply = daemon.request({"cmd": "reload"})
+    except (ConnectionError, OSError) as exc:
+        print(f"{RED}{exc}{RESET}", file=sys.stderr)
+        return 1
+    if not reply.get("ok"):
+        print(f"{RED}{reply.get('error')}{RESET}", file=sys.stderr)
+        return 1
+    print(f"{GREEN}config reloaded{RESET}")
+    if reply.get("model_restart_required"):
+        print(f"{YELLOW}model settings changed; restart the daemon{RESET}")
+    return 0
+
+
+def cmd_transcribe(args: argparse.Namespace) -> int:
+    from . import asr
+    from .audio import Capture
+    from .pipeline import Pipeline
+
+    cfg = config.load()
+    setup_logging(args.log_level or "WARNING")
+    samples, rate = load_wav(Path(args.file), cfg["audio"]["rate"])
+
+    backend = asr.build(cfg)
+    backend.load()
+    try:
+        capture = Capture(samples, rate, 0.0, 0.0, False)
+        entry = Pipeline(cfg, backend).process(
+            capture, inject=args.inject, forced_mode=args.mode)
+    finally:
+        close = getattr(backend, "close", None)
+        if callable(close):
+            close()
+
+    if args.json:
+        print(json.dumps(entry, ensure_ascii=False, indent=2))
+    else:
+        _print_entry(entry, verbose=args.verbose)
+    return 0
+
+
+def cmd_names(args: argparse.Namespace) -> int:
+    from . import names as names_mod
+    from .history import History
+
+    cfg = config.load()
+    entries = cfg.setdefault("dictionary", {}).setdefault("names", [])
+
+    if args.action == "list":
+        index = names_mod.NameIndex(cfg)
+        if args.json:
+            rows = []
+            for e in index.entries:
+                key = (names_mod.pinyin_key(e.name) if e.resolved_match() == "pinyin"
+                       else names_mod.phonetic_key(e.name))
+                rows.append(e.as_dict() | {"key": key})
+            print(json.dumps({"names": rows, "seed": index.seed_text(),
+                              "budget": index.budget}, ensure_ascii=False, indent=2))
+            return 0
+        if not index.entries:
+            print(f"{DIM}no names yet — omavoi names add <name> [...]{RESET}")
+            return 0
+        for e in index.entries:
+            state = f"{GREEN}matching{RESET}" if e.enabled else f"{DIM}seed only{RESET}"
+            key = (names_mod.pinyin_key(e.name) if e.resolved_match() == "pinyin"
+                   else names_mod.phonetic_key(e.name))
+            print(f"  {e.name:<18}{key:<22}{e.resolved_match():<10}{state:<20}{DIM}{e.group}{RESET}")
+        print(f"\n{DIM}{len(index.entries)} names · decoder prompt: {index.seed_text()[:60] or '(none)'}{RESET}")
+        return 0
+
+    if args.action == "add":
+        if not args.names:
+            print(f"{RED}usage: omavoi names add <name> [<name> ...]{RESET}", file=sys.stderr)
+            return 1
+        existing = {e.name for e in names_mod.load(cfg)}
+        added = 0
+        for name in args.names:
+            name = name.strip()
+            if not name or name in existing:
+                continue
+            entries.append({"name": name, "group": args.group, "seed": True, "enabled": False})
+            added += 1
+        config.write(cfg)
+        print(f"{GREEN}added {added}{RESET} — seeded into the decoder prompt now.")
+        print(f"{DIM}Sound matching stays off until `omavoi names dryrun` shows what it would do.{RESET}")
+        return 0
+
+    if args.action == "rm":
+        target = set(args.names)
+        kept = [e for e in entries if (e.get("name") if isinstance(e, dict) else e) not in target]
+        removed = len(entries) - len(kept)
+        cfg["dictionary"]["names"] = kept
+        config.write(cfg)
+        print(f"{GREEN}removed {removed}{RESET}")
+        return 0
+
+    if args.action in ("dryrun", "enable"):
+        texts = [e.get("raw_text") or "" for e in History(cfg).iter_entries()]
+        texts = [t for t in texts if t.strip()]
+        if not texts:
+            print(f"{YELLOW}no stored transcripts to test against yet{RESET}")
+            return 1
+        found = names_mod.dry_run(cfg, texts)
+        print(f"{BOLD}{len(found)}{RESET} of {len(texts)} stored takes would change\n")
+        for item in found[:20]:
+            print(f"  {DIM}{item['before']}{RESET}")
+            print(f"  {GREEN}{item['after']}{RESET}")
+            print(f"    {DIM}{', '.join(h['found'] + ' -> ' + h['name'] for h in item['hits'])}{RESET}\n")
+        if args.action == "dryrun":
+            print(f"{DIM}Look these over. `omavoi names enable` turns matching on for all of them.{RESET}")
+            return 0
+        for e in entries:
+            if isinstance(e, dict):
+                e["enabled"] = True
+        config.write(cfg)
+        print(f"{GREEN}sound matching enabled for all names{RESET}")
+        return 0
+    return 1
+
+
+def cmd_setup(args: argparse.Namespace) -> int:
+    from . import setup as setup_mod
+
+    cfg = config.load()
+    report = setup_mod.check(cfg)
+
+    if args.json:
+        print(json.dumps(report.as_dict(), ensure_ascii=False, indent=2))
+        return 0 if report.ready else 1
+
+    print(f"{BOLD}Omavoi setup{RESET}  {report.done}/{len(report.steps)} done\n")
+    for step in report.steps:
+        if step.done:
+            mark, colour = f"{GREEN}ok  {RESET}", ""
+        elif step.optional:
+            mark, colour = f"{YELLOW}--  {RESET}", YELLOW
+        else:
+            mark, colour = f"{RED}todo{RESET}", RED
+        tail = f" {DIM}(optional){RESET}" if step.optional and not step.done else ""
+        print(f"  {mark} {step.title}{tail}")
+        print(f"       {DIM}{step.detail}{RESET}")
+        if not step.done and step.command:
+            root = f" {YELLOW}[needs root]{RESET}" if step.needs_root else ""
+            print(f"       {colour}$ {step.command}{RESET}{root}")
+        if not step.done and step.note:
+            print(f"       {DIM}{step.note}{RESET}")
+        print()
+
+    if report.ready:
+        print(f"{GREEN}Ready. Hold {cfg['hotkey']['key']} and talk.{RESET}")
+        return 0
+
+    nxt = report.blocking[0]
+    if args.run:
+        if nxt.needs_root:
+            print(f"{YELLOW}This step needs root; run it yourself:{RESET}\n  {nxt.command}")
+            return 1
+        print(f"{BOLD}Running:{RESET} {nxt.command}")
+        return subprocess.call(nxt.command, shell=True)
+
+    print(f"Next: {BOLD}{nxt.title}{RESET}")
+    print(f"{DIM}Run `omavoi setup --run` to do the next step that does not need root.{RESET}")
+    return 1
+
+
+_MODE_FIELDS = ("language", "prompt", "inject", "paste_key")
+
+
+def cmd_mode(args: argparse.Namespace) -> int:
+    from . import modes as modes_mod
+    from .window import active_window
+
+    cfg = config.load()
+    table = cfg.setdefault("modes", {})
+    rest = list(args.rest)
+
+    def need(n: int, usage: str) -> bool:
+        if len(rest) < n:
+            print(f"{RED}usage: omavoi mode {usage}{RESET}", file=sys.stderr)
+            return False
+        return True
+
+    def save(msg: str) -> int:
+        config.write(cfg)
+        print(f"{GREEN}ok{RESET} {msg}  {DIM}(omavoi reload to apply){RESET}")
+        return 0
+
+    if args.action == "list":
+        active = modes_mod.resolve(cfg, active_window())
+        if args.json:
+            rows = []
+            for name in modes_mod.names(cfg):
+                mode = modes_mod.resolve(cfg, None, forced=name)
+                raw = table.get(name, {})
+                rows.append(mode.as_dict() | {
+                    "match": list(raw.get("match") or []),
+                    "prompt": str(raw.get("prompt", "") or ""),
+                    "paste_key": str(raw.get("paste_key", "") or ""),
+                    "active": name == active.name,
+                })
+            print(json.dumps({"active": active.name, "modes": rows,
+                              "llm": sorted(cfg.get("llm", {})),
+                              "fields": list(_MODE_FIELDS)},
+                             ensure_ascii=False, indent=2))
+            return 0
+        for name in modes_mod.names(cfg):
+            mode = modes_mod.resolve(cfg, None, forced=name)
+            mark = f"{GREEN}*{RESET}" if name == active.name else " "
+            match = ", ".join(table.get(name, {}).get("match") or []) or "fallback"
+            chain = " -> ".join(["speech", *(st.llm for st in mode.steps)])
+            print(f"{mark} {name:<12}{chain:<34}{DIM}{match}{RESET}")
+        return 0
+
+    if args.action == "show":
+        name = (args.rest[0] if args.rest else "") or modes_mod.resolve(cfg, active_window()).name
+        if name not in table:
+            print(f"{RED}no such mode: {name}{RESET}", file=sys.stderr)
+            return 1
+        print(json.dumps(table[name], ensure_ascii=False, indent=2))
+        return 0
+
+    if args.action == "which":
+        win = active_window()
+        mode = modes_mod.resolve(cfg, win)
+        print(f"{mode.name}  {DIM}window={win.cls or '?'} matched={mode.matched_on or '-'}{RESET}")
+        return 0
+
+    # -- mutations ---------------------------------------------------------
+
+    if args.action == "new":
+        if not need(1, "new <name> [copy-from]"):
+            return 1
+        name = rest[0]
+        if name in table:
+            print(f"{RED}{name} already exists{RESET}", file=sys.stderr)
+            return 1
+        source = rest[1] if len(rest) > 1 else ""
+        if source and source not in table:
+            print(f"{RED}no such mode to copy: {source}{RESET}", file=sys.stderr)
+            return 1
+        base = copy.deepcopy(table[source]) if source else {
+            "match": [], "language": "", "prompt": "", "inject": "auto",
+            "rules": dict(config.DEFAULTS["modes"]["default"]["rules"]), "steps": [],
+        }
+        base["match"] = [] if not source else list(base.get("match") or [])
+        table[name] = base
+        return save(f"created mode {name}" + (f" from {source}" if source else ""))
+
+    if args.action == "rm":
+        if not need(1, "rm <name>"):
+            return 1
+        name = rest[0]
+        if name == "default":
+            print(f"{RED}default is the fallback and cannot be removed{RESET}", file=sys.stderr)
+            return 1
+        if table.pop(name, None) is None:
+            print(f"{DIM}no such mode: {name}{RESET}")
+            return 1
+        return save(f"removed mode {name}")
+
+    if args.action == "set":
+        if not need(3, "set <mode> <field> <value>   fields: " + ", ".join(_MODE_FIELDS)):
+            return 1
+        name, field, value = rest[0], rest[1], " ".join(rest[2:])
+        if name not in table:
+            print(f"{RED}no such mode: {name}{RESET}", file=sys.stderr)
+            return 1
+        if field not in _MODE_FIELDS:
+            print(f"{RED}unknown field {field!r}; one of {', '.join(_MODE_FIELDS)}{RESET}",
+                  file=sys.stderr)
+            return 1
+        table[name][field] = value
+        return save(f"{name}.{field} set")
+
+    if args.action in ("match", "unmatch"):
+        if not need(2, f"{args.action} <mode> <window-class> [...]"):
+            return 1
+        name, tokens = rest[0], rest[1:]
+        if name not in table:
+            print(f"{RED}no such mode: {name}{RESET}", file=sys.stderr)
+            return 1
+        current = list(table[name].get("match") or [])
+        if args.action == "match":
+            for t in tokens:
+                if t not in current:
+                    current.append(t)
+        else:
+            current = [c for c in current if c not in tokens]
+        table[name]["match"] = current
+        return save(f"{name}.match = {current or '[]'}")
+
+    if args.action == "step":
+        if not need(2, "step <mode> add|rm|prompt|llm [...]"):
+            return 1
+        name, op = rest[0], rest[1]
+        if name not in table:
+            print(f"{RED}no such mode: {name}{RESET}", file=sys.stderr)
+            return 1
+        steps = list(table[name].get("steps") or [])
+
+        if op == "add":
+            if len(rest) < 3:
+                print(f"{RED}usage: omavoi mode step <mode> add <llm> [prompt]{RESET}",
+                      file=sys.stderr)
+                return 1
+            llm = rest[2]
+            if llm not in cfg.get("llm", {}):
+                print(f"{RED}no [llm.{llm}] defined; see omavoi model list{RESET}",
+                      file=sys.stderr)
+                return 1
+            steps.append({"llm": llm, "prompt": " ".join(rest[3:])})
+        elif op in ("rm", "prompt", "llm"):
+            if len(rest) < 3 or not rest[2].isdigit():
+                print(f"{RED}usage: omavoi mode step <mode> {op} <index> [...]{RESET}",
+                      file=sys.stderr)
+                return 1
+            index = int(rest[2])
+            if not 0 <= index < len(steps):
+                print(f"{RED}no step {index}; this mode has {len(steps)}{RESET}",
+                      file=sys.stderr)
+                return 1
+            if op == "rm":
+                steps.pop(index)
+            elif op == "prompt":
+                steps[index]["prompt"] = " ".join(rest[3:])
+            else:
+                llm = rest[3] if len(rest) > 3 else ""
+                if llm not in cfg.get("llm", {}):
+                    print(f"{RED}no [llm.{llm}] defined{RESET}", file=sys.stderr)
+                    return 1
+                steps[index]["llm"] = llm
+        else:
+            print(f"{RED}unknown step op {op!r}: add, rm, prompt, llm{RESET}", file=sys.stderr)
+            return 1
+
+        table[name]["steps"] = steps
+        return save(f"{name} chain: " + " -> ".join(["speech", *(s["llm"] for s in steps)]))
+
+    print(f"{RED}unknown action {args.action!r}{RESET}", file=sys.stderr)
+    return 1
+
+
+def cmd_names(args: argparse.Namespace) -> int:
+    from . import names as names_mod
+    from .history import History
+
+    cfg = config.load()
+    entries = cfg.setdefault("dictionary", {}).setdefault("names", [])
+
+    if args.action == "list":
+        index = names_mod.NameIndex(cfg)
+        if args.json:
+            rows = []
+            for e in index.entries:
+                key = (names_mod.pinyin_key(e.name) if e.resolved_match() == "pinyin"
+                       else names_mod.phonetic_key(e.name))
+                rows.append(e.as_dict() | {"key": key})
+            print(json.dumps({"names": rows, "seed": index.seed_text(),
+                              "budget": index.budget}, ensure_ascii=False, indent=2))
+            return 0
+        if not index.entries:
+            print(f"{DIM}no names yet — omavoi names add <name> [...]{RESET}")
+            return 0
+        for e in index.entries:
+            state = f"{GREEN}matching{RESET}" if e.enabled else f"{DIM}seed only{RESET}"
+            key = (names_mod.pinyin_key(e.name) if e.resolved_match() == "pinyin"
+                   else names_mod.phonetic_key(e.name))
+            print(f"  {e.name:<18}{key:<22}{e.resolved_match():<10}{state:<20}{DIM}{e.group}{RESET}")
+        print(f"\n{DIM}{len(index.entries)} names · decoder prompt: {index.seed_text()[:60] or '(none)'}{RESET}")
+        return 0
+
+    if args.action == "add":
+        if not args.names:
+            print(f"{RED}usage: omavoi names add <name> [<name> ...]{RESET}", file=sys.stderr)
+            return 1
+        existing = {e.name for e in names_mod.load(cfg)}
+        added = 0
+        for name in args.names:
+            name = name.strip()
+            if not name or name in existing:
+                continue
+            entries.append({"name": name, "group": args.group, "seed": True, "enabled": False})
+            added += 1
+        config.write(cfg)
+        print(f"{GREEN}added {added}{RESET} — seeded into the decoder prompt now.")
+        print(f"{DIM}Sound matching stays off until `omavoi names dryrun` shows what it would do.{RESET}")
+        return 0
+
+    if args.action == "rm":
+        target = set(args.names)
+        kept = [e for e in entries if (e.get("name") if isinstance(e, dict) else e) not in target]
+        removed = len(entries) - len(kept)
+        cfg["dictionary"]["names"] = kept
+        config.write(cfg)
+        print(f"{GREEN}removed {removed}{RESET}")
+        return 0
+
+    if args.action in ("dryrun", "enable"):
+        texts = [e.get("raw_text") or "" for e in History(cfg).iter_entries()]
+        texts = [t for t in texts if t.strip()]
+        if not texts:
+            print(f"{YELLOW}no stored transcripts to test against yet{RESET}")
+            return 1
+        found = names_mod.dry_run(cfg, texts)
+        print(f"{BOLD}{len(found)}{RESET} of {len(texts)} stored takes would change\n")
+        for item in found[:20]:
+            print(f"  {DIM}{item['before']}{RESET}")
+            print(f"  {GREEN}{item['after']}{RESET}")
+            print(f"    {DIM}{', '.join(h['found'] + ' -> ' + h['name'] for h in item['hits'])}{RESET}\n")
+        if args.action == "dryrun":
+            print(f"{DIM}Look these over. `omavoi names enable` turns matching on for all of them.{RESET}")
+            return 0
+        for e in entries:
+            if isinstance(e, dict):
+                e["enabled"] = True
+        config.write(cfg)
+        print(f"{GREEN}sound matching enabled for all names{RESET}")
+        return 0
+    return 1
+
+
+def cmd_setup(args: argparse.Namespace) -> int:
+    from . import setup as setup_mod
+
+    cfg = config.load()
+    report = setup_mod.check(cfg)
+
+    if args.json:
+        print(json.dumps(report.as_dict(), ensure_ascii=False, indent=2))
+        return 0 if report.ready else 1
+
+    print(f"{BOLD}Omavoi setup{RESET}  {report.done}/{len(report.steps)} done\n")
+    for step in report.steps:
+        if step.done:
+            mark, colour = f"{GREEN}ok  {RESET}", ""
+        elif step.optional:
+            mark, colour = f"{YELLOW}--  {RESET}", YELLOW
+        else:
+            mark, colour = f"{RED}todo{RESET}", RED
+        tail = f" {DIM}(optional){RESET}" if step.optional and not step.done else ""
+        print(f"  {mark} {step.title}{tail}")
+        print(f"       {DIM}{step.detail}{RESET}")
+        if not step.done and step.command:
+            root = f" {YELLOW}[needs root]{RESET}" if step.needs_root else ""
+            print(f"       {colour}$ {step.command}{RESET}{root}")
+        if not step.done and step.note:
+            print(f"       {DIM}{step.note}{RESET}")
+        print()
+
+    if report.ready:
+        print(f"{GREEN}Ready. Hold {cfg['hotkey']['key']} and talk.{RESET}")
+        return 0
+
+    nxt = report.blocking[0]
+    if args.run:
+        if nxt.needs_root:
+            print(f"{YELLOW}This step needs root; run it yourself:{RESET}\n  {nxt.command}")
+            return 1
+        print(f"{BOLD}Running:{RESET} {nxt.command}")
+        return subprocess.call(nxt.command, shell=True)
+
+    print(f"Next: {BOLD}{nxt.title}{RESET}")
+    print(f"{DIM}Run `omavoi setup --run` to do the next step that does not need root.{RESET}")
+    return 1
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    from . import cudaenv
+    from .hotkey import find_devices, key_code
+
+    cfg = config.load()
+    ok = True
+
+    def check(label: str, good: bool, detail: str = "") -> None:
+        nonlocal ok
+        ok = ok and good
+        mark = f"{GREEN}ok  {RESET}" if good else f"{RED}FAIL{RESET}"
+        print(f"  {mark} {label:<22}{detail}")
+
+    print(f"{BOLD}Omavoi {__version__}{RESET}\n")
+
+    print(f"{BOLD}config{RESET}")
+    problems = config.validate(cfg)
+    check("config file", not problems, str(paths.config_file()) +
+          ("" if paths.config_file().exists() else f" {DIM}(absent, using defaults){RESET}"))
+    for problem in problems:
+        print(f"    {YELLOW}! {problem}{RESET}")
+
+    print(f"\n{BOLD}external commands{RESET}")
+    for tool, needed in [("pw-record", True), ("wtype", True), ("wl-copy", True),
+                         ("wl-paste", False), ("hyprctl", True), ("notify-send", False),
+                         ("ffmpeg", False)]:
+        found = shutil.which(tool)
+        check(tool, bool(found) or not needed,
+              found or (f"{RED}missing{RESET}" if needed else f"{DIM}optional, absent{RESET}"))
+
+    print(f"\n{BOLD}hotkey{RESET}")
+    try:
+        code = key_code(cfg["hotkey"]["key"])
+        devices = find_devices(code)
+        check(f"{cfg['hotkey']['key']} readable on", bool(devices),
+              f"{len(devices)} device(s)" if devices
+              else f"{RED}nothing (are you in the input group? check `id -nG`){RESET}")
+        for dev in devices:
+            print(f"    {DIM}{dev.path}  {dev.name}{RESET}")
+            dev.close()
+    except Exception as exc:
+        check("hotkey", False, str(exc))
+
+    print(f"\n{BOLD}asr{RESET}")
+    from . import asr as asr_mod
+
+    backend_name = asr_mod.canonical(cfg["speech"]["backend"])
+    check("backend", backend_name is not None, str(backend_name or cfg["speech"]["backend"]))
+
+    if backend_name == "api":
+        from . import secrets
+        from .asr.api_whisper import PROVIDERS
+
+        api = cfg["speech"]["api"]
+        provider = api.get("provider", "openai")
+        check("provider", provider in PROVIDERS or bool(api.get("base_url")), provider)
+        key = secrets.resolve(
+            api.get("key_env", "") or PROVIDERS.get(provider, {}).get("key_env", ""),
+            api.get("key_name", "") or provider,
+        )
+        check("api key", bool(key), secrets.redact(key))
+    elif backend_name == "local-whispercpp":
+        from .asr.local_whispercpp import find_server
+
+        server = find_server()
+        check("whisper.cpp server", bool(server),
+              server or f"{RED}not found — pacman -S whisper-cpp ggml-vulkan{RESET}")
+        key = cfg["speech"]["model"]
+        if not key.startswith("ggml:"):
+            key = f"ggml:{key}"
+        check(f"model {key}", models.is_downloaded(key),
+              str(models.local_path(key) or f"{YELLOW}omavoi model pull {key}{RESET}"))
+    else:
+        info = cudaenv.diagnose()
+        check("ctranslate2", "ctranslate2" in info,
+              str(info.get("ctranslate2", info.get("ctranslate2_error"))))
+        devices = int(info.get("cuda_devices", 0) or 0)
+        check("cuda devices", devices > 0,
+              f"{devices}" if devices else f"{YELLOW}none, will run on CPU{RESET}")
+        check("cuda runtime libs", not info.get("preload_failures"),
+              f"{info.get('preloaded_count', 0)} preloaded from wheels")
+        key = cfg["speech"]["model"]
+        check(f"model {key}", models.is_downloaded(key),
+              str(models.local_path(key) or f"{YELLOW}omavoi model pull {key}{RESET}"))
+
+    print(f"\n{BOLD}audio{RESET}")
+    try:
+        out = subprocess.run(["pactl", "get-default-source"], capture_output=True, timeout=2)
+        source = out.stdout.decode().strip()
+        check("default source", bool(source), source or f"{RED}none{RESET}")
+    except (subprocess.SubprocessError, OSError) as exc:
+        check("default source", False, str(exc))
+
+    if args.mic:
+        import time as _time
+
+        from .audio import RingCapture
+
+        print(f"  {DIM}measuring 2s of input, say something...{RESET}")
+        ring = RingCapture(cfg)
+        try:
+            ring.start()
+            mark = ring.mark()
+            _time.sleep(2.0)
+            cap = ring.take(mark)
+            good = cap.rms_dbfs > cfg["audio"]["warn_rms_dbfs"]
+            check("input level", good,
+                  f"rms {cap.rms_dbfs:.1f} dBFS  peak {cap.peak_dbfs:.1f} dBFS"
+                  + ("" if good else f"  {YELLOW}too quiet, expect dropped words{RESET}"))
+        finally:
+            ring.stop()
+
+    print(f"\n{BOLD}daemon{RESET}")
+    info = daemon.ping()
+    check("running", info is not None,
+          f"pid {info['pid']}, {info['state']}" if info else f"{DIM}not running{RESET}")
+
+    print()
+    print(f"{GREEN}all good{RESET}" if ok else f"{YELLOW}problems above{RESET}")
+    return 0 if ok else 1
+
+
+# -- parser ------------------------------------------------------------------
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="omavoi",
+        description="Voice dictation for Omarchy: hold a key, talk, the text lands in the focused window.",
+    )
+    parser.add_argument("-V", "--version", action="version", version=f"omavoi {__version__}")
+    parser.add_argument("--log-level", default="", help="DEBUG, INFO, WARNING or ERROR")
+    parser.add_argument("--no-color", action="store_true")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("daemon", help="run the daemon (keeps the model resident)")
+    p.set_defaults(func=cmd_daemon)
+
+    p = sub.add_parser("record", help="drive recording from a keybinding or script")
+    p.add_argument("action", choices=["start", "stop", "toggle", "cancel"])
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_record)
+
+    p = sub.add_parser("status", help="daemon status (--json for a bar module)")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_status)
+
+    p = sub.add_parser("history", help="recent takes")
+    p.add_argument("-n", "--number", type=int, default=10)
+    p.add_argument("-v", "--verbose", action="store_true",
+                   help="include per-segment confidences and post-processing")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_history)
+
+    p = sub.add_parser("last", help="full diagnostics for the most recent take")
+    p.add_argument("--raw", action="store_true", help="print the model's raw text only")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_last)
+
+    p = sub.add_parser("stats", help="aggregates: empty rate, RTF, input level")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_stats)
+
+    p = sub.add_parser("model", help="download and switch local models")
+    p.add_argument("action", choices=["list", "pull", "rm", "use"])
+    p.add_argument("models", nargs="*", help="e.g. large-v3 or ggml:large-v3")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_model)
+
+    p = sub.add_parser("config", help="inspect and change settings")
+    p.add_argument("action", choices=["init", "show", "get", "set", "edit", "path"])
+    p.add_argument("key", nargs="?", default="")
+    p.add_argument("value", nargs="?", default="")
+    p.add_argument("--force", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_config)
+
+    p = sub.add_parser("dict", help="term dictionary: pin words the model keeps mishearing")
+    p.add_argument("action", choices=["list", "add", "rm"])
+    p.add_argument("heard", nargs="?", default="", help="what the model produced")
+    p.add_argument("meant", nargs="?", default="", help="what you actually said")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_dict)
+
+    p = sub.add_parser("reload", help="make the daemon re-read the config")
+    p.set_defaults(func=cmd_reload)
+
+    p = sub.add_parser("transcribe", help="transcribe a file through the same pipeline")
+    p.add_argument("file")
+    p.add_argument("--inject", action="store_true", help="also type the result")
+    p.add_argument("--mode", default="", help="force a mode instead of matching the window")
+    p.add_argument("-v", "--verbose", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_transcribe)
+
+    p = sub.add_parser("names", help="proper nouns, written only in their correct form")
+    p.add_argument("action", choices=["list", "add", "rm", "dryrun", "enable"])
+    p.add_argument("names", nargs="*")
+    p.add_argument("--group", default="", help="People, Places, Terms, ...")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_names)
+
+    p = sub.add_parser("setup", help="what is still missing, and the command for each")
+    p.add_argument("--run", action="store_true",
+                   help="run the next step that does not need root")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_setup)
+
+    p = sub.add_parser("mode", help="inspect and edit the modes")
+    p.add_argument("action", choices=["list", "show", "which", "new", "rm", "set",
+                                      "match", "unmatch", "step"])
+    p.add_argument("rest", nargs="*", help="arguments for the action")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_mode)
+
+    p = sub.add_parser("doctor", help="check the whole setup")
+    p.add_argument("--mic", action="store_true", help="also measure 2s of microphone input")
+    p.set_defaults(func=cmd_doctor)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    _color(sys.stdout.isatty() and not args.no_color and os.environ.get("NO_COLOR") is None)
+    if args.command != "daemon":
+        setup_logging(args.log_level or "WARNING")
+    try:
+        return int(args.func(args) or 0)
+    except KeyboardInterrupt:
+        return 130
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .pill { height: 28px; background: #1a1b26; border: 1px solid #7aa2f7; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+    .cap { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .dim { color: #414868; font-size: 10px; }
+  </style>
+</helmet>
+
+<div style="width: 1000px; height: 440px; background: #0e0e14; box-sizing: border-box; display: flex; flex-direction: column;">
+
+  <!-- Desktop scene, drawn 1:1 -->
+  <div style="height: 250px; flex-shrink: 0; position: relative; overflow: hidden; background: linear-gradient(160deg, #161824 0%, #0e0e14 60%, #131520 100%);">
+
+    <div style="position: absolute; left: 0; right: 0; top: 0; height: 26px; background: #1a1b26; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; box-sizing: border-box; font-size: 11px;">
+      <span style="color: #565f89; letter-spacing: 0.14em;">1 2 3 4 <span style="color:#c0caf5;">5</span> 6</span>
+      <span style="color: #565f89;">14:32</span>
+      <span style="display: flex; align-items: center; gap: 4px; color: #f7768e; background: rgba(247,118,142,0.12); padding: 0 5px; height: 18px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="#f7768e"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0 1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0z"></path><rect x="11" y="18" width="2" height="4"></rect></svg>
+        0:03
+      </span>
+    </div>
+
+    <div style="position: absolute; left: 36px; top: 58px; color: #24283b; font-size: 12px; line-height: 1.9;">
+      ~/Work/Omavoi&nbsp;&nbsp;❯&nbsp;git status<br>On branch main<br>nothing to commit, working tree clean<br>~/Work/Omavoi&nbsp;&nbsp;❯&nbsp;<span style="color:#414868;">▎</span>
+    </div>
+
+    <!-- The HUD itself: bottom center, 5px from the edge -->
+    <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 5px; display: flex; align-items: center;">
+      <div class="pill" style="width: 178px;">
+        <svg width="7" height="7" viewBox="0 0 8 8" style="flex-shrink:0;"><circle cx="4" cy="4" r="4" fill="#f7768e"></circle></svg>
+        <svg width="94" height="12" viewBox="0 0 94 12" style="flex-shrink:0;">
+          <g fill="#414868"><rect x="0" y="4" width="2" height="3"/><rect x="4" y="2" width="2" height="7"/><rect x="8" y="0" width="2" height="11"/></g>
+          <g fill="#7aa2f7">
+            <rect x="12" y="3" width="2" height="5"/><rect x="16" y="1" width="2" height="9"/><rect x="20" y="0" width="2" height="12"/><rect x="24" y="4" width="2" height="4"/><rect x="28" y="2" width="2" height="8"/><rect x="32" y="0" width="2" height="11"/><rect x="36" y="3" width="2" height="6"/><rect x="40" y="4" width="2" height="3"/><rect x="44" y="1" width="2" height="9"/><rect x="48" y="0" width="2" height="12"/><rect x="52" y="2" width="2" height="7"/><rect x="56" y="4" width="2" height="4"/><rect x="60" y="1" width="2" height="10"/><rect x="64" y="0" width="2" height="12"/><rect x="68" y="3" width="2" height="5"/><rect x="72" y="2" width="2" height="8"/><rect x="76" y="0" width="2" height="11"/>
+          </g>
+          <g fill="#24283b"><rect x="80" y="5" width="2" height="2"/><rect x="84" y="5" width="2" height="2"/><rect x="88" y="5" width="2" height="2"/></g>
+        </svg>
+        <span style="color: #c0caf5; font-size: 11px; margin-left: auto;">0:03</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Size ladder -->
+  <div style="flex-grow: 1; padding: 20px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; border-top: 1px solid #1a1b26;">
+
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.18em;">Size</span>
+      <span style="color: #565f89; font-size: 11px;">All 28px tall — one notch off the bar's 26px, so it reads as system chrome, not a dialog</span>
+    </div>
+
+    <div style="display: flex; align-items: flex-start; gap: 34px;">
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <span class="cap">XS &nbsp;28 × 28</span>
+        <div class="pill" style="width: 28px; padding: 0; justify-content: center;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#f7768e"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0 1 1 0 0 0-2 0 5 5 0 0 1-10 0 1 1 0 0 0-2 0z"></path><rect x="11" y="18" width="2" height="4"></rect></svg>
+        </div>
+        <span class="dim">Says you are recording.<br>Says nothing else.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <span class="cap" style="color: #7aa2f7;">S &nbsp;178 × 28 &nbsp;· recommended</span>
+        <div class="pill" style="width: 178px;">
+          <svg width="7" height="7" viewBox="0 0 8 8" style="flex-shrink:0;"><circle cx="4" cy="4" r="4" fill="#f7768e"></circle></svg>
+          <svg width="94" height="12" viewBox="0 0 94 12" style="flex-shrink:0;">
+            <g fill="#414868"><rect x="0" y="4" width="2" height="3"/><rect x="4" y="2" width="2" height="7"/><rect x="8" y="0" width="2" height="11"/></g>
+            <g fill="#7aa2f7"><rect x="12" y="3" width="2" height="5"/><rect x="16" y="1" width="2" height="9"/><rect x="20" y="0" width="2" height="12"/><rect x="24" y="4" width="2" height="4"/><rect x="28" y="2" width="2" height="8"/><rect x="32" y="0" width="2" height="11"/><rect x="36" y="3" width="2" height="6"/><rect x="40" y="4" width="2" height="3"/><rect x="44" y="1" width="2" height="9"/><rect x="48" y="0" width="2" height="12"/><rect x="52" y="2" width="2" height="7"/><rect x="56" y="4" width="2" height="4"/><rect x="60" y="1" width="2" height="10"/><rect x="64" y="0" width="2" height="12"/><rect x="68" y="3" width="2" height="5"/><rect x="72" y="2" width="2" height="8"/><rect x="76" y="0" width="2" height="11"/></g>
+            <g fill="#24283b"><rect x="80" y="5" width="2" height="2"/><rect x="84" y="5" width="2" height="2"/><rect x="88" y="5" width="2" height="2"/></g>
+          </svg>
+          <span style="color: #c0caf5; font-size: 11px; margin-left: auto;">0:03</span>
+        </div>
+        <span class="dim">Recording · is the mic hearing you · how long<br>The only three that matter mid-utterance</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <span class="cap">M &nbsp;278 × 28</span>
+        <div class="pill" style="width: 278px;">
+          <svg width="7" height="7" viewBox="0 0 8 8" style="flex-shrink:0;"><circle cx="4" cy="4" r="4" fill="#f7768e"></circle></svg>
+          <svg width="94" height="12" viewBox="0 0 94 12" style="flex-shrink:0;">
+            <g fill="#414868"><rect x="0" y="4" width="2" height="3"/><rect x="4" y="2" width="2" height="7"/><rect x="8" y="0" width="2" height="11"/></g>
+            <g fill="#7aa2f7"><rect x="12" y="3" width="2" height="5"/><rect x="16" y="1" width="2" height="9"/><rect x="20" y="0" width="2" height="12"/><rect x="24" y="4" width="2" height="4"/><rect x="28" y="2" width="2" height="8"/><rect x="32" y="0" width="2" height="11"/><rect x="36" y="3" width="2" height="6"/><rect x="40" y="4" width="2" height="3"/><rect x="44" y="1" width="2" height="9"/><rect x="48" y="0" width="2" height="12"/><rect x="52" y="2" width="2" height="7"/><rect x="56" y="4" width="2" height="4"/><rect x="60" y="1" width="2" height="10"/><rect x="64" y="0" width="2" height="12"/><rect x="68" y="3" width="2" height="5"/><rect x="72" y="2" width="2" height="8"/><rect x="76" y="0" width="2" height="11"/></g>
+            <g fill="#24283b"><rect x="80" y="5" width="2" height="2"/><rect x="84" y="5" width="2" height="2"/><rect x="88" y="5" width="2" height="2"/></g>
+          </svg>
+          <span style="color: #565f89; font-size: 10px; border-left: 1px solid #24283b; padding-left: 8px;">→ Alacritty</span>
+          <span style="color: #c0caf5; font-size: 11px; margin-left: auto;">0:03</span>
+        </div>
+        <span class="dim">Adds the target window. Worth the width<br>only on multi-monitor, where focus drifts</span>
+      </div>
+    </div>
+
+    <!-- Against the previous version -->
+    <div style="display: flex; align-items: center; gap: 14px; border-top: 1px solid #1a1b26; padding-top: 12px;">
+      <span class="cap" style="width: 78px;">Previous</span>
+      <div style="width: 330px; height: 45px; border: 1px dashed #24283b; box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: #24283b; font-size: 10px;">660 × 90</div>
+      <div style="width: 89px; height: 14px; border: 1px solid #7aa2f7; box-sizing: border-box;"></div>
+      <span class="dim">About 1/12 the area. Both boxes above are drawn at 1:2</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

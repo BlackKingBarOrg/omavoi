@@ -1,0 +1,213 @@
+"""Run a take through its mode's chain: speech -> rules -> LLM steps -> inject.
+
+Both the daemon and `omavoi transcribe <file>` go through here, so an
+offline re-run of a bad take exercises exactly the same path.
+
+The one rule that governs the whole file: a later stage may improve the
+text, never destroy it. Every LLM step falls through to what it was given
+if it fails, times out, or comes back empty — a slow model degrades your
+dictation, it must not swallow it.
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from typing import Any
+
+from . import asr, llm, modes, names as names_mod, notify, post
+from .audio import Capture
+from .history import History
+from .inject import Injector
+from .llm import Registry
+from .modes import Mode
+from .window import Window, active_window
+
+log = logging.getLogger(__name__)
+
+
+class Pipeline:
+    def __init__(
+        self,
+        cfg: dict[str, Any],
+        backend: asr.Backend,
+        injector: Injector | None = None,
+        history: History | None = None,
+        registry: Registry | None = None,
+    ) -> None:
+        self.cfg = cfg
+        self.backend = backend
+        self.injector = injector or Injector(cfg)
+        self.history = history or History(cfg)
+        self.llms = registry or Registry(cfg)
+
+    # -- chain -------------------------------------------------------------
+
+    def _run_steps(self, text: str, mode: Mode, entry: dict[str, Any]) -> str:
+        """Apply each LLM pass in order, keeping the last good text."""
+        records: list[dict[str, Any]] = entry.setdefault("steps", [])
+        current = text
+
+        for index, step in enumerate(mode.steps):
+            backend = self.llms.get(step.llm)
+            if backend is None:
+                records.append({"llm": step.llm, "error": "not configured", "kept": True})
+                entry["warnings"].append(f"step {index + 1}: llm {step.llm!r} is not configured")
+                continue
+
+            result = backend.complete(step.prompt, current, timeout=step.timeout)
+            record = result.as_dict() | {"llm": step.llm, "index": index}
+            if result.ok:
+                record["before"] = current
+                current = result.text
+            else:
+                record["kept"] = True
+                reason = result.error or "empty response"
+                entry["warnings"].append(f"step {index + 1} ({step.llm}) fell through: {reason}")
+                log.warning("llm step %s failed, keeping previous text: %s", step.llm, reason)
+            records.append(record)
+
+        return current
+
+    # -- one take ----------------------------------------------------------
+
+    def process(
+        self,
+        capture: Capture,
+        *,
+        inject: bool = True,
+        window: Window | None = None,
+        forced_mode: str = "",
+    ) -> dict[str, Any]:
+        started = time.monotonic()
+        cfg = self.cfg
+        entry: dict[str, Any] = {
+            "ts": time.time(),
+            "audio": {
+                "seconds": round(capture.seconds, 3),
+                "peak_dbfs": round(capture.peak_dbfs, 1),
+                "rms_dbfs": round(capture.rms_dbfs, 1),
+                "preroll": capture.preroll_seconds,
+                "tail": capture.tail_seconds,
+                "truncated": capture.truncated,
+            },
+            "raw_text": "",
+            "text": "",
+            "warnings": [],
+            "rejected": "",
+        }
+        warnings: list[str] = entry["warnings"]
+
+        min_seconds = float(cfg["audio"]["min_seconds"])
+        if capture.seconds < min_seconds:
+            entry["rejected"] = (
+                f"only {capture.seconds:.2f}s, below audio.min_seconds={min_seconds}"
+            )
+            return self._finish(entry, capture, started, notify_empty=False)
+
+        warn_rms = float(cfg["audio"]["warn_rms_dbfs"])
+        quiet = capture.rms_dbfs < warn_rms
+        if quiet:
+            warnings.append(
+                f"input is quiet: rms {capture.rms_dbfs:.1f} dBFS, below {warn_rms} "
+                "— the usual cause of dropped words"
+            )
+        if capture.truncated:
+            warnings.append("the ring buffer wrapped; the start of this take was lost")
+
+        # Resolve where the text is going now: that decides the mode.
+        win = window if window is not None else active_window()
+        mode = modes.resolve(cfg, win, forced_mode)
+        entry["window"] = win.as_dict()
+        entry["mode"] = mode.as_dict()
+
+        # Names are seeded into the decoder prompt: getting the model to
+        # produce a name is cheaper and cleaner than fixing it afterwards.
+        index = names_mod.NameIndex(cfg, mode.name)
+        seed = index.seed_text() if mode.rules.get("names", True) else ""
+        prompt = "\n".join(p for p in (mode.prompt, seed) if p)
+
+        try:
+            transcript = self.backend.transcribe(
+                capture.samples,
+                capture.rate,
+                language=mode.language or None,
+                prompt=prompt or None,
+            )
+        except Exception as exc:
+            log.exception("transcription failed")
+            entry["rejected"] = f"transcription failed: {exc}"
+            return self._finish(entry, capture, started, notify_empty=True)
+
+        entry["asr"] = transcript.as_dict()
+        entry["raw_text"] = transcript.text
+        warnings.extend(transcript.warnings())
+
+        result = post.run(
+            transcript.text,
+            cfg,
+            post.Context(win.cls, win.title, mode.rules),
+            max_no_speech=transcript.max_no_speech,
+            quiet=quiet,
+        )
+        entry["post"] = result.as_dict()
+
+        # Whatever seeding did not catch, sound matching recovers here.
+        if result.text and mode.rules.get("names", True):
+            fixed, hits = index.apply(result.text)
+            if hits:
+                entry["names"] = [
+                    {"name": h.name, "found": h.found, "score": round(h.score, 3)}
+                    for h in hits
+                ]
+                entry["post"]["changes"].append(
+                    "names: " + ", ".join(f"{h.found}->{h.name}" for h in hits)
+                )
+                result.text = fixed
+        entry["rules_text"] = result.text
+        if result.rejected:
+            entry["text"] = ""
+            entry["rejected"] = result.rejected
+            return self._finish(entry, capture, started, notify_empty=True)
+
+        final = self._run_steps(result.text, mode, entry) if mode.steps else result.text
+        entry["text"] = final
+
+        if inject and final:
+            profile: dict[str, Any] = {"inject": mode.inject}
+            if mode.paste_key:
+                profile["paste_key"] = mode.paste_key
+            outcome = self.injector.inject(final, win, profile)
+            entry["inject"] = outcome.as_dict()
+            if not outcome.ok:
+                warnings.append(f"injection failed: {outcome.error}")
+            elif outcome.fell_back:
+                warnings.append(f"injection fell back to {outcome.method}")
+
+        return self._finish(entry, capture, started, notify_empty=False)
+
+    # -- reporting ---------------------------------------------------------
+
+    def _finish(self, entry: dict[str, Any], capture: Capture, started: float,
+                *, notify_empty: bool) -> dict[str, Any]:
+        entry["total_seconds"] = round(time.monotonic() - started, 3)
+        self.history.record(entry, capture.samples, capture.rate)
+
+        for warning in entry["warnings"]:
+            log.warning("%s", warning)
+        if self.cfg["ui"].get("notify", True):
+            self._notify(entry, notify_empty=notify_empty)
+        if entry["text"]:
+            log.info("typed in %.2fs [%s]: %s",
+                     entry["total_seconds"], entry.get("mode", {}).get("name", "?"), entry["text"])
+        elif entry["rejected"]:
+            log.info("dropped: %s", entry["rejected"])
+        return entry
+
+    def _notify(self, entry: dict[str, Any], *, notify_empty: bool) -> None:
+        if entry["text"]:
+            if entry["warnings"]:
+                notify.send("Omavoi", entry["warnings"][0], urgency="normal")
+            return
+        if notify_empty and self.cfg["ui"].get("notify_on_empty", True):
+            notify.send("Omavoi heard nothing", entry["rejected"], urgency="low")

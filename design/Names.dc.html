@@ -1,0 +1,212 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace; }
+    a { color: #7aa2f7; } a:hover { color: #c0caf5; }
+    .tab { padding: 0 15px; height: 44px; display: flex; align-items: center; font-size: 12px; color: #565f89; border-bottom: 2px solid transparent; }
+    .tab-on { color: #c0caf5; border-bottom-color: #7aa2f7; }
+    .lbl { color: #565f89; font-size: 10px; letter-spacing: 0.12em; }
+    .btn { font-size: 10px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); background: rgba(169,177,214,0.04); padding: 4px 10px; }
+    .n { color: #565f89; font-size: 10px; }
+    .c { color: #a9b1d6; font-size: 11px; }
+    .row { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid #1a1b26; }
+    .nm { width: 132px; color: #c0caf5; font-size: 12px; flex-shrink: 0; }
+    .key { width: 152px; color: #565f89; font-size: 10px; flex-shrink: 0; }
+    .pill { font-size: 9px; color: #565f89; border: 1px solid #24283b; padding: 1px 6px; }
+    .grp { color: #7aa2f7; font-size: 10px; letter-spacing: 0.1em; padding: 11px 0 5px; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #1a1b26; border: 2px solid #7aa2f7; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; background: #13141c; border-bottom: 1px solid #24283b; padding-left: 18px;">
+    <div style="display: flex; align-items: center; gap: 22px;">
+      <span style="color: #c0caf5; font-size: 13px; letter-spacing: 0.26em;">OMAVOI</span>
+      <div style="display: flex; align-self: stretch;">
+        <span class="tab">History</span><span class="tab">Modes</span><span class="tab">Models</span>
+        <span class="tab tab-on">Dictionary</span><span class="tab">Settings</span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; padding-right: 18px; font-size: 10px; color: #565f89;">
+      <span style="display: flex; align-items: center; gap: 6px;"><svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#9ece6a"></circle></svg><span style="color:#9ece6a;">Ready</span></span>
+      <span>Prose · large-v3 + qwen3-4b</span><span>RIGHTALT</span>
+    </div>
+  </div>
+
+  <div style="padding: 12px 26px; border-bottom: 1px solid #24283b; display: flex; align-items: center; gap: 14px;">
+    <span style="display: flex;">
+      <span style="font-size: 10px; padding: 4px 12px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4);">Rules</span>
+      <span style="font-size: 10px; padding: 4px 12px; color: #c0caf5; background: rgba(169,177,214,0.18); border: 1px solid #a9b1d6; border-left: 0;">Names</span>
+      <span style="font-size: 10px; padding: 4px 12px; color: #a9b1d6; border: 1px solid rgba(169,177,214,0.4); border-left: 0;">Text</span>
+    </span>
+    <span class="n">A rule needs to know what went wrong. A name does not &mdash; you write only the correct form.</span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <!-- list -->
+    <div style="width: 800px; flex-shrink: 0; border-right: 1px solid #24283b; padding: 12px 22px; display: flex; flex-direction: column; min-width: 0; overflow: hidden;">
+
+      <div style="display: flex; gap: 9px; padding-bottom: 3px;">
+        <span class="n" style="width: 132px;">name</span><span class="n" style="width: 152px;">sound key</span>
+        <span class="n" style="width: 104px;">match</span><span class="n" style="width: 90px;">groups</span>
+        <span class="n" style="width: 40px;">hits</span><span class="n" style="flex-grow: 1;">prompt</span>
+      </div>
+
+      <span class="grp">PEOPLE &nbsp;&middot;&nbsp; active in Prose, Email</span>
+
+      <div class="row">
+        <span class="nm">李文渊</span>
+        <span class="key">lǐ wén yuān</span>
+        <span style="width: 104px;"><span class="pill">pinyin</span></span>
+        <span style="width: 90px;" class="n">People</span>
+        <span style="width: 40px; color: #9ece6a; font-size: 11px;">7</span>
+        <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="#e0af68"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.8 5.5 21 7.5 13.5 2 9 9 9"></polygon></svg>
+          <span class="n">seeded</span></span>
+      </div>
+
+      <div class="row">
+        <span class="nm">陈静</span>
+        <span class="key">chén jìng</span>
+        <span style="width: 104px;"><span class="pill">pinyin · tones</span></span>
+        <span style="width: 90px;" class="n">People</span>
+        <span style="width: 40px;" class="c">3</span>
+        <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="#e0af68"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.8 5.5 21 7.5 13.5 2 9 9 9"></polygon></svg>
+          <span class="n">seeded</span></span>
+      </div>
+
+      <div class="row">
+        <span class="nm">Nadia Boulanger</span>
+        <span class="key">NT&middot;PLNJ</span>
+        <span style="width: 104px;"><span class="pill">phonetic</span></span>
+        <span style="width: 90px;" class="n">People</span>
+        <span style="width: 40px;" class="c">2</span>
+        <span style="flex-grow: 1;"><span class="n">match only</span></span>
+      </div>
+
+      <span class="grp">PLACES</span>
+
+      <div class="row">
+        <span class="nm">旺角</span>
+        <span class="key">wàng jiǎo</span>
+        <span style="width: 104px;"><span class="pill">pinyin</span></span>
+        <span style="width: 90px;" class="n">Places</span>
+        <span style="width: 40px;" class="c">4</span>
+        <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="#e0af68"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.8 5.5 21 7.5 13.5 2 9 9 9"></polygon></svg>
+          <span class="n">seeded</span></span>
+      </div>
+
+      <div class="row">
+        <span class="nm">中关村</span>
+        <span class="key">zhōng guān cūn</span>
+        <span style="width: 104px;"><span class="pill">pinyin</span></span>
+        <span style="width: 90px;" class="n">Places</span>
+        <span style="width: 40px;" class="c">1</span>
+        <span style="flex-grow: 1;"><span class="n">match only</span></span>
+      </div>
+
+      <span class="grp">PRODUCTS &amp; TERMS</span>
+
+      <div class="row">
+        <span class="nm">Anthropic</span>
+        <span class="key">ANTRPK</span>
+        <span style="width: 104px;"><span class="pill">phonetic</span></span>
+        <span style="width: 90px;" class="n">Terms</span>
+        <span style="width: 40px; color: #9ece6a; font-size: 11px;">11</span>
+        <span style="flex-grow: 1; display: flex; align-items: center; gap: 6px;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="#e0af68"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.8 5.5 21 7.5 13.5 2 9 9 9"></polygon></svg>
+          <span class="n">seeded</span></span>
+      </div>
+
+      <div class="row">
+        <span class="nm">CTranslate2</span>
+        <span class="key">KTRNSLT&middot;2</span>
+        <span style="width: 104px;"><span class="pill">phonetic</span></span>
+        <span style="width: 90px;" class="n">Terms</span>
+        <span style="width: 40px;" class="c">4</span>
+        <span style="flex-grow: 1;"><span class="n">match only</span></span>
+      </div>
+
+      <div style="margin-top: auto; padding-top: 11px; border-top: 1px solid #24283b; display: flex; align-items: center; gap: 10px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#565f89" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span class="n" style="line-height: 1.55;">The sound key is what matching runs on. For 汉字 that is pinyin, so every homophone spelling collapses to one entry &mdash; 李文远, 李闻渊 and 里文渊 all reduce to <span style="color:#a9b1d6;">li wen yuan</span>. You never enumerate them.</span>
+      </div>
+    </div>
+
+    <!-- right -->
+    <div style="flex-grow: 1; padding: 13px 22px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <span class="lbl">ADD &mdash; one per line, nothing else</span>
+      <div style="border: 1px solid #7aa2f7; background: #13141c; padding: 9px 11px; display: flex; flex-direction: column; gap: 1px;">
+        <span style="color: #a9b1d6; font-size: 11px;">周慕云</span>
+        <span style="color: #a9b1d6; font-size: 11px;">深水埗</span>
+        <span style="color: #a9b1d6; font-size: 11px;">Jean-Luc Ponty</span>
+        <span style="color: #a9b1d6; font-size: 11px;">psycopg<span style="color: #414868;">▎</span></span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="btn" style="color: #7aa2f7; border-color: #7aa2f7;">Add 4 names</span>
+        <span class="n">group</span>
+        <span style="border: 1px solid rgba(169,177,214,0.4); padding: 3px 9px; color: #a9b1d6; font-size: 10px;">auto-detect ▾</span>
+        <span class="n">script and match mode are inferred</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #24283b; padding-top: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span class="lbl">DECODER PROMPT BUDGET</span>
+          <span class="c">62 / 224 tokens</span>
+        </div>
+        <div style="display: flex; height: 14px; width: 100%;">
+          <div style="width: 28%; background: rgba(224,175,104,0.6);"></div>
+          <div style="width: 72%; background: #24283b;"></div>
+        </div>
+        <span class="n" style="line-height: 1.55;">Starred names are fed to the speech model before it decodes, which is what makes it produce them in the first place. The budget is small, so only the most-used are seeded; the rest are fixed afterwards by sound matching.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #24283b; padding-top: 12px; min-height: 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span class="lbl">DRY RUN &mdash; against 47 stored takes</span>
+          <span class="btn">Re-run</span>
+        </div>
+
+        <div style="display: flex; gap: 20px;">
+          <span style="display: flex; flex-direction: column; gap: 1px;"><span style="color: #9ece6a; font-size: 15px;">9</span><span class="n">would fix</span></span>
+          <span style="display: flex; flex-direction: column; gap: 1px;"><span style="color: #e0af68; font-size: 15px;">1</span><span class="n">suspicious</span></span>
+          <span style="display: flex; flex-direction: column; gap: 1px;"><span style="color: #565f89; font-size: 15px;">37</span><span class="n">untouched</span></span>
+        </div>
+
+        <div style="border: 1px solid #24283b; background: #16171f; padding: 9px 11px; display: flex; flex-direction: column; gap: 4px;">
+          <span class="n">14:31 &middot; would fix</span>
+          <span style="color: #565f89; font-size: 11px;">我跟<span style="color:#f7768e; text-decoration: line-through;">李文远</span>聊过这个方案</span>
+          <span style="color: #c0caf5; font-size: 11px;">我跟<span style="color:#9ece6a;">李文渊</span>聊过这个方案</span>
+        </div>
+
+        <div style="border: 1px solid #e0af68; background: rgba(224,175,104,0.07); padding: 9px 11px; display: flex; flex-direction: column; gap: 5px;">
+          <div style="display: flex; align-items: center; gap: 7px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#e0af68" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span style="color: #e0af68; font-size: 10px;">would have been wrong</span>
+          </div>
+          <span style="color: #a9b1d6; font-size: 11px;">房间里很<span style="color:#e0af68;">沉静</span> &nbsp;&rarr;&nbsp; 房间里很<span style="color:#f7768e;">陈静</span></span>
+          <span class="n" style="line-height: 1.5;">陈静 and 沉静 are the same sound. Pinyin matching cannot tell a name from an ordinary word, so this one needs tones on, a longer span, or a group that is off outside Email.</span>
+          <div style="display: flex; gap: 6px;">
+            <span class="btn">Require tones</span><span class="btn">Limit to Email</span><span class="btn">Add exception</span>
+          </div>
+        </div>
+
+        <span class="n" style="line-height: 1.55; margin-top: auto;">Sound matching is the only thing here that can corrupt text that was already correct, so it is never enabled on a new name until the dry run has been looked at.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

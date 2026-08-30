@@ -1,0 +1,175 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1000,
+      "h": 440,
+      "title": "Recording HUD"
+    },
+    {
+      "file": "HudStates.dc.html",
+      "x": 1080,
+      "y": 0,
+      "w": 1000,
+      "h": 470,
+      "title": "HUD states"
+    },
+    {
+      "file": "BarWidget.dc.html",
+      "x": 0,
+      "y": 590,
+      "w": 1000,
+      "h": 700,
+      "title": "Bar module + popup"
+    },
+    {
+      "file": "BarSetup.dc.html",
+      "x": 1080,
+      "y": 590,
+      "w": 1000,
+      "h": 770,
+      "title": "Bar module · before setup"
+    },
+    {
+      "file": "Setup.dc.html",
+      "x": 0,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "First run · Setup"
+    },
+    {
+      "file": "Modes.dc.html",
+      "x": 1560,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "Console · Modes"
+    },
+    {
+      "file": "ConsoleModels.dc.html",
+      "x": 3120,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "Console · Models"
+    },
+    {
+      "file": "Console.dc.html",
+      "x": 4680,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "Console · History"
+    },
+    {
+      "file": "Dictionary.dc.html",
+      "x": 6240,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "Console · Dictionary"
+    },
+    {
+      "file": "DictionaryBulk.dc.html",
+      "x": 7800,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "Console · Dictionary as text"
+    },
+    {
+      "file": "Names.dc.html",
+      "x": 9360,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "Console · Names"
+    },
+    {
+      "file": "Settings.dc.html",
+      "x": 10920,
+      "y": 1410,
+      "w": 1440,
+      "h": 900,
+      "title": "Console · Settings"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "note-tokens",
+      "x": 0,
+      "y": -150,
+      "w": 620,
+      "text": "Every value is lifted from the machine's own tokens: Tokyo Night colors.toml, the type and spacing scale in shell.toml, 26px bar, 2px accent popup border. Corners are square because Hyprland's decoration:rounding is 0 - following the system, not a style choice."
+    },
+    {
+      "id": "note-preroll",
+      "x": 660,
+      "y": -150,
+      "w": 420,
+      "text": "The HUD went from a 660x90 card to a 178x28 strip - about 1/12 the area, one notch off the bar's height. Dropped: model name, hotkey hint, target window, the pre-roll caption. Kept: are you recording, is the mic hearing you, how long."
+    },
+    {
+      "id": "note-modes",
+      "x": 1560,
+      "y": 1270,
+      "w": 760,
+      "text": "A mode is a chain of models, not a bag of switches: a speech model, the deterministic rules, then zero or more LLM steps, each with its own prompt. Engine is where models are set up once; Modes is where they get composed and named. That split is why the same qwen3-4b can serve Prose and be absent from Terminal."
+    },
+    {
+      "id": "note-models",
+      "x": 800,
+      "y": 1270,
+      "w": 460,
+      "text": "The tab is Models, not Engine, because it manages two families: speech models and LLM models. Each has its own backends, its own catalogue, and its own idea of cost - VRAM for local, latency and a key for remote. Modes never install a model, they only reference one."
+    },
+    {
+      "id": "note-dict",
+      "x": 6240,
+      "y": 1270,
+      "w": 620,
+      "text": "The dictionary earns its keep by filling itself. Suggestions are mined from history: words the model produced at low confidence, or that you retyped by hand afterwards. Hit counts run the other way - an entry that never fires is dead weight, and one shadowed by a longer key is flagged rather than silently ignored."
+    },
+    {
+      "id": "note-bulk",
+      "x": 7800,
+      "y": 1270,
+      "w": 620,
+      "text": "The text view is the whole dictionary, not a separate add box - pasting a glossary at the bottom is just more lines, which is why there is no import dialog to design. Format is a linter with a fix-all: it normalises separators, aligns, sorts longest-key-first, and drops only redundancies it can prove. A shadowed entry gets a comment, never a deletion."
+    },
+    {
+      "id": "note-names",
+      "x": 9360,
+      "y": 1270,
+      "w": 640,
+      "text": "Names cannot be a heard->meant table: you do not know how the model will mangle a proper noun, and for Chinese the manglings are an open set of homophones. So a name is entered once, in its correct form, and works two ways - seeded into the decoder prompt so the model produces it, and matched by sound afterwards so homophones collapse back to it. The dry run exists because sound matching is the one feature here that can damage text that was already right."
+    },
+    {
+      "id": "note-settings",
+      "x": 10920,
+      "y": 1270,
+      "w": 620,
+      "text": "Settings is what is left once Modes took the contextual choices and Models took the weights: the physical and the global. A key, a microphone, an overlay, and what stays on disk. The privacy block is here rather than buried because the honest answer is conditional - audio is always local, but a mode whose cleanup step is a remote model does send text out, and the page names which one."
+    },
+    {
+      "id": "note-setup",
+      "x": 0,
+      "y": 1270,
+      "w": 700,
+      "text": "Installing the plugin first and finishing from inside it is the right flow, but it has one hard line: the plugin never installs anything by itself. Omarchy deliberately runs nothing from inside a plugin folder, so every step here is a button that prints its command first. Only the input-group step cannot be completed in place - it needs a logout - so first run offers a Hyprland-bound F9 that works immediately instead."
+    },
+    {
+      "id": "note-barsetup",
+      "x": 1080,
+      "y": 450,
+      "w": 460,
+      "text": "With only the plugin installed the module is the single way in, so it appears and explains itself rather than hiding. Accent, not red: there is something to do, nothing is broken. The normal popup would be five empty sections on a fresh install, so it is replaced outright by a checklist and one button - with the download size printed on the button, not behind it."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
