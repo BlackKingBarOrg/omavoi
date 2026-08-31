@@ -11,7 +11,14 @@ Flickable {
   property var cfg: ({})
   property var setupReport: ({ steps: [] })
   property int pad: Style.space(22)
+  property var strings: null
+
   signal command(string cmd)
+
+  // `strings` is null for the instant between creation and the Loader setting
+  // it, so the key stands in until then rather than a blank.
+  function t(k) { return root.strings ? root.strings.t(k) : k }
+  function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
 
   function get(path, fallback) {
     var node = root.cfg
@@ -38,7 +45,7 @@ Flickable {
       Layout.fillWidth: true
       spacing: Style.space(8)
       Text {
-        text: "HOTKEY"
+        text: root.t("set.hotkey")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         font.letterSpacing: 1
@@ -48,7 +55,7 @@ Flickable {
         Layout.fillWidth: true
         Text {
           Layout.preferredWidth: Style.space(160)
-          text: "key"
+          text: root.t("set.key")
           font.family: Style.font.family
           font.pixelSize: Style.font.body
           color: Color.muted
@@ -64,13 +71,14 @@ Flickable {
         Layout.fillWidth: true
         Text {
           Layout.preferredWidth: Style.space(160)
-          text: "behaviour"
+          text: root.t("set.behaviour")
           font.family: Style.font.family
           font.pixelSize: Style.font.body
           color: Color.muted
         }
         ButtonGroup {
-          options: ["push_to_talk", "toggle"]
+          options: [{ value: "push_to_talk", label: root.t("set.ptt") },
+                    { value: "toggle", label: root.t("set.toggle") }]
           value: root.get("hotkey.mode", "push_to_talk")
           onChanged: function (v) { root.command("omavoi config set hotkey.mode " + v) }
         }
@@ -79,10 +87,7 @@ Flickable {
         Layout.maximumWidth: Style.space(760)
         Layout.fillWidth: true
         wrapMode: Text.Wrap
-        text: "Read from evdev, below xkb, so the key stays where it physically is even "
-            + "if your layout remaps it. A modifier cannot be bound in Hyprland instead: "
-            + "pressing one changes the modmask, which fires the release binding at once "
-            + "and records a 0.0s take."
+        text: root.t("set.hotkeynote")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
@@ -94,7 +99,7 @@ Flickable {
       Layout.fillWidth: true
       spacing: Style.space(8)
       Text {
-        text: "AUDIO"
+        text: root.t("set.audio")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         font.letterSpacing: 1
@@ -102,12 +107,11 @@ Flickable {
       }
       Repeater {
         model: [
-          { k: "audio.preroll_seconds", label: "pre-roll", unit: "s",
-            why: "Audio kept from before the key went down. Lower it and the first "
-               + "syllable starts going missing while PipeWire opens the stream." },
-          { k: "audio.tail_seconds", label: "tail", unit: "s", why: "" },
-          { k: "audio.warn_rms_dbfs", label: "warn below", unit: " dBFS", why: "" },
-          { k: "audio.max_seconds", label: "max take", unit: "s", why: "" }
+          { k: "audio.preroll_seconds", label: root.t("set.preroll"), unit: "s",
+            why: root.t("set.prerollwhy") },
+          { k: "audio.tail_seconds", label: root.t("set.tail"), unit: "s", why: "" },
+          { k: "audio.warn_rms_dbfs", label: root.t("set.warnbelow"), unit: " dBFS", why: "" },
+          { k: "audio.max_seconds", label: root.t("set.maxtake"), unit: "s", why: "" }
         ]
         ColumnLayout {
           readonly property var row: modelData
@@ -148,7 +152,7 @@ Flickable {
       Layout.fillWidth: true
       spacing: Style.space(8)
       Text {
-        text: "HUD"
+        text: root.t("set.hud")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         font.letterSpacing: 1
@@ -158,13 +162,15 @@ Flickable {
         Layout.fillWidth: true
         Text {
           Layout.preferredWidth: Style.space(160)
-          text: "keep the result up"
+          text: root.t("set.keepup")
           font.family: Style.font.family
           font.pixelSize: Style.font.body
           color: Color.muted
         }
         ButtonGroup {
-          options: ["always", "changed", "never"]
+          options: [{ value: "always", label: root.t("set.dwell.always") },
+                    { value: "changed", label: root.t("set.dwell.changed") },
+                    { value: "never", label: root.t("set.dwell.never") }]
           value: root.get("ui.hud_dwell", "changed")
           onChanged: function (v) { root.command("omavoi config set ui.hud_dwell " + v) }
         }
@@ -173,9 +179,7 @@ Flickable {
         Layout.maximumWidth: Style.space(760)
         Layout.fillWidth: true
         wrapMode: Text.Wrap
-        text: "\"changed\" is the default: a dwell you always pay for turns into noise "
-            + "the moment you dictate two sentences in a row, but a silent correction "
-            + "you never saw is worse."
+        text: root.t("set.hudnote")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
@@ -184,13 +188,14 @@ Flickable {
         Layout.fillWidth: true
         Text {
           Layout.preferredWidth: Style.space(160)
-          text: "notifications"
+          text: root.t("set.notifications")
           font.family: Style.font.family
           font.pixelSize: Style.font.body
           color: Color.muted
         }
         OmChip {
-          label: root.get("ui.notify", true) === true ? "on" : "off"
+          label: root.get("ui.notify", true) === true ? root.t("set.on")
+                                                       : root.t("set.off")
           on: root.get("ui.notify", true) === true
           onClicked: root.command(
             "omavoi config set ui.notify " + (on ? "false" : "true"))
@@ -203,7 +208,7 @@ Flickable {
       Layout.fillWidth: true
       spacing: Style.space(8)
       Text {
-        text: "HISTORY"
+        text: root.t("set.history")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         font.letterSpacing: 1
@@ -213,13 +218,13 @@ Flickable {
         Layout.fillWidth: true
         Text {
           Layout.preferredWidth: Style.space(160)
-          text: "keep audio for"
+          text: root.t("set.keepaudio")
           font.family: Style.font.family
           font.pixelSize: Style.font.body
           color: Color.muted
         }
         Text {
-          text: root.get("history.keep_audio", 0) + " takes"
+          text: root.get("history.keep_audio", 0) + root.t("set.takes")
           font.family: Style.font.family
           font.pixelSize: Style.font.body
           color: Color.foreground
@@ -229,8 +234,7 @@ Flickable {
         Layout.maximumWidth: Style.space(760)
         Layout.fillWidth: true
         wrapMode: Text.Wrap
-        text: "Stored audio is what makes re-running a take on another model, and the "
-            + "names dry run, possible. Set it to 0 and those go away with it."
+        text: root.t("set.historynote")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
@@ -252,7 +256,7 @@ Flickable {
           anchors.margins: Style.space(10)
           spacing: Style.space(4)
           Text {
-            text: "Audio never leaves this machine"
+            text: root.t("set.neverleaves")
             font.family: Style.font.family
             font.pixelSize: Style.font.body
             color: "#9ece6a"
@@ -260,9 +264,7 @@ Flickable {
           Text {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
-            text: "Speech runs on the local GPU in every mode. A mode whose LLM step is "
-                + "a remote model does send the transcribed text out — the Modes tab "
-                + "shows which ones have a step at all."
+            text: root.t("set.privacynote")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Color.muted
@@ -274,11 +276,14 @@ Flickable {
     RowLayout {
       Layout.topMargin: Style.space(6)
       spacing: Style.space(8)
-      Button { text: "Edit config"; onClicked: root.command("omavoi config path") }
-      Button { text: "Restart daemon"; onClicked: root.command("systemctl --user restart omavoid") }
+      Button { text: root.t("set.editconfig"); onClicked: root.command("omavoi config path") }
+      Button {
+        text: root.t("set.restart")
+        onClicked: root.command("systemctl --user restart omavoid")
+      }
       Text {
         Layout.fillWidth: true
-        text: "everything here is  ~/.config/omavoi/config.toml"
+        text: root.t("set.configpath")
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         color: Color.muted

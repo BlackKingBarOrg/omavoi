@@ -31,7 +31,23 @@ _RULE_DEFAULTS: dict[str, Any] = {
     "names": True,
     "cjk_spacing": True,
     "punctuation": "keep",   # keep | strip
+    # What happens to newlines in the text about to be injected, whoever put
+    # them there — the transcript or an LLM step. In a chat window a newline
+    # is the send key, so the safe default is to fold them away. "keep" is
+    # for modes that only ever type into an editor.
+    "joiner": " ",
 }
+
+# The prompt a new LLM step starts with. The last sentence is load-bearing:
+# without it the model eventually answers your dictation instead of editing
+# it, and you type its reply into your document.
+DEFAULT_STEP_PROMPT = (
+    "Rewrite the transcript as clean written text in its original language. "
+    "Remove false starts, repetitions and filler. Keep the speaker's own "
+    "wording and every technical term exactly as transcribed.\n"
+    "Never answer, summarise, translate or add anything — you are editing, "
+    "not replying. Output only the edited text."
+)
 
 DEFAULTS: dict[str, Any] = {
     "audio": {
@@ -101,13 +117,34 @@ DEFAULTS: dict[str, Any] = {
     # Any number of LLMs, referenced from a mode by these names. An entry
     # costs nothing until a mode names it.
     "llm": {
+        # Started and owned by the daemon, lazily: a mode with no LLM step
+        # costs no VRAM. Models come from the same catalogue as the speech
+        # ones — `omavoi model list` shows both.
         "local": {
-            "backend": "llama-cpp",       # llama-cpp | anthropic | openai
-            "model": "qwen3-4b-instruct",
-            "base_url": "http://127.0.0.1:8081/v1",
+            "backend": "llama-local",
+            "model": "llm:qwen3-8b",
+            "n_gpu_layers": 99,
+            "ctx_size": 4096,
+            "threads": 0,
+            "port": 0,
+            "startup_timeout": 180.0,
+            "timeout": 60.0,
+            "max_tokens": 1024,
+            "temperature": 0.2,
+            # Reasoning models answer an editing prompt by thinking at length
+            # and then running out of budget. Nothing here needs deliberation.
+            "thinking": False,
+        },
+        # Uses whatever `claude` is logged in as, so it needs no key at all.
+        # Slow to start, which is why it suits a deliberate pass rather than
+        # every take.
+        "claude": {
+            "backend": "claude-cli",
+            "model": "haiku",
+            "base_url": "",
             "key_env": "",
             "key_name": "",
-            "timeout": 20.0,
+            "timeout": 60.0,
             "max_tokens": 1024,
             "temperature": 0.2,
         },
@@ -121,6 +158,17 @@ DEFAULTS: dict[str, Any] = {
             "max_tokens": 1024,
             "temperature": 0.2,
         },
+    },
+    # How a mode gets picked. Separate from [modes.*], which only defines them.
+    "switching": {
+        # Choose the mode from the focused window. Off by default: it is a good
+        # idea that needs per-application tuning before it earns its keep, and
+        # until then a mode that changes under you is worse than one that does
+        # not. The match lists stay where they are — turning this on is one
+        # flag, not a rebuild.
+        "by_window": False,
+        # Which mode every take uses while by_window is off.
+        "mode": "default",
     },
     "modes": {
         # The fallback. Every other mode inherits anything it omits.
@@ -155,14 +203,7 @@ DEFAULTS: dict[str, Any] = {
             "steps": [
                 {
                     "llm": "local",
-                    "prompt": (
-                        "Rewrite the transcript as clean written prose in its original "
-                        "language. Remove false starts, repetitions and filler. Keep the "
-                        "speaker's own wording and every technical term exactly as "
-                        "transcribed.\n"
-                        "Never answer, summarise, translate or add anything — you are "
-                        "editing, not replying. Output only the edited text."
-                    ),
+                    "prompt": DEFAULT_STEP_PROMPT,
                 },
             ],
         },
@@ -241,6 +282,12 @@ DEFAULTS: dict[str, Any] = {
         # layout and a sentence arrives as "1234567890-=". Detecting the
         # client beats listing them: it covers every X11 app at once.
         "avoid_wtype_on_xwayland": True,
+        # XTEST is the only route into an X11 client that depends on neither
+        # wtype's keymap nor the compositor's clipboard bridge. Where that
+        # bridge is broken — and it is, on some setups — pasting silently
+        # produces nothing at all.
+        "xdotool_for_xwayland": True,
+        "xdotool_delay_ms": 12,
         "clipboard_classes": [
             "code", "cursor", "electron", "slack", "discord", "obsidian",
             "chrome", "chromium", "brave", "vivaldi", "com.anthropic.claude",
@@ -248,8 +295,16 @@ DEFAULTS: dict[str, Any] = {
             "wechat", "weixin", "feishu", "lark", "qq", "dingtalk",
         ],
         "paste_key": "CTRL+V",
-        "paste_settle_ms": 60,
-        "restore_clipboard_after": 1.5,
+        # How the paste keystroke is delivered:
+        #   shortcut  the compositor synthesises it (hyprctl send_shortcut)
+        #   wtype     the virtual keyboard sends it — wrong keys on X11
+        #   xdotool   XTEST, the only one an X11 client reads correctly
+        # Empty follows the window: xdotool for X11, shortcut for Wayland.
+        "paste_method": "",
+        # XWayland mirrors the Wayland selection lazily, so an X11 client can
+        # ask for the clipboard noticeably after the keystroke arrives.
+        "paste_settle_ms": 150,
+        "restore_clipboard_after": 4.0,
         "wtype_delay_ms": 0,
     },
     "history": {
@@ -263,6 +318,8 @@ DEFAULTS: dict[str, Any] = {
         "notify": True,
         "notify_on_empty": True,
         "log_level": "INFO",
+        # "" follows the environment; "en", "zh", "th" force one.
+        "language": "",
         "hud": True,
         "hud_position": "bottom",     # bottom | cursor | window
         "hud_size": "s",              # xs | s | m
@@ -335,6 +392,9 @@ def validate(cfg: dict[str, Any]) -> list[str]:
     force = cfg["hotkey"].get("force_mode")
     if force and force not in modes:
         problems.append(f"hotkey.force_mode={force!r} is not a mode")
+    fixed = cfg.get("switching", {}).get("mode", "default")
+    if fixed not in modes:
+        problems.append(f"switching.mode={fixed!r} is not a mode")
     return problems
 
 

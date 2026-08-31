@@ -226,11 +226,17 @@ def cmd_stats(args: argparse.Namespace) -> int:
 
 def _is_remote(backend: str, base_url: str) -> bool:
     """Whether using this model sends text off the machine."""
+    from .llm import ON_MACHINE
+
+    backend = backend.strip().lower()
     if backend == "anthropic":
         return True
+    if backend in ON_MACHINE and not base_url:
+        # llama-local owns its own server on loopback and never writes a URL.
+        return False
     if not base_url:
         # An OpenAI-compatible backend with no base_url means api.openai.com.
-        return backend != "llama-cpp"
+        return True
     host = base_url.split("//", 1)[-1].split("/", 1)[0].split(":", 1)[0]
     return host not in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
 
@@ -240,12 +246,20 @@ def cmd_model(args: argparse.Namespace) -> int:
         cfg = config.load()
         active = cfg["speech"]["model"]
         if args.json:
+            from . import gpu, i18n
+
+            # The console renders these notes verbatim, so they are translated
+            # here rather than there: the text lives beside the catalogue.
+            lang = i18n.ui_lang(cfg)
             rows = []
             for spec in models.CATALOG:
+                fit = (gpu.fits(spec.size_mb) if spec.kind == models.LLM else {})
                 rows.append({
+                    "fits": fit.get("fits", True),
+                    "needed_mb": fit.get("needed_mb", 0),
                     "key": spec.key, "id": spec.id, "fmt": spec.fmt,
                     "backend": spec.backend, "size_mb": spec.size_mb,
-                    "note": spec.note, "tags": list(spec.tags),
+                    "note": i18n.t(spec.note, lang), "tags": list(spec.tags),
                     "downloaded": models.is_downloaded(spec.key),
                     "path": str(models.local_path(spec.key) or ""),
                     "ours": models.owned_by_us(spec.key),
@@ -284,10 +298,17 @@ def cmd_model(args: argparse.Namespace) -> int:
                               "vram": gpu.vram()}, ensure_ascii=False, indent=2))
             return 0
         print(f"{BOLD}  {'model':<24}{'size':>7}  {'state':<10}notes{RESET}")
-        for fmt in (models.CT2, models.GGML):
-            entries = [s for s in models.CATALOG if s.fmt == fmt]
-            engine = "local-whisper (CUDA)" if fmt == models.CT2 else "local-whispercpp (Vulkan)"
-            print(f"\n{DIM}{fmt}  —  {engine}{RESET}")
+        groups = [
+            (models.CT2, models.SPEECH, "speech · local-whisper (CUDA)"),
+            (models.GGML, models.SPEECH, "speech · local-whispercpp (Vulkan)"),
+            ("", models.LLM, "llm · llama-local, started by the daemon"),
+        ]
+        for fmt, kind, engine in groups:
+            entries = [s for s in models.CATALOG
+                       if s.kind == kind and (not fmt or s.fmt == fmt)]
+            if not entries:
+                continue
+            print(f"\n{DIM}{engine}{RESET}")
             for spec in entries:
                 here = models.is_downloaded(spec.key)
                 current = spec.key == active or (fmt == models.CT2 and spec.id == active)
@@ -607,8 +628,34 @@ def cmd_mode(args: argparse.Namespace) -> int:
 
     def save(msg: str) -> int:
         config.write(cfg)
-        print(f"{GREEN}ok{RESET} {msg}  {DIM}(omavoi reload to apply){RESET}")
+        # The daemon watches config.toml, so this applies on its own within
+        # about a second. Saying otherwise sent people looking for a command
+        # they did not need.
+        print(f"{GREEN}ok{RESET} {msg}")
         return 0
+
+    switching = cfg.setdefault("switching", {"by_window": False, "mode": "default"})
+
+    if args.action == "use":
+        if not need(1, "use <mode>   — the mode every take uses"):
+            return 1
+        name = rest[0]
+        if name not in table:
+            print(f"{RED}no such mode: {name}{RESET}", file=sys.stderr)
+            return 1
+        switching["mode"] = name
+        if switching.get("by_window"):
+            print(f"{YELLOW}note: switching by window is on, so this only applies "
+                  f"where nothing matches{RESET}")
+        return save(f"every take now uses {name}")
+
+    if args.action == "auto":
+        if not need(1, "auto on|off"):
+            return 1
+        want = rest[0].lower() in ("on", "true", "yes", "1")
+        switching["by_window"] = want
+        return save("mode follows the focused window" if want
+                    else f"mode is fixed at {switching.get('mode', 'default')}")
 
     if args.action == "list":
         active = modes_mod.resolve(cfg, active_window())
@@ -625,15 +672,24 @@ def cmd_mode(args: argparse.Namespace) -> int:
                 })
             print(json.dumps({"active": active.name, "modes": rows,
                               "llm": sorted(cfg.get("llm", {})),
-                              "fields": list(_MODE_FIELDS)},
+                              "fields": list(_MODE_FIELDS),
+                              "switching": dict(switching)},
                              ensure_ascii=False, indent=2))
             return 0
+        by_window = bool(switching.get("by_window"))
         for name in modes_mod.names(cfg):
             mode = modes_mod.resolve(cfg, None, forced=name)
             mark = f"{GREEN}*{RESET}" if name == active.name else " "
             match = ", ".join(table.get(name, {}).get("match") or []) or "fallback"
             chain = " -> ".join(["speech", *(st.llm for st in mode.steps)])
-            print(f"{mark} {name:<12}{chain:<34}{DIM}{match}{RESET}")
+            trigger = match if by_window else f"{DIM}{match}{RESET}"
+            print(f"{mark} {name:<12}{chain:<34}{DIM}{trigger}{RESET}")
+        print()
+        if by_window:
+            print(f"{DIM}The mode follows the focused window.{RESET}")
+        else:
+            print(f"Every take uses {BOLD}{switching.get('mode', 'default')}{RESET}. "
+                  f"{DIM}The window lists above are inert — omavoi mode auto on{RESET}")
         return 0
 
     if args.action == "show":
@@ -647,7 +703,22 @@ def cmd_mode(args: argparse.Namespace) -> int:
     if args.action == "which":
         win = active_window()
         mode = modes_mod.resolve(cfg, win)
-        print(f"{mode.name}  {DIM}window={win.cls or '?'} matched={mode.matched_on or '-'}{RESET}")
+        # The config on disk and the daemon's copy of it can differ for a
+        # moment, and only the daemon's answer is the one that types.
+        live, reachable = "", True
+        try:
+            live = str(daemon.request({"cmd": "status"}, timeout=3).get("mode", ""))
+        except (ConnectionError, OSError):
+            reachable = False
+        print(f"{mode.name}  {DIM}window={win.cls or '?'} "
+              f"matched={mode.matched_on or '-'}{RESET}")
+        if not reachable:
+            print(f"{DIM}(daemon not running; this is the config on disk){RESET}")
+        elif live and live != mode.name:
+            print(f"{YELLOW}the daemon is still on {live} — it picks up a change "
+                  f"within about a second{RESET}")
+        elif live:
+            print(f"{DIM}the daemon agrees{RESET}")
         return 0
 
     # -- mutations ---------------------------------------------------------
@@ -733,7 +804,10 @@ def cmd_mode(args: argparse.Namespace) -> int:
                 print(f"{RED}no [llm.{llm}] defined; see omavoi model list{RESET}",
                       file=sys.stderr)
                 return 1
-            steps.append({"llm": llm, "prompt": " ".join(rest[3:])})
+            # Never leave a step without instructions: an LLM handed a bare
+            # transcript answers it, and the answer is what gets typed.
+            steps.append({"llm": llm,
+                          "prompt": " ".join(rest[3:]) or config.DEFAULT_STEP_PROMPT})
         elif op in ("rm", "prompt", "llm"):
             if len(rest) < 3 or not rest[2].isdigit():
                 print(f"{RED}usage: omavoi mode step <mode> {op} <index> [...]{RESET}",
@@ -747,7 +821,7 @@ def cmd_mode(args: argparse.Namespace) -> int:
             if op == "rm":
                 steps.pop(index)
             elif op == "prompt":
-                steps[index]["prompt"] = " ".join(rest[3:])
+                steps[index]["prompt"] = " ".join(rest[3:]) or config.DEFAULT_STEP_PROMPT
             else:
                 llm = rest[3] if len(rest) > 3 else ""
                 if llm not in cfg.get("llm", {}):
@@ -889,6 +963,81 @@ def cmd_setup(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_inject(args: argparse.Namespace) -> int:
+    """Put known text into the focused window, without saying anything.
+
+    Injection failures are hard to pin down from dictation: you cannot tell a
+    bad transcript from a paste that never landed. This does only the last
+    step, with text you chose, so the question becomes one thing at a time.
+    """
+    import time as _time
+
+    from .inject import Injector
+    from .window import active_window
+
+    cfg = config.load()
+    if args.method:
+        cfg["inject"]["method"] = args.method
+    if args.paste_via:
+        cfg["inject"]["paste_method"] = args.paste_via
+
+    text = args.text or "omavoi one line"
+    if args.lines > 1:
+        text = "\n".join(f"{text} {i + 1}" for i in range(args.lines))
+
+    print(f"{DIM}focus the target window now — injecting in {args.delay}s{RESET}")
+    _time.sleep(args.delay)
+
+    if args.via_daemon:
+        try:
+            reply = daemon.request({"cmd": "inject", "text": text}, timeout=120)
+        except (ConnectionError, OSError) as exc:
+            print(f"{RED}{exc}{RESET}", file=sys.stderr)
+            return 1
+        inj = reply.get("inject", {})
+        win_info = reply.get("window", {})
+        print(f"  injected by  the daemon process")
+        print(f"  window       {win_info.get('class', '?')}  "
+              f"xwayland={win_info.get('xwayland')}")
+        print(f"  route        {inj.get('method')}  paste_via={inj.get('paste_via') or '—'}")
+        mark = f"{GREEN}ok{RESET}" if inj.get("ok") else f"{RED}failed{RESET}"
+        print(f"  result       {mark}  {inj.get('error') or ''}")
+        return 0 if inj.get("ok") else 1
+
+    win = active_window()
+
+    # XTEST delivers to whatever X11 thinks is focused. If the compositor has
+    # not handed X11 focus to the client, keys land nowhere and every layer
+    # above reports success.
+    xfocus = "n/a"
+    if shutil.which("xdotool"):
+        env = dict(os.environ)
+        env.setdefault("DISPLAY", ":0")
+        probe = subprocess.run(["xdotool", "getwindowfocus", "getwindowname"],
+                               capture_output=True, timeout=5, env=env)
+        xfocus = (probe.stdout.decode("utf-8", "replace").strip()
+                  or probe.stderr.decode("utf-8", "replace").strip() or "?")
+
+    injector = Injector(cfg)
+    profile: dict[str, Any] = {}
+    if args.method:
+        profile["inject"] = args.method
+    result = injector.inject(text, win, profile)
+
+    print(f"  window       {win.cls or '?'}  xwayland={win.xwayland}")
+    print(f"  x11 focus    {xfocus}")
+    print(f"  route        {result.method}"
+          + (f" (fell back from {cfg['inject']['method']})" if result.fell_back else ""))
+    print(f"  paste via    {cfg['inject'].get('paste_method', 'shortcut')}")
+    print(f"  lines        {len(text.splitlines())}")
+    mark = f"{GREEN}ok{RESET}" if result.ok else f"{RED}failed{RESET}"
+    print(f"  result       {mark} in {result.seconds:.2f}s"
+          + (f"  {result.error}" if result.error else ""))
+    print(f"\n{DIM}omavoi reports what it did, not what the app accepted — "
+          f"look at the window.{RESET}")
+    return 0 if result.ok else 1
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     from . import cudaenv
     from .hotkey import find_devices, key_code
@@ -913,8 +1062,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     print(f"\n{BOLD}external commands{RESET}")
     for tool, needed in [("pw-record", True), ("wtype", True), ("wl-copy", True),
-                         ("wl-paste", False), ("hyprctl", True), ("notify-send", False),
-                         ("ffmpeg", False)]:
+                         ("wl-paste", False), ("hyprctl", True), ("xdotool", True),
+                         ("notify-send", False), ("ffmpeg", False)]:
         found = shutil.which(tool)
         check(tool, bool(found) or not needed,
               found or (f"{RED}missing{RESET}" if needed else f"{DIM}optional, absent{RESET}"))
@@ -1097,11 +1246,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_setup)
 
     p = sub.add_parser("mode", help="inspect and edit the modes")
-    p.add_argument("action", choices=["list", "show", "which", "new", "rm", "set",
-                                      "match", "unmatch", "step"])
+    p.add_argument("action", choices=["list", "show", "which", "use", "auto", "new",
+                                      "rm", "set", "match", "unmatch", "step"])
     p.add_argument("rest", nargs="*", help="arguments for the action")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_mode)
+
+    p = sub.add_parser("inject", help="type test text into the focused window")
+    p.add_argument("text", nargs="?", default="", help="what to inject")
+    p.add_argument("--delay", type=float, default=3.0,
+                   help="seconds to focus the target first (default 3)")
+    p.add_argument("--lines", type=int, default=1, help="inject this many lines")
+    p.add_argument("--method", default="", choices=["", "wtype", "clipboard"],
+                   help="force a route instead of auto")
+    p.add_argument("--paste-via", default="",
+                   choices=["", "shortcut", "wtype", "xdotool"],
+                   dest="paste_via", help="how the paste keystroke is sent")
+    p.add_argument("--via-daemon", action="store_true", dest="via_daemon",
+                   help="have the daemon inject instead of this process")
+    p.set_defaults(func=cmd_inject)
 
     p = sub.add_parser("doctor", help="check the whole setup")
     p.add_argument("--mic", action="store_true", help="also measure 2s of microphone input")

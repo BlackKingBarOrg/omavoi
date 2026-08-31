@@ -14,7 +14,14 @@ Item {
   property string running: ""
   property var pulling: ({})
   readonly property int pad: Style.space(20)
+  property var strings: null
+
   signal command(string cmd)
+
+  // `strings` is null for the instant between creation and the Loader setting
+  // it, so the key stands in until then rather than a blank.
+  function t(k) { return root.strings ? root.strings.t(k) : k }
+  function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
 
   readonly property bool ggml: payload.backend === "local-whispercpp"
   readonly property var speechModels: (payload.models || []).filter(function (m) {
@@ -45,14 +52,14 @@ Item {
         RowLayout {
           spacing: Style.space(9)
           Text {
-            text: "SPEECH"
+            text: root.t("models.speech")
             font.family: Style.font.family
             font.pixelSize: Style.font.subtitle
             font.letterSpacing: 2
             color: Color.foreground
           }
           Text {
-            text: "audio → text · one runs"
+            text: root.t("models.speechsub")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Color.muted
@@ -62,15 +69,15 @@ Item {
         // -- engines, single choice --
         Repeater {
           model: [
-            { id: "local-whispercpp", name: "Local · Vulkan",
-              detail: "whisper.cpp · ggml weights · NVIDIA, AMD and Intel alike",
-              note: "~10 MB of packages" },
-            { id: "local-whisper", name: "Local · CUDA",
-              detail: "faster-whisper · ct2 weights · NVIDIA only",
-              note: "~2.2 GB of wheels" },
-            { id: "api", name: "Remote API",
-              detail: "OpenAI-compatible · OpenAI, Groq, SiliconFlow, a local server",
-              note: "audio leaves this machine" }
+            { id: "local-whispercpp", name: root.t("models.e.vulkan"),
+              detail: root.t("models.e.vulkan.sub"),
+              note: root.t("models.e.vulkan.note") },
+            { id: "local-whisper", name: root.t("models.e.cuda"),
+              detail: root.t("models.e.cuda.sub"),
+              note: root.t("models.e.cuda.note") },
+            { id: "api", name: root.t("models.e.api"),
+              detail: root.t("models.e.api.sub"),
+              note: root.t("models.e.api.note") }
           ]
           Rectangle {
             readonly property var eng: modelData
@@ -152,7 +159,7 @@ Item {
               Layout.fillWidth: true
               spacing: 1
               Text {
-                text: "The daemon is still running what it started with"
+                text: root.t("models.stale")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.body
                 color: Color.foreground
@@ -160,14 +167,15 @@ Item {
               Text {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                text: "loaded " + root.running + "   ·   configured " + root.payload.active
+                text: root.t("models.loaded") + root.running + "   ·   "
+                    + root.t("models.configured") + root.payload.active
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: Color.muted
               }
             }
             Button {
-              text: "Restart daemon"
+              text: root.t("models.restart")
               onClicked: root.command("systemctl --user restart omavoid")
             }
           }
@@ -178,7 +186,7 @@ Item {
           Layout.topMargin: Style.space(8)
           Layout.fillWidth: true
           Text {
-            text: "MODELS · " + (root.ggml ? "ggml" : "ct2")
+            text: root.t("models.list") + (root.ggml ? "ggml" : "ct2")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             font.letterSpacing: 1
@@ -186,7 +194,7 @@ Item {
           }
           Item { Layout.fillWidth: true }
           Text {
-            text: "the format this engine runs"
+            text: root.t("models.formathint")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Color.muted
@@ -236,31 +244,31 @@ Item {
               Item { Layout.fillWidth: true }
               Text {
                 visible: m.downloaded && !m.ours
-                text: "already on disk"
+                text: root.t("models.ondisk")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: Color.muted
               }
               Text {
                 visible: !m.downloaded && root.pulling[m.key] === true
-                text: "downloading…"
+                text: root.t("models.downloading")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: Color.accent
               }
               Button {
                 visible: !m.downloaded && root.pulling[m.key] !== true
-                text: "Download"
+                text: root.t("models.download")
                 onClicked: root.command("omavoi model pull " + m.key)
               }
               Button {
                 visible: m.downloaded && !m.active
-                text: "Use"
+                text: root.t("models.use")
                 onClicked: root.command("omavoi model use " + m.key)
               }
               Button {
                 visible: m.downloaded && m.ours && !m.active
-                text: "Remove"
+                text: root.t("models.remove")
                 onClicked: root.command("omavoi model rm " + m.key)
               }
             }
@@ -271,8 +279,7 @@ Item {
           Layout.topMargin: Style.space(6)
           Layout.fillWidth: true
           wrapMode: Text.Wrap
-          text: "Weights found outside " + (root.payload.root || "our store")
-              + " are used where they lie and never deleted."
+          text: root.tf("models.outside", root.payload.root || root.t("models.ourstore"))
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
           color: Qt.darker(Color.muted, 1.1)
@@ -303,14 +310,14 @@ Item {
         RowLayout {
           spacing: Style.space(9)
           Text {
-            text: "LLM"
+            text: root.t("models.llm")
             font.family: Style.font.family
             font.pixelSize: Style.font.subtitle
             font.letterSpacing: 2
             color: Color.foreground
           }
           Text {
-            text: "text → text · any number, named by modes"
+            text: root.t("models.llmsub")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Color.muted
@@ -360,7 +367,7 @@ Item {
                 // Whether using it sends your words off the machine is the
                 // one fact worth a badge.
                 Text {
-                  text: l.remote ? "remote" : "local"
+                  text: l.remote ? root.t("models.remote") : root.t("models.local")
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
                   color: l.remote ? Color.urgent : Color.accent
@@ -385,7 +392,7 @@ Item {
                 }
                 Text {
                   visible: l.key_env && !l.has_key
-                  text: "no key"
+                  text: root.t("models.nokey")
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
                   color: Color.urgent
@@ -395,8 +402,8 @@ Item {
               Text {
                 Layout.fillWidth: true
                 text: (l.used_by || []).length
-                      ? "used by " + (l.used_by || []).join(", ")
-                      : "not named by any mode — costs nothing until one does"
+                      ? root.t("models.usedby") + (l.used_by || []).join(", ")
+                      : root.t("models.unused")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: (l.used_by || []).length ? Color.accent : Qt.darker(Color.muted, 1.1)
@@ -408,9 +415,7 @@ Item {
         Text {
           Layout.fillWidth: true
           wrapMode: Text.Wrap
-          text: "Endpoints live under [llm.<name>] — omavoi config edit. A key never "
-              + "goes in the config: set its environment variable, or put it in "
-              + "secrets.toml."
+          text: root.t("models.endpointnote")
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
           color: Qt.darker(Color.muted, 1.1)
@@ -424,7 +429,7 @@ Item {
           spacing: Style.space(5)
 
           Text {
-            text: "VRAM · " + ((root.payload.vram || {}).name || "")
+            text: root.t("models.vram") + ((root.payload.vram || {}).name || "")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             font.letterSpacing: 1
@@ -446,7 +451,7 @@ Item {
           RowLayout {
             Layout.fillWidth: true
             Text {
-              text: "in use across the whole machine"
+              text: root.t("models.vramsub")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -463,10 +468,7 @@ Item {
           Text {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
-            text: "Keeping both resident is the point: a chain that loads weights per "
-                + "take costs seconds, not milliseconds. Overcommit and the speech "
-                + "model is what gets evicted — dictation goes ten times slower with "
-                + "nothing to say why."
+            text: root.t("models.vramnote")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)

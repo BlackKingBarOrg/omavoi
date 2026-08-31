@@ -1,18 +1,40 @@
 """Getting text into the focused window.
 
-Two paths, because neither one works everywhere:
+Three paths, because none of them works everywhere:
 
-  wtype      — virtual-keyboard protocol. Correct for native Wayland apps,
-               but Electron and XWayland clients drop characters or ignore
-               it outright.
-  clipboard  — wl-copy plus a synthetic paste shortcut. Works essentially
-               everywhere, at the cost of touching the user's clipboard,
-               so we put the old contents back afterwards.
+  wtype      — virtual-keyboard protocol. Correct for native Wayland apps.
+               X11 clients never receive the keymap it installs, so they
+               decode its keycodes against the system layout and a sentence
+               arrives as "1234567890-=".
+  clipboard  — wl-copy plus a synthetic paste shortcut. Fine between Wayland
+               apps. Useless for XWayland wherever the compositor's X11
+               clipboard bridge is not working, and then it fails silently:
+               the copy succeeds, the keystroke lands, and the X client finds
+               an empty selection.
+  xdotool    — XTEST, the way X11 has always injected input, using the X
+               server's own keymap. Only reaches X11 clients.
+
+The keymap is the whole story for X11. wtype's synthetic map does not reach
+those clients, so both the text it types and the Ctrl+V it sends arrive as
+different keys — which is why pasting into an X11 app appeared to do nothing
+while the clipboard held the text all along. XTEST uses the server's own map
+and gets both right.
+
+X11 clients are typed into with XTEST, character by character. Sending the
+payload by clipboard and only the keystroke by XTEST would be faster, and it
+was tried: it pastes nothing, because the compositor's Wayland-to-X11
+clipboard bridge does not carry the selection either. Copying by hand and
+pasting works only because that copy already happened on the X11 side.
+
+So the slow route is the one that works. It costs about 12 ms a character,
+and a focus change part-way through will scatter the rest of the text into
+whatever window took over.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import subprocess
 import threading
@@ -32,12 +54,18 @@ class InjectResult:
     seconds: float
     error: str = ""
     fell_back: bool = False
+    # How the paste keystroke was sent, when one was. Without this in the
+    # record, "route=clipboard ok=True" says nothing about which of the two
+    # halves failed.
+    paste_via: str = ""
+    chars: int = 0
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "ok": self.ok, "method": self.method,
             "seconds": round(self.seconds, 3),
             "error": self.error, "fell_back": self.fell_back,
+            "paste_via": self.paste_via, "chars": self.chars,
         }
 
 
@@ -50,15 +78,30 @@ class Injector:
         self.wtype_delay_ms = int(inject.get("wtype_delay_ms", 0))
         self.default_paste_key: str = inject.get("paste_key", "CTRL+V")
         self.avoid_wtype_on_xwayland = bool(inject.get("avoid_wtype_on_xwayland", True))
+        self.paste_method: str = inject.get("paste_method", "") or ""
+        self.xdotool_delay_ms = int(inject.get("xdotool_delay_ms", 12))
         self.paste_settle_ms = int(inject.get("paste_settle_ms", 60))
 
     # -- routing -----------------------------------------------------------
 
     def choose(self, win: Window, profile: dict[str, Any]) -> str:
-        override = profile.get("inject")
-        if override in ("wtype", "clipboard"):
-            return str(override)
-        if self.method in ("wtype", "clipboard"):
+        override = str(profile.get("inject", "") or "")
+
+        # An X11 client cannot be reached by wtype or by the clipboard, so a
+        # mode asking for either is asking for silence. Overriding the route
+        # per mode is legitimate; overriding it into one that cannot arrive is
+        # a mistake, and it stayed invisible for hours because the override
+        # short-circuited the detection below before it ever ran.
+        if win.xwayland and override in ("wtype", "clipboard"):
+            if shutil.which("xdotool"):
+                log.warning(
+                    "mode asks for %s but %s is an X11 window, which cannot "
+                    "receive it — using xdotool", override, win.cls or "?")
+                return "xdotool"
+
+        if override in ("wtype", "clipboard", "xdotool"):
+            return override
+        if self.method in ("wtype", "clipboard", "xdotool"):
             return self.method
 
         # XWayland clients never see the keymap wtype installs for its virtual
@@ -66,13 +109,26 @@ class Injector:
         # type digits instead of your words. Detecting the client is better
         # than listing them: it covers every X11 app without anyone keeping a
         # list up to date.
-        if self.avoid_wtype_on_xwayland and win.xwayland:
+        if win.xwayland:
+            # Never wtype here: its keymap is exactly what X11 clients cannot
+            # read. Never the clipboard either: the bridge does not carry it.
+            # XTEST typing is slow and it is the only thing that arrives.
+            if shutil.which("xdotool"):
+                return "xdotool"
             return "clipboard"
 
         haystack = f"{win.cls} {win.title}".lower()
         if any(c and c in haystack for c in self.clipboard_classes):
             return "clipboard"
         return "wtype"
+
+    def _paste_via(self, win: Window, profile: dict[str, Any]) -> str:
+        explicit = str(profile.get("paste_method", "") or "")
+        if explicit:
+            return explicit
+        if win.xwayland:
+            return "xdotool"
+        return self.paste_method or "shortcut"
 
     def inject(self, text: str, win: Window, profile: dict[str, Any] | None = None) -> InjectResult:
         profile = profile or {}
@@ -82,25 +138,60 @@ class Injector:
         method = self.choose(win, profile)
         started = time.monotonic()
         try:
-            if method == "wtype":
-                self._wtype(text)
-            else:
-                self._clipboard(text, profile)
-            return InjectResult(True, method, time.monotonic() - started)
+            via = self._deliver(method, text, profile, win)
+            return InjectResult(True, method, time.monotonic() - started,
+                                paste_via=via, chars=len(text))
         except Exception as exc:
             log.warning("%s injection failed: %s", method, exc)
-            # One retry on the other path — a dropped transcript is worse
-            # than a clipboard we had to touch.
-            other = "clipboard" if method == "wtype" else "wtype"
+            # One retry on a route that could plausibly work instead. A
+            # dropped transcript is worse than a clipboard we had to touch.
+            other = self._fallback_for(method, win)
+            if other is None:
+                return InjectResult(False, method, time.monotonic() - started, error=str(exc))
             try:
-                if other == "wtype":
-                    self._wtype(text)
-                else:
-                    self._clipboard(text, profile)
+                via = self._deliver(other, text, profile, win)
                 return InjectResult(True, other, time.monotonic() - started,
-                                    error=str(exc), fell_back=True)
+                                    error=str(exc), fell_back=True,
+                                    paste_via=via, chars=len(text))
             except Exception as exc2:
-                return InjectResult(False, method, time.monotonic() - started, error=f"{exc} / {exc2}")
+                return InjectResult(False, method, time.monotonic() - started,
+                                    error=f"{exc} / {exc2}")
+
+    def _deliver(self, method: str, text: str, profile: dict[str, Any],
+                 win: Window) -> str:
+        if method == "wtype":
+            self._wtype(text)
+            return ""
+        if method == "xdotool":
+            self._xdotool(text)
+            return "xtest-type"
+        via = self._paste_via(win, profile)
+        self._clipboard(text, profile, via)
+        return via
+
+    def _fallback_for(self, method: str, win: Window) -> str | None:
+        """The next thing worth trying, or None when nothing else can work."""
+        if win.xwayland:
+            # wtype is not a fallback here: its keymap is the original bug.
+            if method == "clipboard":
+                return "xdotool" if shutil.which("xdotool") else None
+            return "clipboard"
+        return "clipboard" if method == "wtype" else "wtype"
+
+    def _xdotool(self, text: str) -> None:
+        """XTEST, for X11 clients. No clipboard, no custom keymap."""
+        if shutil.which("xdotool") is None:
+            raise RuntimeError("xdotool is not installed")
+        env = dict(os.environ)
+        env.setdefault("DISPLAY", ":0")
+        proc = subprocess.run(
+            ["xdotool", "type", "--clearmodifiers",
+             "--delay", str(self.xdotool_delay_ms), "--", text],
+            capture_output=True, timeout=60, env=env,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(proc.stderr.decode("utf-8", "replace").strip()
+                               or "xdotool exited non-zero")
 
     # -- backends ----------------------------------------------------------
 
@@ -117,7 +208,8 @@ class Injector:
         if proc.returncode != 0:
             raise RuntimeError(proc.stderr.decode("utf-8", "replace").strip() or "wtype exited non-zero")
 
-    def _clipboard(self, text: str, profile: dict[str, Any]) -> None:
+    def _clipboard(self, text: str, profile: dict[str, Any],
+                   paste_via: str = "shortcut") -> None:
         if shutil.which("wl-copy") is None:
             raise RuntimeError("wl-clipboard is not installed")
 
@@ -126,7 +218,7 @@ class Injector:
         # Give the compositor a moment to publish the new selection before
         # the paste keystroke asks for it.
         time.sleep(self.paste_settle_ms / 1000.0)
-        self._send_paste(str(profile.get("paste_key", self.default_paste_key)))
+        self._send_paste(str(profile.get("paste_key", self.default_paste_key)), paste_via)
 
         if saved is not None:
             threading.Timer(self.restore_after, self._restore_clipboard, args=(saved,)).start()
@@ -154,12 +246,41 @@ class Injector:
             log.debug("could not restore the clipboard: %s", exc)
 
     @staticmethod
-    def _send_paste(combo: str) -> None:
-        """Hyprland 0.56+ takes a Lua expression, not a bare dispatcher name."""
+    def _send_paste(combo: str, method: str = "shortcut") -> None:
         parts = [p.strip().upper() for p in combo.split("+") if p.strip()]
         if not parts:
             raise ValueError(f"invalid paste shortcut {combo!r}")
         key, mods = parts[-1], parts[:-1]
+
+        if method == "xdotool":
+            if shutil.which("xdotool") is None:
+                raise RuntimeError("xdotool is not installed")
+            combo_x = "+".join([*(m.lower() for m in mods), key.lower()])
+            env = dict(os.environ)
+            env.setdefault("DISPLAY", ":0")
+            proc = subprocess.run(["xdotool", "key", "--clearmodifiers", combo_x],
+                                  capture_output=True, timeout=10, env=env)
+            if proc.returncode != 0:
+                raise RuntimeError(proc.stderr.decode("utf-8", "replace").strip()
+                                   or "xdotool key failed")
+            return
+
+        if method == "wtype":
+            if shutil.which("wtype") is None:
+                raise RuntimeError("wtype is not installed")
+            argv: list[str] = []
+            for mod in mods:
+                argv += ["-M", mod.lower()]
+            argv += ["-k", key.lower()]
+            for mod in reversed(mods):
+                argv += ["-m", mod.lower()]
+            proc = subprocess.run(["wtype", *argv], capture_output=True, timeout=5)
+            if proc.returncode != 0:
+                raise RuntimeError(proc.stderr.decode("utf-8", "replace").strip()
+                                   or "wtype paste failed")
+            return
+
+        # Hyprland 0.56+ takes a Lua expression, not a bare dispatcher name.
         lua = (
             "hl.dsp.send_shortcut({{ mods = {mods!r}, key = {key!r}, window = 'activewindow' }})"
         ).format(mods=" ".join(mods), key=key).replace("'", '"')

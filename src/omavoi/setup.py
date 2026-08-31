@@ -102,13 +102,19 @@ def check(cfg: dict[str, Any]) -> Report:
     backend = asr.canonical(cfg["speech"]["backend"]) or ""
 
     # 1. What we type with. Omarchy ships all of these, so this is normally green.
-    missing = [t for t in ("pw-record", "wtype", "wl-copy", "hyprctl") if not shutil.which(t)]
+    # xdotool is not optional despite only mattering to X11 windows: without
+    # it a take into one of those lands nowhere, and says nothing.
+    missing = [t for t in ("pw-record", "wtype", "wl-copy", "hyprctl", "xdotool")
+               if not shutil.which(t)]
     steps.append(Step(
         "tools", "Typing and audio tools", not missing,
-        detail="pw-record, wtype, wl-clipboard, hyprctl"
+        detail="pw-record, wtype, wl-clipboard, hyprctl, xdotool"
         if not missing else "missing: " + ", ".join(missing),
-        command="sudo pacman -S --needed pipewire wtype wl-clipboard" if missing else "",
+        command="sudo pacman -S --needed pipewire wtype wl-clipboard xdotool"
+        if missing else "",
         needs_root=bool(missing),
+        note="xdotool is what carries a paste into an X11 window — WeChat, "
+             "Feishu, Steam. Without it those get nothing." if missing else "",
     ))
 
     # 2. The speech engine, which depends on which backend is selected.

@@ -45,6 +45,11 @@ class Mode:
     def punctuation(self) -> str:
         return str(self.rules.get("punctuation", "keep"))
 
+    @property
+    def joiner(self) -> str:
+        """What replaces a newline before injection; "keep" leaves them."""
+        return str(self.rules.get("joiner", " "))
+
     def chain(self) -> str:
         """`large-v3 -> local -> haiku`, for status lines and logs."""
         return " -> ".join(["speech", *(s.llm for s in self.steps)])
@@ -93,12 +98,14 @@ def resolve(cfg: dict[str, Any], window: Window | None = None,
             forced: str = "") -> Mode:
     """Pick the mode for this take.
 
-    A forced name wins outright. Otherwise the longest `match` substring that
-    occurs in the window class or title wins, so "org.wezfurlong.wezterm"
-    beats a bare "wez". Nothing matching falls back to `default`.
+    A forced name always wins. After that it depends on switching.by_window:
+    off (the default) every take uses switching.mode, on the longest `match`
+    substring found in the window class or title wins, so
+    "org.wezfurlong.wezterm" beats a bare "wez".
     """
     modes: dict[str, Any] = cfg.get("modes", {})
     base: dict[str, Any] = modes.get("default", {})
+    switching: dict[str, Any] = cfg.get("switching", {})
 
     if forced:
         raw = modes.get(forced)
@@ -106,6 +113,14 @@ def resolve(cfg: dict[str, Any], window: Window | None = None,
             log.warning("forced mode %r does not exist, using default", forced)
             return _build("default", base, {}, "forced-missing")
         return _build(forced, raw, base, "forced")
+
+    if not switching.get("by_window", False):
+        name = str(switching.get("mode", "default"))
+        raw = modes.get(name)
+        if raw is None:
+            log.warning("switching.mode=%r does not exist, using default", name)
+            return _build("default", base, {}, "fixed")
+        return _build(name, raw, base, "fixed")
 
     haystack = ""
     if window is not None:

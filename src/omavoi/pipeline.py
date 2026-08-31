@@ -12,6 +12,8 @@ dictation, it must not swallow it.
 from __future__ import annotations
 
 import logging
+import re
+import shutil
 import time
 from typing import Any
 
@@ -51,8 +53,9 @@ class Pipeline:
         for index, step in enumerate(mode.steps):
             backend = self.llms.get(step.llm)
             if backend is None:
-                records.append({"llm": step.llm, "error": "not configured", "kept": True})
-                entry["warnings"].append(f"step {index + 1}: llm {step.llm!r} is not configured")
+                why = self.llms.why(step.llm)
+                records.append({"llm": step.llm, "error": why, "kept": True})
+                entry["warnings"].append(f"step {index + 1}: llm {step.llm!r} unavailable — {why}")
                 continue
 
             result = backend.complete(step.prompt, current, timeout=step.timeout)
@@ -171,7 +174,26 @@ class Pipeline:
             return self._finish(entry, capture, started, notify_empty=True)
 
         final = self._run_steps(result.text, mode, entry) if mode.steps else result.text
+
+        # Fold newlines last, whoever produced them. The rule that turns a
+        # segment break into punctuation runs before the LLM, so an LLM asked
+        # for two lines used to hand them straight to injection — and a
+        # newline typed into a chat window is the send key, which is how a
+        # bilingual take ended up posting only its first line.
+        if mode.joiner != "keep" and "\n" in final:
+            joined = re.sub(r"\s*\n+\s*", mode.joiner, final).strip()
+            if joined != final:
+                entry.setdefault("post", {}).setdefault("changes", []).append(
+                    f"newlines folded with {mode.joiner!r}"
+                )
+                final = joined
         entry["text"] = final
+
+        if inject and final and win.xwayland and not shutil.which("xdotool"):
+            warnings.append(
+                "this is an X11 window and xdotool is not installed — the paste "
+                "keystroke will not reach it (sudo pacman -S xdotool)"
+            )
 
         if inject and final:
             profile: dict[str, Any] = {"inject": mode.inject}
