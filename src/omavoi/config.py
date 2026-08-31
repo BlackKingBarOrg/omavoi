@@ -318,7 +318,8 @@ DEFAULTS: dict[str, Any] = {
         "notify": True,
         "notify_on_empty": True,
         "log_level": "INFO",
-        # "" follows the environment; "en", "zh", "th" force one.
+        # "" follows the environment. Otherwise one of: en, de, es, fr, vi,
+        # zh, ja, th — the console's dropdown writes this.
         "language": "",
         "hud": True,
         "hud_position": "bottom",     # bottom | cursor | window
