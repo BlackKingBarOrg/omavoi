@@ -159,6 +159,38 @@ class Daemon:
                                                 daemon=True)
                 self._ticker.start()
 
+    def _needed_llms(self) -> set[str] | None:
+        """The LLM names the mode in use can reach. None means "cannot tell".
+
+        With window matching on, the mode follows the focused window, so any
+        mode's LLM could be wanted a keystroke from now — unloading on that
+        signal would thrash a 5 GB server against alt-tab.
+        """
+        switching = self.cfg.get("switching", {}) or {}
+        if switching.get("by_window"):
+            return None
+        mode = modes.resolve(self.cfg, None, self.forced_mode)
+        return {str(step.llm) for step in (mode.steps or []) if getattr(step, "llm", "")}
+
+    def _release_idle_llms(self) -> None:
+        """Stop local LLM servers the current mode does not use.
+
+        A mode is a chain, and leaving one leaves its models resident: the
+        server kept its VRAM, which then made the fit check refuse a different
+        mode over memory it could have reclaimed.
+        """
+        if self._state == BUSY:
+            # A take is in the middle of using one. The next sweep gets it,
+            # and _process runs one as soon as it is done.
+            return
+        needed = self._needed_llms()
+        if needed is None:
+            return
+        freed = self.pipeline.llms.retain(needed)
+        if freed:
+            log.info("unloaded llm %s — the mode in use does not name %s",
+                     ", ".join(freed), "them" if len(freed) > 1 else "it")
+
     def status(self) -> dict[str, Any]:
         return {
             "ok": True,
@@ -253,6 +285,9 @@ class Daemon:
         finally:
             with self._lock:
                 self._set_state(IDLE)
+            # A mode switch during the take skipped its sweep; this is the
+            # first moment the servers are idle again.
+            self._release_idle_llms()
 
     # -- server ------------------------------------------------------------
 
@@ -280,6 +315,7 @@ class Daemon:
             if name and name not in self.cfg.get("modes", {}):
                 return {"ok": False, "error": f"no such mode: {name}"}
             self.forced_mode = name
+            self._release_idle_llms()
             return {"ok": True, "forced_mode": name}
         if cmd == "start":
             return self.begin()
@@ -315,6 +351,7 @@ class Daemon:
         llms.update(new)
         self.pipeline = Pipeline(new, self.backend, Injector(new), History(new),
                                  registry=llms)
+        self._release_idle_llms()
         log.info("config reloaded%s", "; speech settings changed, restart the daemon" if model_changed else "")
         return {"ok": True, "reloaded": True, "model_restart_required": model_changed}
 

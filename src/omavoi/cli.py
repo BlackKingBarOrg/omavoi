@@ -772,10 +772,33 @@ def _live_model_keys() -> set[str]:
     return {k for k in live if k}
 
 
-def _mode_fit(cfg: dict[str, Any], mode: Any) -> dict[str, Any]:
+def _reclaimable_mb(engines: dict[str, Any], wanted_keys: set[str]) -> int:
+    """VRAM held by local LLM servers the target mode does not name.
+
+    Switching modes unloads those, so counting them as taken would refuse the
+    switch over memory the switch itself frees.
+    """
     from . import gpu
 
-    return gpu.fits_chain(_mode_wants(cfg, mode), _live_model_keys())
+    live = [e for e in (engines.get("llm") or [])
+            if e.get("live") and not e.get("remote") and e.get("pid")]
+    if not live:
+        return 0
+    by_pid = gpu.usage_by_pid()
+    return sum(by_pid.get(int(e["pid"]), 0) for e in live
+               if str(e.get("model", "")) not in wanted_keys)
+
+
+def _mode_fit(cfg: dict[str, Any], mode: Any, engines: dict[str, Any] | None = None
+              ) -> dict[str, Any]:
+    from . import gpu
+
+    if engines is None:
+        engines = ((daemon.ping() or {}).get("engines") or {})
+    wants = _mode_wants(cfg, mode)
+    keys = {w["key"] for w in wants}
+    return gpu.fits_chain(wants, _live_model_keys(),
+                          _reclaimable_mb(engines, keys))
 
 
 def cmd_mode(args: argparse.Namespace) -> int:
@@ -816,7 +839,7 @@ def cmd_mode(args: argparse.Namespace) -> int:
         fit = _mode_fit(cfg, modes_mod.resolve(cfg, None, forced=name))
         if fit.get("known") and not fit.get("fits"):
             need_gb = fit["needed_mb"] / 1024
-            free_gb = fit.get("free_mb", 0) / 1024
+            free_gb = fit.get("available_mb", fit.get("free_mb", 0)) / 1024
             which = ", ".join(fit.get("pending") or [])
             print(f"{RED}{name} needs {need_gb:.1f} GB of VRAM and only "
                   f"{free_gb:.1f} GB is free{RESET}", file=sys.stderr)
@@ -851,11 +874,14 @@ def cmd_mode(args: argparse.Namespace) -> int:
             # Resolved once: ping and nvidia-smi per mode would be a dozen
             # subprocesses for a list of six.
             live = _live_model_keys()
+            engines = ((daemon.ping() or {}).get("engines") or {})
             rows = []
             for name in modes_mod.names(cfg):
                 mode = modes_mod.resolve(cfg, None, forced=name)
                 raw = table.get(name, {})
-                fit = gpu.fits_chain(_mode_wants(cfg, mode), live)
+                wants = _mode_wants(cfg, mode)
+                fit = gpu.fits_chain(wants, live,
+                                     _reclaimable_mb(engines, {w["key"] for w in wants}))
                 rows.append(mode.as_dict() | {
                     "match": list(raw.get("match") or []),
                     "prompt": str(raw.get("prompt", "") or ""),
@@ -865,6 +891,7 @@ def cmd_mode(args: argparse.Namespace) -> int:
                     "vram_known": fit.get("known", False),
                     "needs_mb": fit.get("needed_mb", 0),
                     "free_mb": fit.get("free_mb", 0),
+                    "available_mb": fit.get("available_mb", fit.get("free_mb", 0)),
                     "pending": fit.get("pending") or [],
                 })
             print(json.dumps({"active": active.name, "modes": rows,

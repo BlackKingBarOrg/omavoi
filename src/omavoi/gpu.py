@@ -134,7 +134,8 @@ def fits(weights_mb: int, ctx_size: int = 4096, gpu_layers: int = 99) -> dict[st
     return out
 
 
-def fits_chain(wants: list[dict[str, Any]], live: set[str]) -> dict[str, Any]:
+def fits_chain(wants: list[dict[str, Any]], live: set[str],
+               reclaimable_mb: int = 0) -> dict[str, Any]:
     """Whether a whole chain of local models can be resident at once.
 
     A mode is speech plus zero or more LLM passes, and they all have to stay
@@ -144,6 +145,11 @@ def fits_chain(wants: list[dict[str, Any]], live: set[str]) -> dict[str, Any]:
 
     `wants` is [{"key", "weights_mb", "ctx_size", "gpu_layers"}]; anything in
     `live` is already resident and so already counted in used_mb.
+
+    `reclaimable_mb` is memory the caller is about to release anyway — the
+    local LLM of the mode being left. Counting it as free is the difference
+    between "this mode does not fit" and "this mode does not fit beside a
+    model that is on its way out".
     """
     info = vram()
     pending = [w for w in wants if w["key"] not in live]
@@ -161,7 +167,10 @@ def fits_chain(wants: list[dict[str, Any]], live: set[str]) -> dict[str, Any]:
         # fail loudly on its own, and guessing here would block a working setup.
         return out
     free = int(info.get("free_mb", 0))
-    out.update({"fits": want <= free, "free_mb": free,
+    available = free + max(0, int(reclaimable_mb))
+    out.update({"fits": want <= available, "free_mb": free,
+                "reclaimable_mb": max(0, int(reclaimable_mb)),
+                "available_mb": available,
                 "total_mb": info.get("total_mb", 0), "name": info.get("name", "")})
     if not out["fits"]:
         out["holders"] = [{"pid": h.pid, "name": h.name, "used_mb": h.used_mb}

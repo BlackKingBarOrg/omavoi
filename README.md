@@ -153,7 +153,10 @@ models editable from the UI, the dictionary and names. `omavoi status` and the
 Models tab both report which engine is loaded right now, per family, which is
 not the same question as which one is configured. Switching to a mode whose
 local model will not fit in free VRAM is refused rather than left to fail on
-the next take — `omavoi mode use <name> --force` overrides.
+the next take — `omavoi mode use <name> --force` overrides. Leaving a mode
+unloads the local LLM it was using, and the fit check counts that memory as
+available, so switching between an LLM mode and a speech-only one is not
+blocked by the model on its way out.
 
 Not yet: the dictionary's history-mined suggestions and its try-it box, sliders
 in settings rather than read-only values, and a real byte-level progress bar

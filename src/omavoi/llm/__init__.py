@@ -100,6 +100,38 @@ class Registry:
         self._defs = defs
         self._why.clear()
 
+    def retain(self, needed: set[str]) -> list[str]:
+        """Release local models nothing is asking for any more.
+
+        Only local backends hold anything worth reclaiming: a remote one is a
+        key and an HTTP client. An empty `needed` is a real state — a
+        speech-only mode asks for no LLM at all — and not a reason to skip.
+
+        Returns the names it unloaded, for the caller's log line.
+        """
+        freed: list[str] = []
+        for name, backend in self._built.items():
+            if name in needed:
+                continue
+            try:
+                st = backend.state()
+            except Exception:
+                continue
+            if st.get("remote") or not st.get("live"):
+                continue
+            stop = getattr(backend, "close", None)
+            if not callable(stop):
+                continue
+            try:
+                stop()
+            except Exception:
+                log.debug("could not stop %s", name)
+                continue
+            # The object stays: close() resets it to cold, and keeping it
+            # means the next take that names it restarts rather than rebuilds.
+            freed.append(name)
+        return freed
+
     def states(self) -> list[dict[str, Any]]:
         """What every configured LLM is doing right now.
 
