@@ -375,6 +375,20 @@ def validate(cfg: dict[str, Any]) -> list[str]:
         problems.append(f"speech.backend={cfg['speech']['backend']!r} is not a known engine")
     if cfg["hotkey"]["mode"] not in ("push_to_talk", "toggle"):
         problems.append(f"hotkey.mode={cfg['hotkey']['mode']!r} must be push_to_talk or toggle")
+    # An unresolvable key name was accepted silently: the daemon logged
+    # "hotkey unavailable" once at startup and then ran with no hotkey at all,
+    # which looks exactly like a broken microphone.
+    key = str(cfg["hotkey"].get("key", ""))
+    if key:
+        from .hotkey import HotkeyUnavailable, key_code
+
+        try:
+            key_code(key)
+        except HotkeyUnavailable as exc:
+            problems.append(f"hotkey.key={key!r} is not an evdev key ({exc})")
+        except ModuleNotFoundError:
+            # No evdev installed; setup reports that separately.
+            pass
     if cfg["audio"]["rate"] != 16000:
         problems.append("whisper needs 16000 Hz; audio.rate has been changed")
     if cfg["audio"]["preroll_seconds"] < 0:
