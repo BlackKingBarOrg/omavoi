@@ -23,7 +23,7 @@ therefore:
 |---|---|---|
 | `omavoid` | the daemon: model, microphone, hotkey, typing | `uv tool install omavoi` |
 | model weights | 3 GB, never shipped | downloaded on first run |
-| `ai.bkblab.omavoi` | the QML plugin: bar module, HUD, console | `omarchy plugin add` |
+| `ai.bkblab.omavoi` | the QML plugin: bar module, HUD, console — [its own repository](https://github.com/BlackKingBarOrg/omavoi-shell-plugin) | `omarchy plugin add` |
 
 The plugin talks to the daemon over a Unix socket and never installs anything
 itself — Omarchy deliberately runs nothing from inside a plugin folder. The
@@ -31,16 +31,37 @@ first-run screen asks instead, and prints every command before it runs.
 
 ## Install
 
+One command, and the rest happens in the plugin's own first-run screen —
+language, model, packages (one password prompt), the daemon, the unit, the
+weights:
+
+```bash
+omarchy plugin add https://github.com/BlackKingBarOrg/omavoi-shell-plugin --enable --yes
+```
+
+Then open the console with `SUPER + ALT + V`.
+
+If you would rather do it by hand, or you only want the daemon and no desktop
+pieces:
+
 ```bash
 # 1. the speech engine (Vulkan runs on NVIDIA, AMD and Intel alike)
 sudo pacman -S --needed whisper-cpp ggml-cpu ggml-vulkan
 
-# 2. the daemon
-uv tool install omavoi
-systemctl --user enable --now omavoid
+# 2. the daemon. `omavoi` is not on PyPI; install it from this repository
+uv tool install git+https://github.com/BlackKingBarOrg/omavoi
 
 # 3. weights, and whatever is still missing
 omavoi setup
+
+# 4. the systemd user unit, which ships with the plugin, not with the package
+```
+
+The CUDA engine is an extra, because CTranslate2, PyAV and onnxruntime are
+300 MB for a backend that only runs on NVIDIA and is not the default:
+
+```bash
+uv tool install --reinstall "omavoi[cuda] @ git+https://github.com/BlackKingBarOrg/omavoi"
 ```
 
 `ggml-cpu` is **not** optional. Arch ships ggml's compute backends as separate
@@ -48,13 +69,10 @@ packages, and whisper still asks for a CPU device for the tensors it does not
 offload. With only the GPU plugin installed it aborts part-way through loading
 the model on `GGML_ASSERT(device)`, and the backtrace says nothing useful.
 
-For the desktop pieces:
-
-```bash
-omarchy plugin add https://github.com/BlackKingBarOrg/omavoi
-omarchy plugin enable ai.bkblab.omavoi right
-~/.config/omarchy/plugins/ai.bkblab.omavoi/install.sh   # unit, keybinding
-```
+The desktop pieces live in
+[omavoi-shell-plugin](https://github.com/BlackKingBarOrg/omavoi-shell-plugin).
+They are a separate repository because `omarchy plugin add` clones a repository
+whose `manifest.json` is at its root, and this one is a Python package.
 
 The hotkey is read from evdev, which needs membership of the `input` group and
 a fresh login. Until then `omavoi setup` will offer a Hyprland binding on a
