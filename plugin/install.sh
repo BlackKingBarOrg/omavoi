@@ -30,7 +30,11 @@ say() { printf '  %s\n' "$*"; }
 strip_block() {
   local file="$1"
   [[ -f "$file" ]] || return 0
-  if grep -qF "$BEGIN" "$file"; then
+  # `--` before the pattern: BEGIN starts with "--", which grep otherwise
+  # reads as an option, so this test silently never matched. The block was
+  # never stripped, which made the script append a duplicate every run and
+  # left --remove with nothing to remove.
+  if grep -qF -- "$BEGIN" "$file"; then
     local tmp; tmp="$(mktemp)"
     awk -v b="$BEGIN" -v e="$END" '
       index($0, b) { skip = 1 } !skip { print } index($0, e) { skip = 0 }

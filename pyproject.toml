@@ -8,6 +8,14 @@ license = { text = "MIT" }
 
 dependencies = [
     "numpy>=1.26",
+    # These four were imported by the code but never declared: httpx and
+    # huggingface-hub happened to arrive as faster-whisper's transitive
+    # dependencies, and evdev and pypinyin arrived not at all — a fresh
+    # install had no hotkey reader and no phonetic name matching.
+    "httpx>=0.27",
+    "huggingface-hub>=0.24",
+    "evdev>=1.7",
+    "pypinyin>=0.53",
     "faster-whisper>=1.1.0",
 ]
 
