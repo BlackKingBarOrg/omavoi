@@ -132,10 +132,28 @@ size and the breadth of hardware, not because it is slower.
 An LLM step is separate and optional, configured per mode: a local llama.cpp
 server, the Claude API, or any OpenAI-compatible endpoint.
 
+## Interface language
+
+The console is in English by default and also speaks German, Spanish, French,
+Vietnamese, Chinese, Japanese and Thai. Pick one from the dropdown in the top
+nav, or set it from a terminal:
+
+```bash
+omavoi config set ui.language ja
+```
+
+An empty value follows the environment locale. This is the interface language
+only — what you dictate in, and what an LLM step translates to, are per-mode
+settings on the Modes tab.
+
 ## Status
 
 Working: the daemon, all five console tabs, the HUD, the bar module, modes and
-models editable from the UI, the dictionary and names.
+models editable from the UI, the dictionary and names. `omavoi status` and the
+Models tab both report which engine is loaded right now, per family, which is
+not the same question as which one is configured. Switching to a mode whose
+local model will not fit in free VRAM is refused rather than left to fail on
+the next take — `omavoi mode use <name> --force` overrides.
 
 Not yet: the dictionary's history-mined suggestions and its try-it box, sliders
 in settings rather than read-only values, and a real byte-level progress bar

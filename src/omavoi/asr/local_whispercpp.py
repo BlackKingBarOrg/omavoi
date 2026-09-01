@@ -169,10 +169,23 @@ class WhisperCppBackend:
             proc.kill()
             proc.wait(timeout=2.0)
 
+    def state(self) -> dict[str, Any]:
+        return {
+            "backend": self.name,
+            "engine": "whisper.cpp",
+            "model": self.model_key,
+            "device": "gpu" if self.use_gpu else "cpu",
+            # The child process is the model: if it is up, the weights are
+            # resident and a take costs a decode, not a load.
+            "live": self._proc is not None and self._proc.poll() is None,
+            "url": self._url,
+            "pid": self._proc.pid if self._proc is not None else 0,
+        }
+
     def describe(self) -> str:
-        state = "running" if self._proc is not None else "not started"
-        gpu = "gpu" if self.use_gpu else "cpu"
-        return f"whisper.cpp {self.model_key} [{gpu}] {self._url} ({state})"
+        st = self.state()
+        state = "running" if st["live"] else "not started"
+        return f"whisper.cpp {st['model']} [{st['device']}] {st['url']} ({state})"
 
     # -- inference ---------------------------------------------------------
 

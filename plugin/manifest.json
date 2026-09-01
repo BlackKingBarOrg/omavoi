@@ -22,5 +22,6 @@
     "category": "Audio",
     "allowMultiple": false,
     "defaultSection": "right"
-  }
+  },
+  "keepLoaded": true
 }

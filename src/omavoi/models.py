@@ -18,27 +18,33 @@ from pathlib import Path
 from . import paths
 
 CT2, GGML = "ct2", "ggml"
+SPEECH, LLM = "speech", "llm"
 
 
 @dataclass(frozen=True, slots=True)
 class ModelSpec:
     id: str
     fmt: str              # CT2 | GGML
-    backend: str          # which ASR backend runs it
+    backend: str          # which backend runs it
     repo: str             # HuggingFace repo
     filename: str = ""    # single-file models (ggml); empty = whole snapshot
     size_mb: int = 0
     note: str = ""
     tags: tuple[str, ...] = field(default_factory=tuple)
+    kind: str = SPEECH    # SPEECH | LLM
+    languages: str = ""
 
     @property
     def key(self) -> str:
-        """How you name it on the command line: `large-v3` or `ggml:large-v3`."""
+        """How you name it: `large-v3`, `ggml:large-v3`, `llm:qwen3-8b`."""
+        if self.kind == LLM:
+            return f"{LLM}:{self.id}"
         return self.id if self.fmt == CT2 else f"{GGML}:{self.id}"
 
 
 _CT2 = "local-whisper"
 _CPP = "local-whispercpp"
+_LLM = "llama-local"
 _HF_CPP = "ggerganov/whisper.cpp"
 
 CATALOG: tuple[ModelSpec, ...] = (
@@ -78,6 +84,31 @@ CATALOG: tuple[ModelSpec, ...] = (
     ModelSpec("large-v3-turbo-q5_0", GGML, _CPP, _HF_CPP,
               "ggml-large-v3-turbo-q5_0.bin", 574,
               "The lightest thing still worth using.", ("quant", "fast")),
+
+    # -- LLM, run by the bundled llama-server ---------------------------------
+    #
+    # Every repo and filename here was checked to exist before it went in: a
+    # catalogue entry that 404s on click is worse than no entry.
+    ModelSpec("qwen3-4b", GGML, _LLM, "Qwen/Qwen3-4B-GGUF",
+              "Qwen3-4B-Q4_K_M.gguf", 2355,
+              "Fast, and the best Chinese at this size. Other languages are "
+              "along for the ride.", ("fast",), kind=LLM,
+              languages="strong zh/en"),
+    ModelSpec("qwen3-8b", GGML, _LLM, "Qwen/Qwen3-8B-GGUF",
+              "Qwen3-8B-Q4_K_M.gguf", 4812,
+              "The same strengths with more room. A good default when the "
+              "source language is Chinese.", ("recommended",), kind=LLM,
+              languages="strong zh/en"),
+    ModelSpec("gemma-3-4b", GGML, _LLM, "ggml-org/gemma-3-4b-it-GGUF",
+              "gemma-3-4b-it-Q4_K_M.gguf", 2355,
+              "Broader language coverage than Qwen at this size, which shows "
+              "on translation into anything but English.", ("fast",), kind=LLM,
+              languages="broad multilingual"),
+    ModelSpec("gemma-3-12b", GGML, _LLM, "ggml-org/gemma-3-12b-it-GGUF",
+              "gemma-3-12b-it-Q4_K_M.gguf", 6963,
+              "The best translation here, and the heaviest. Leaves little room "
+              "beside a large speech model.", (), kind=LLM,
+              languages="broad multilingual"),
 )
 
 
@@ -90,15 +121,26 @@ def parse_key(key: str) -> tuple[str, str]:
 
 
 def spec(key: str) -> ModelSpec | None:
-    fmt, name = parse_key(key)
+    prefix, name = parse_key(key)
     for entry in CATALOG:
-        if entry.fmt == fmt and entry.id == name:
+        if prefix == LLM:
+            if entry.kind == LLM and entry.id == name:
+                return entry
+        elif entry.kind == SPEECH and entry.fmt == prefix and entry.id == name:
             return entry
     return None
 
 
+def catalog(kind: str = "") -> tuple[ModelSpec, ...]:
+    return tuple(e for e in CATALOG if not kind or e.kind == kind)
+
+
 def model_root() -> Path:
     return paths.data_dir() / "models"
+
+
+def llm_dir() -> Path:
+    return model_root() / "llm"
 
 
 def ggml_search_dirs() -> list[Path]:
@@ -120,6 +162,10 @@ def local_path(key: str) -> Path | None:
     entry = spec(key)
     if entry is None:
         return None
+
+    if entry.kind == LLM:
+        candidate = llm_dir() / entry.filename
+        return candidate if candidate.is_file() else None
 
     if entry.fmt == GGML:
         for directory in ggml_search_dirs():
@@ -162,6 +208,13 @@ def pull(key: str) -> Path:
     root = model_root()
     root.mkdir(parents=True, exist_ok=True)
 
+    if entry.kind == LLM:
+        from huggingface_hub import hf_hub_download
+
+        target = llm_dir()
+        target.mkdir(parents=True, exist_ok=True)
+        return Path(hf_hub_download(entry.repo, entry.filename, local_dir=str(target)))
+
     if entry.fmt == GGML:
         from huggingface_hub import hf_hub_download
 
@@ -181,7 +234,7 @@ def remove(key: str) -> bool:
         raise ValueError(f"unknown model {key!r}")
     if not owned_by_us(key):
         return False
-    if entry.fmt == GGML:
+    if entry.kind == LLM or entry.fmt == GGML:
         path = local_path(key)
         if path is None:
             return False

@@ -29,6 +29,22 @@ class OpenAiCompatBackend:
         self.temperature = float(cfg.get("temperature", 0.2))
         self._client: Any = None
 
+    def state(self) -> dict[str, Any]:
+        key = secrets.resolve(self.key_env, self.key_name) if self.key_env else ""
+        host = self.base_url.split("//", 1)[-1].split("/", 1)[0].split(":", 1)[0]
+        local = host in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+        return {
+            "name": self.name,
+            "backend": self.backend,
+            "engine": "openai-compatible",
+            "model": self.model,
+            "remote": not local,
+            "live": bool(key) or not self.key_env,
+            "url": self.base_url,
+            "pid": 0,
+            "problem": "" if (key or not self.key_env) else f"no key: set {self.key_env}",
+        }
+
     def describe(self) -> str:
         return f"{self.name}: {self.model} @ {self.base_url}"
 

@@ -94,6 +94,14 @@ class Backend(Protocol):
     def describe(self) -> str:
         """One line for `omavoi status`."""
 
+    def state(self) -> dict[str, Any]:
+        """What is actually running, structured, for the UI.
+
+        `live` is the field that matters and the one nothing else reports: a
+        configured model and a loaded model are different things, and the gap
+        between them is where a whole afternoon goes.
+        """
+
     def transcribe(
         self,
         samples: np.ndarray,

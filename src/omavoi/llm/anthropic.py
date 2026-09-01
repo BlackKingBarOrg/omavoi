@@ -27,6 +27,22 @@ class AnthropicBackend:
         self.temperature = float(cfg.get("temperature", 0.2))
         self._client: Any = None
 
+    def state(self) -> dict[str, Any]:
+        key = secrets.resolve(self.key_env, self.key_name)
+        return {
+            "name": self.name,
+            "backend": self.backend,
+            "engine": "anthropic",
+            "model": self.model,
+            "remote": True,
+            # Nothing is resident. Having a key is the whole of being usable,
+            # so that is what `live` has to mean here.
+            "live": bool(key),
+            "url": self.base_url,
+            "pid": 0,
+            "problem": "" if key else f"no key: set {self.key_env}",
+        }
+
     def describe(self) -> str:
         key = secrets.resolve(self.key_env, self.key_name)
         return f"{self.name}: {self.model} @ anthropic key={secrets.redact(key)}"

@@ -87,8 +87,35 @@ class Daemon:
         self._subs: list[socket.socket] = []
         self._subs_lock = threading.Lock()
         self._ticker: threading.Thread | None = None
+        self._watcher: threading.Thread | None = None
+        self._config_stamp = self._stamp()
 
     # -- state -------------------------------------------------------------
+
+    def _stamp(self) -> float:
+        try:
+            return paths.config_file().stat().st_mtime
+        except OSError:
+            return 0.0
+
+    def _watch_config(self) -> None:
+        """Reload when config.toml changes on disk.
+
+        The daemon read its config once at startup, so every edit — from the
+        console, from the CLI, from an editor — did nothing until someone
+        remembered to reload. Editing settings and having them not apply is
+        not a thing to ask people to remember.
+        """
+        while not self._stop.wait(1.0):
+            stamp = self._stamp()
+            if stamp == self._config_stamp or stamp == 0.0:
+                continue
+            # Let a writer finish: config.write replaces the file, but an
+            # editor may still be mid-save.
+            time.sleep(0.3)
+            self._config_stamp = self._stamp()
+            log.info("config.toml changed on disk, reloading")
+            self.reload()
 
     def _broadcast(self, payload: dict[str, Any]) -> None:
         line = (json.dumps(payload, ensure_ascii=False) + "\n").encode()
@@ -140,6 +167,18 @@ class Daemon:
             "uptime": round(time.time() - self._boot, 1),
             "takes": self._takes,
             "backend": self.backend.describe(),
+            # Structured, because "which engine is actually running" cannot be
+            # read out of the sentence above, and the config only says which
+            # one was asked for.
+            "engines": {
+                "speech": self.backend.state(),
+                "llm": self.pipeline.llms.states(),
+            },
+            # What the daemon would actually use, from its own copy of the
+            # config. The CLI reads the file, and the two differ for about a
+            # second after an edit — this is the answer that types.
+            "mode": modes.resolve(self.cfg, None, self.forced_mode).name,
+            "switching": dict(self.cfg.get("switching", {})),
             "hotkey": {
                 "enabled": bool(self.hotkey),
                 "key": self.cfg["hotkey"]["key"],
@@ -225,6 +264,15 @@ class Daemon:
             from . import setup as setup_mod
 
             return {"ok": True, **setup_mod.check(self.cfg).as_dict()}
+        if cmd == "inject":
+            # Injection from inside the daemon, on demand. The CLI can already
+            # inject, and when the two disagree the difference is the process
+            # doing it — not the code, which is shared.
+            text = str(payload.get("text", "") or "omavoi daemon test")
+            win = active_window()
+            outcome = self.pipeline.injector.inject(text, win)
+            return {"ok": outcome.ok, "window": win.as_dict(),
+                    "inject": outcome.as_dict()}
         if cmd == "last":
             return {"ok": True, "entry": self._last}
         if cmd == "mode":
@@ -259,7 +307,14 @@ class Daemon:
             new["speech"] != self.cfg["speech"]
         )
         self.cfg = new
-        self.pipeline = Pipeline(new, self.backend, Injector(new), History(new))
+        self._config_stamp = self._stamp()
+        # The registry is carried over, not rebuilt: it owns running llama
+        # servers, and a reload is not a reason to drop 5 GB of resident
+        # weights and start again on the next take.
+        llms = self.pipeline.llms
+        llms.update(new)
+        self.pipeline = Pipeline(new, self.backend, Injector(new), History(new),
+                                 registry=llms)
         log.info("config reloaded%s", "; speech settings changed, restart the daemon" if model_changed else "")
         return {"ok": True, "reloaded": True, "model_restart_required": model_changed}
 
@@ -333,6 +388,10 @@ class Daemon:
                 log.error("hotkey unavailable: %s", exc)
                 notify.send("Omavoi: hotkey unavailable", str(exc), urgency="critical")
 
+        self._watcher = threading.Thread(target=self._watch_config,
+                                         name="omavoi-config", daemon=True)
+        self._watcher.start()
+
         self._set_state(IDLE)
         notify.send("Omavoi ready", self.backend.describe(), urgency="low")
 
@@ -365,6 +424,7 @@ class Daemon:
         close = getattr(self.backend, "close", None)
         if callable(close):
             close()
+        self.pipeline.llms.close()
         self.audio.stop()
         if self._server is not None:
             self._server.close()

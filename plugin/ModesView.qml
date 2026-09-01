@@ -16,10 +16,22 @@ Item {
   property string selected: ""
   readonly property int pad: Style.space(18)
 
+  property var strings: null
+  // The mode a click just refused to enter, so the reason appears next to the
+  // mode rather than only in a log the user will never open.
+  property string blocked: ""
+
   signal command(string cmd)
   signal commandArgs(var argv)
 
+  // `strings` is null for the instant between creation and the Loader setting
+  // it, so the key stands in until then rather than a blank.
+  function t(k) { return root.strings ? root.strings.t(k) : k }
+  function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
+
   readonly property var modes: payload.modes || []
+  readonly property var switching: payload.switching || ({ by_window: false, mode: "default" })
+  readonly property bool byWindow: switching.by_window === true
   readonly property var llms: payload.llm || []
   readonly property string current: {
     for (var i = 0; i < modes.length; i++) if (modes[i].name === selected) return selected
@@ -89,7 +101,7 @@ Item {
                 Item { Layout.fillWidth: true }
                 Text {
                   visible: m.active === true
-                  text: "here"
+                  text: root.t("modes.here")
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
                   color: Color.accent
@@ -106,16 +118,43 @@ Item {
               Text {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                text: (m.match || []).join(", ") || "fallback"
+                text: (m.match || []).join(", ") || root.t("modes.fallback")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: Qt.darker(Color.muted, 1.1)
+              }
+              // A mode that cannot load its model is not a mode you can be in.
+              Text {
+                visible: m.vram_known === true && m.fits === false
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+                text: root.tf("modes.wontfit", (m.needs_mb / 1024).toFixed(1) + "G")
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                color: Color.urgent
               }
             }
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
-              onClicked: root.selected = m.name
+              // Clicking a mode uses it, not merely opens it for editing.
+              // Selecting-without-switching is what a list of modes looks
+              // like it does least, and switching is instant and reversible.
+              // With window matching on there is nothing to switch, so a
+              // click only selects.
+              onClicked: {
+                // Selecting always works — you need to open a mode to fix the
+                // step that does not fit. Only entering it is refused, and the
+                // CLI refuses the same switch for the same reason.
+                root.selected = m.name
+                if (m.vram_known === true && m.fits === false) {
+                  root.blocked = m.name
+                  return
+                }
+                root.blocked = ""
+                if (!root.byWindow && (root.switching.mode || "default") !== m.name)
+                  root.commandArgs(["omavoi", "mode", "use", m.name])
+              }
             }
           }
         }
@@ -128,7 +167,7 @@ Item {
           TextField {
             id: newName
             Layout.fillWidth: true
-            placeholderText: "new mode name"
+            placeholderText: root.t("modes.newname")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             onAccepted: makeMode.click()
@@ -172,6 +211,61 @@ Item {
         width: parent.width - root.pad * 2
         spacing: Style.space(14)
 
+        // How the mode gets picked at all. Without this the trigger chips below
+        // are a lie: they are configured, but nothing reads them.
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: pick.implicitHeight + Style.space(18)
+          color: root.byWindow
+                 ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.07)
+                 : "transparent"
+          border.width: 1
+          border.color: root.byWindow
+                        ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.6)
+                        : Qt.rgba(Color.foreground.r, Color.foreground.g,
+                                  Color.foreground.b, 0.25)
+          radius: Style.cornerRadius
+
+          RowLayout {
+            id: pick
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.margins: Style.space(12)
+            spacing: Style.space(12)
+
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: 2
+              Text {
+                text: root.byWindow
+                      ? root.t("modes.followwin")
+                      : root.t("modes.everytake") + (root.switching.mode || "default")
+                font.family: Style.font.family
+                font.pixelSize: Style.font.body
+                color: Color.foreground
+              }
+              Text {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: root.byWindow ? root.t("modes.longestwins")
+                                    : root.t("modes.matchoff")
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                color: Color.muted
+              }
+            }
+
+            OmChip {
+              label: root.byWindow ? root.t("modes.following") : root.t("modes.fixed")
+              on: root.byWindow
+              onClicked: root.commandArgs(
+                ["omavoi", "mode", "auto", root.byWindow ? "off" : "on"])
+            }
+
+          }
+        }
+
         // -- header --
         RowLayout {
           Layout.fillWidth: true
@@ -183,8 +277,17 @@ Item {
             color: Color.foreground
           }
           Text {
+            visible: root.blocked !== "" && root.blocked === root.current
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.t("modes.blocked")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            color: Color.urgent
+          }
+          Text {
             visible: root.mode && root.mode.active === true
-            text: "active in this window"
+            text: root.t("modes.activehere")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Color.accent
@@ -192,7 +295,7 @@ Item {
           Item { Layout.fillWidth: true }
           Button {
             visible: root.current !== "default"
-            text: "Delete mode"
+            text: root.t("modes.delete")
             onClicked: root.commandArgs(["omavoi", "mode", "rm", root.current])
           }
         }
@@ -201,12 +304,23 @@ Item {
         ColumnLayout {
           Layout.fillWidth: true
           spacing: Style.space(6)
-          Text {
-            text: "OPENS ON"
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
-            font.letterSpacing: 1
-            color: Color.muted
+          opacity: root.byWindow ? 1 : 0.5
+          RowLayout {
+            spacing: Style.space(8)
+            Text {
+              text: root.t("modes.opens")
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              font.letterSpacing: 1
+              color: Color.muted
+            }
+            Text {
+              visible: !root.byWindow
+              text: root.t("modes.notinuse")
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Qt.darker(Color.muted, 1.1)
+            }
           }
           Flow {
             Layout.fillWidth: true
@@ -222,7 +336,7 @@ Item {
             }
             Text {
               visible: !((root.mode && root.mode.match) || []).length
-              text: "nothing — this mode is only reached by name"
+              text: root.t("modes.nothing")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -234,14 +348,14 @@ Item {
             TextField {
               id: newMatch
               Layout.preferredWidth: Style.space(280)
-              placeholderText: "window class, e.g. thunderbird"
+              placeholderText: root.t("modes.classph")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               onAccepted: addMatch.click()
             }
             Button {
               id: addMatch
-              text: "Add"
+              text: root.t("modes.add")
               function click() {
                 var t = newMatch.text.trim()
                 if (!t) return
@@ -253,7 +367,7 @@ Item {
             Text {
               Layout.fillWidth: true
               wrapMode: Text.Wrap
-              text: "Matched against the Hyprland class and title. The longest match wins."
+              text: root.t("modes.matchhint")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.1)
@@ -273,14 +387,14 @@ Item {
           RowLayout {
             spacing: Style.space(9)
             Text {
-              text: "1  SPEECH"
+              text: root.t("modes.s1")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.accent
             }
             Text {
-              text: "what the model is told before it decodes"
+              text: root.t("modes.speechsub")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -291,7 +405,7 @@ Item {
             spacing: Style.space(9)
             Text {
               Layout.preferredWidth: Style.space(96)
-              text: "language"
+              text: root.t("modes.language")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -299,7 +413,7 @@ Item {
             TextField {
               Layout.preferredWidth: Style.space(120)
               text: (root.mode && root.mode.language) || ""
-              placeholderText: "auto"
+              placeholderText: root.t("modes.langauto")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               onEditingFinished: if (root.mode && text !== (root.mode.language || ""))
@@ -307,14 +421,14 @@ Item {
             }
             Text {
               Layout.fillWidth: true
-              text: "empty detects it per take; a code like en or zh is faster and steadier"
+              text: root.t("modes.langhint")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.1)
             }
           }
           Text {
-            text: "decoder hint"
+            text: root.t("modes.decoderhint")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Color.muted
@@ -322,8 +436,9 @@ Item {
           OmTextArea {
             Layout.fillWidth: true
             minLines: 2
+            key: root.current
             text: (root.mode && root.mode.prompt) || ""
-            placeholder: "Seeded into the model. Good for jargon it keeps mangling — a hint, not a guarantee; the dictionary is the guarantee."
+            placeholder: root.t("modes.promptph")
             onCommitted: function (v) {
               root.commandArgs(["omavoi", "mode", "set", root.current, "prompt", v])
             }
@@ -337,14 +452,14 @@ Item {
           RowLayout {
             spacing: Style.space(9)
             Text {
-              text: "2  RULES"
+              text: root.t("modes.s2")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.foreground
             }
             Text {
-              text: "deterministic · no latency"
+              text: root.t("modes.rulessub")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -355,11 +470,11 @@ Item {
             spacing: Style.space(6)
             Repeater {
               model: [
-                { k: "hallucinations", label: "hallucinations" },
-                { k: "fillers", label: "fillers" },
-                { k: "dictionary", label: "dictionary" },
-                { k: "names", label: "names" },
-                { k: "cjk_spacing", label: "CJK spacing" }
+                { k: "hallucinations", label: root.t("modes.r.hallucinations") },
+                { k: "fillers", label: root.t("modes.r.fillers") },
+                { k: "dictionary", label: root.t("modes.r.dictionary") },
+                { k: "names", label: root.t("modes.r.names") },
+                { k: "cjk_spacing", label: root.t("modes.r.cjk") }
               ]
               OmChip {
                 readonly property var rule: modelData
@@ -375,7 +490,7 @@ Item {
               color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.2)
             }
             OmChip {
-              label: "keep end punctuation"
+              label: root.t("modes.keeppunct")
               on: !(root.mode && root.mode.rules
                     && root.mode.rules.punctuation === "strip")
               onClicked: root.command(
@@ -392,14 +507,14 @@ Item {
           RowLayout {
             spacing: Style.space(9)
             Text {
-              text: "3  LLM"
+              text: root.t("modes.s3")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: ((root.mode && root.mode.steps) || []).length ? Color.accent : Color.muted
             }
             Text {
-              text: "optional · runs in order · a failure keeps the text it was given"
+              text: root.t("modes.llmsub")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -430,7 +545,8 @@ Item {
                   Layout.fillWidth: true
                   spacing: Style.space(7)
                   Text {
-                    text: "step " + (idx + 1)
+                    text: root.t("modes.step") + (idx + 1)
+                          + root.t("modes.stepsuffix")
                     font.family: Style.font.family
                     font.pixelSize: Style.font.caption
                     color: Color.muted
@@ -448,7 +564,7 @@ Item {
                   }
                   Item { Layout.fillWidth: true }
                   Button {
-                    text: "Remove"
+                    text: root.t("modes.remove")
                     onClicked: root.commandArgs(
                       ["omavoi", "mode", "step", root.current, "rm", String(idx)])
                   }
@@ -457,8 +573,9 @@ Item {
                 OmTextArea {
                   Layout.fillWidth: true
                   minLines: 3
+                  key: root.current + "#" + idx
                   text: step.prompt || ""
-                  placeholder: "Tell it to edit, not to reply."
+                  placeholder: root.t("modes.stepph")
                   onCommitted: function (v) {
                     root.commandArgs(["omavoi", "mode", "step", root.current,
                                       "prompt", String(idx), v])
@@ -468,11 +585,21 @@ Item {
             }
           }
 
+          Text {
+            visible: !((root.mode && root.mode.steps) || []).length
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.t("modes.nostep")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            color: Qt.darker(Color.muted, 1.1)
+          }
+
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.space(7)
             Text {
-              text: "+ add a step"
+              text: root.t("modes.addstep")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -483,18 +610,15 @@ Item {
                 readonly property string llmName: modelData
                 label: llmName
                 on: false
+                // No prompt here: the command fills its default, so the text
+                // lives in one place instead of drifting between the two.
                 onClicked: root.commandArgs(
-                  ["omavoi", "mode", "step", root.current, "add", llmName,
-                   "Rewrite the transcript as clean written text in its original "
-                   + "language. Remove false starts, repetitions and filler. Keep the "
-                   + "speaker's own wording and every technical term exactly.\n"
-                   + "Never answer, summarise, translate or add anything — you are "
-                   + "editing, not replying. Output only the edited text."])
+                  ["omavoi", "mode", "step", root.current, "add", llmName])
               }
             }
             Text {
               visible: !root.llms.length
-              text: "no LLM is configured — see the Models tab"
+              text: root.t("modes.nollm")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               color: Color.muted
@@ -510,7 +634,7 @@ Item {
           RowLayout {
             spacing: Style.space(9)
             Text {
-              text: "4  INJECT"
+              text: root.t("modes.s4")
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
               font.letterSpacing: 1
@@ -520,7 +644,8 @@ Item {
               model: ["auto", "wtype", "clipboard"]
               OmChip {
                 readonly property string how: modelData
-                label: how
+                // wtype is a program name, so it is not translated.
+                label: how === "wtype" ? how : root.t("modes.inject." + how)
                 on: ((root.mode && root.mode.inject) || "auto") === how
                 onClicked: if (!on) root.commandArgs(
                   ["omavoi", "mode", "set", root.current, "inject", how])
@@ -531,9 +656,7 @@ Item {
           Text {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
-            text: "auto types with wtype, except in XWayland clients and known Electron "
-                + "apps, where it pastes instead — wtype's synthetic keycodes reach "
-                + "those as digits."
+            text: root.t("modes.injecthint")
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)

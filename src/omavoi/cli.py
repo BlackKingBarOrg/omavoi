@@ -95,6 +95,43 @@ def cmd_record(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_engines(info: dict[str, Any]) -> None:
+    """The two model families and whether each is actually up.
+
+    Split from the old single `backend` line because a mode is a chain: the
+    speech model being resident says nothing about whether the LLM step it
+    hands off to has ever started.
+    """
+    engines = info.get("engines") or {}
+    speech = engines.get("speech") or {}
+    if not speech:
+        # An older daemon still running after an upgrade.
+        print(f"{BOLD}backend{RESET}   {info['backend']}")
+        return
+
+    where = f"  {DIM}{speech['url']}{RESET}" if speech.get("url") else ""
+    live = f"{GREEN}running{RESET}" if speech.get("live") else f"{YELLOW}not loaded{RESET}"
+    print(f"{BOLD}speech{RESET}    {speech['engine']} {speech['model']} "
+          f"[{speech['device']}]  {live}{where}")
+
+    llms = engines.get("llm") or []
+    if not llms:
+        return
+    width = max(len(l["name"]) for l in llms)
+    for i, llm in enumerate(llms):
+        head = f"{BOLD}llm{RESET}       " if i == 0 else "          "
+        if llm.get("problem"):
+            note = f"{RED}{llm['problem']}{RESET}"
+        elif llm.get("live"):
+            note = f"{GREEN}running{RESET}" if not llm.get("remote") else f"{GREEN}ready{RESET}"
+        else:
+            # A local server starts on the first take that names it, so cold
+            # is the resting state, not a fault.
+            note = f"{DIM}cold{RESET}"
+        where = f"  {DIM}{llm['url']}{RESET}" if llm.get("url") and not llm.get("remote") else ""
+        print(f"{head}{llm['name']:<{width}}  {llm['engine']} {llm['model']}  {note}{where}")
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     info = daemon.ping()
     if info is None:
@@ -113,12 +150,15 @@ def cmd_status(args: argparse.Namespace) -> int:
             "tooltip": info["backend"],
             "class": state,
             "state": state,
+            # The bar only needs the first four; anything scripting against
+            # this wants to know what is actually loaded.
+            "engines": info.get("engines", {}),
         }, ensure_ascii=False))
         return 0
 
     print(f"{BOLD}state{RESET}     {info['state']}")
     print(f"{BOLD}pid{RESET}       {info['pid']}  up {info['uptime']:.0f}s  {info['takes']} takes")
-    print(f"{BOLD}backend{RESET}   {info['backend']}")
+    _print_engines(info)
     hk = info["hotkey"]
     print(f"{BOLD}hotkey{RESET}    {hk['key']} ({hk['mode']})")
     for dev in hk["devices"]:
@@ -226,13 +266,67 @@ def cmd_stats(args: argparse.Namespace) -> int:
 
 def _is_remote(backend: str, base_url: str) -> bool:
     """Whether using this model sends text off the machine."""
+    from .llm import ON_MACHINE
+
+    backend = backend.strip().lower()
     if backend == "anthropic":
         return True
+    if backend in ON_MACHINE and not base_url:
+        # llama-local owns its own server on loopback and never writes a URL.
+        return False
     if not base_url:
         # An OpenAI-compatible backend with no base_url means api.openai.com.
-        return backend != "llama-cpp"
+        return True
     host = base_url.split("//", 1)[-1].split("/", 1)[0].split(":", 1)[0]
     return host not in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+
+def _vram_split(engines: dict[str, Any]) -> dict[str, Any]:
+    """VRAM, with the part our own two model families hold broken out.
+
+    One bar for "13.4 of 16.3 GB used" does not say whether the speech model
+    or the LLM is the thing filling it, which is the only actionable question
+    when a chain stops fitting.
+    """
+    from . import gpu
+
+    info = gpu.vram()
+    if not info:
+        return info
+    speech = engines.get("speech") or {}
+    speech_pid = int(speech.get("pid", 0) or 0) if speech.get("live") else 0
+    llms = [e for e in (engines.get("llm") or []) if e.get("live") and e.get("pid")]
+    llm_pids = {int(e["pid"]) for e in llms}
+
+    labels = {
+        "speech": (f"{speech.get('engine', '')} {speech.get('model', '')}".strip()
+                   if speech_pid else ""),
+        "llm": ", ".join(f"{e['name']} {e['model']}" for e in llms),
+        "other": "",
+    }
+    out = dict(info)
+    out["segments"] = [
+        seg | {"label": labels.get(seg["kind"], "")}
+        for seg in gpu.segments(int(info.get("used_mb", 0)), speech_pid, llm_pids)
+    ]
+    return out
+
+
+def _llm_live(engines: dict[str, Any], name: str) -> dict[str, Any]:
+    """The daemon's view of one LLM, merged into its config row.
+
+    Named `live_*` so it cannot be confused with the config fields beside it —
+    `remote` is what the file says, `live_running` is what is happening.
+    """
+    for entry in engines.get("llm") or []:
+        if entry.get("name") == name:
+            return {
+                "live_running": bool(entry.get("live")),
+                "live_url": str(entry.get("url", "")),
+                "live_problem": str(entry.get("problem", "")),
+                "live_engine": str(entry.get("engine", "")),
+            }
+    return {"live_running": False, "live_url": "", "live_problem": "", "live_engine": ""}
 
 
 def cmd_model(args: argparse.Namespace) -> int:
@@ -240,16 +334,46 @@ def cmd_model(args: argparse.Namespace) -> int:
         cfg = config.load()
         active = cfg["speech"]["model"]
         if args.json:
+            from . import gpu, i18n
+
+            # The console renders these notes verbatim, so they are translated
+            # here rather than there: the text lives beside the catalogue.
+            lang = i18n.ui_lang(cfg)
+
+            # The config says which model was asked for; only the daemon knows
+            # which one is loaded, and the two differ after every edit until a
+            # restart. Absent daemon leaves `engines` null rather than implying
+            # nothing is running.
+            live = daemon.ping()
+            engines = (live or {}).get("engines") or {}
+            speech_now = engines.get("speech") or {}
+            running_speech = str(speech_now.get("model", "")) if speech_now.get("live") else ""
+            running_llm = {
+                str(e.get("model", "")) for e in (engines.get("llm") or []) if e.get("live")
+            }
+
+            def _is_running(spec: models.ModelSpec) -> bool:
+                if spec.kind == models.LLM:
+                    return spec.key in running_llm
+                if not running_speech:
+                    return False
+                return (spec.key == running_speech
+                        or (spec.fmt == models.CT2 and spec.id == running_speech))
+
             rows = []
             for spec in models.CATALOG:
+                fit = (gpu.fits(spec.size_mb) if spec.kind == models.LLM else {})
                 rows.append({
-                    "key": spec.key, "id": spec.id, "fmt": spec.fmt,
+                    "fits": fit.get("fits", True),
+                    "needed_mb": fit.get("needed_mb", 0),
+                    "key": spec.key, "id": spec.id, "fmt": spec.fmt, "kind": spec.kind,
                     "backend": spec.backend, "size_mb": spec.size_mb,
-                    "note": spec.note, "tags": list(spec.tags),
+                    "note": i18n.t(spec.note, lang), "tags": list(spec.tags),
                     "downloaded": models.is_downloaded(spec.key),
                     "path": str(models.local_path(spec.key) or ""),
                     "ours": models.owned_by_us(spec.key),
                     "active": spec.key == active or (spec.fmt == models.CT2 and spec.id == active),
+                    "running": _is_running(spec),
                 })
             from . import gpu, secrets
 
@@ -274,6 +398,7 @@ def cmd_model(args: argparse.Namespace) -> int:
                     "key": secrets.redact(key) if key_env else "",
                     "has_key": bool(key) or not key_env,
                     "used_by": sorted(used_by.get(name, [])),
+                    **_llm_live(engines, name),
                 })
 
             print(json.dumps({"active": active,
@@ -281,13 +406,22 @@ def cmd_model(args: argparse.Namespace) -> int:
                               "root": str(models.model_root()),
                               "models": rows,
                               "llm": llms,
-                              "vram": gpu.vram()}, ensure_ascii=False, indent=2))
+                              "engines": engines or None,
+                              "daemon": bool(live),
+                              "vram": _vram_split(engines)}, ensure_ascii=False, indent=2))
             return 0
         print(f"{BOLD}  {'model':<24}{'size':>7}  {'state':<10}notes{RESET}")
-        for fmt in (models.CT2, models.GGML):
-            entries = [s for s in models.CATALOG if s.fmt == fmt]
-            engine = "local-whisper (CUDA)" if fmt == models.CT2 else "local-whispercpp (Vulkan)"
-            print(f"\n{DIM}{fmt}  —  {engine}{RESET}")
+        groups = [
+            (models.CT2, models.SPEECH, "speech · local-whisper (CUDA)"),
+            (models.GGML, models.SPEECH, "speech · local-whispercpp (Vulkan)"),
+            ("", models.LLM, "llm · llama-local, started by the daemon"),
+        ]
+        for fmt, kind, engine in groups:
+            entries = [s for s in models.CATALOG
+                       if s.kind == kind and (not fmt or s.fmt == fmt)]
+            if not entries:
+                continue
+            print(f"\n{DIM}{engine}{RESET}")
             for spec in entries:
                 here = models.is_downloaded(spec.key)
                 current = spec.key == active or (fmt == models.CT2 and spec.id == active)
@@ -328,6 +462,12 @@ def cmd_model(args: argparse.Namespace) -> int:
         spec = models.spec(key)
         if spec is None:
             print(f"{RED}unknown model {key}{RESET}", file=sys.stderr)
+            return 1
+        if spec.kind == models.LLM:
+            print(f"{RED}{key} is an LLM, not a speech model{RESET}", file=sys.stderr)
+            print(f"{DIM}`model use` sets speech.model. An LLM is named by a mode's "
+                  f"step instead:{RESET}", file=sys.stderr)
+            print(f"{DIM}  omavoi mode step <mode> add <llm-name>{RESET}", file=sys.stderr)
             return 1
         if not models.is_downloaded(key):
             print(f"{YELLOW}{key} is not downloaded yet, fetching{RESET}")
@@ -591,6 +731,53 @@ def cmd_setup(args: argparse.Namespace) -> int:
 _MODE_FIELDS = ("language", "prompt", "inject", "paste_key")
 
 
+def _mode_wants(cfg: dict[str, Any], mode: Any) -> list[dict[str, Any]]:
+    """The local LLM weights a mode would need resident on the GPU.
+
+    Remote steps need no VRAM. The speech model is already loaded whenever the
+    daemon is up, so it belongs to used_mb rather than here — counting it again
+    would refuse every mode on a machine that is working fine.
+    """
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for step in getattr(mode, "steps", []) or []:
+        name = str(getattr(step, "llm", "") or "")
+        entry = (cfg.get("llm") or {}).get(name) or {}
+        backend = str(entry.get("backend", "")).strip().lower()
+        if backend not in ("llama-local", "llama.cpp", "llamacpp"):
+            continue
+        key = str(entry.get("model", "") or "llm:qwen3-8b")
+        if key in seen:
+            continue
+        seen.add(key)
+        spec = models.spec(key)
+        out.append({
+            "key": key,
+            "llm": name,
+            "weights_mb": spec.size_mb if spec is not None else 0,
+            "ctx_size": int(entry.get("ctx_size", 4096)),
+            "gpu_layers": int(entry.get("n_gpu_layers", 99)),
+        })
+    return out
+
+
+def _live_model_keys() -> set[str]:
+    """What the daemon has resident right now, so it is not double-counted."""
+    info = daemon.ping()
+    engines = (info or {}).get("engines") or {}
+    live = {str(e.get("model", "")) for e in (engines.get("llm") or []) if e.get("live")}
+    speech = engines.get("speech") or {}
+    if speech.get("live"):
+        live.add(str(speech.get("model", "")))
+    return {k for k in live if k}
+
+
+def _mode_fit(cfg: dict[str, Any], mode: Any) -> dict[str, Any]:
+    from . import gpu
+
+    return gpu.fits_chain(_mode_wants(cfg, mode), _live_model_keys())
+
+
 def cmd_mode(args: argparse.Namespace) -> int:
     from . import modes as modes_mod
     from .window import active_window
@@ -607,33 +794,99 @@ def cmd_mode(args: argparse.Namespace) -> int:
 
     def save(msg: str) -> int:
         config.write(cfg)
-        print(f"{GREEN}ok{RESET} {msg}  {DIM}(omavoi reload to apply){RESET}")
+        # The daemon watches config.toml, so this applies on its own within
+        # about a second. Saying otherwise sent people looking for a command
+        # they did not need.
+        print(f"{GREEN}ok{RESET} {msg}")
         return 0
+
+    switching = cfg.setdefault("switching", {"by_window": False, "mode": "default"})
+
+    if args.action == "use":
+        force = bool(getattr(args, "force", False))
+        if not need(1, "use <mode> [--force]   — the mode every take uses"):
+            return 1
+        name = rest[0]
+        if name not in table:
+            print(f"{RED}no such mode: {name}{RESET}", file=sys.stderr)
+            return 1
+        # Switching into a mode whose LLM will not fit does not fail at the
+        # switch — it fails on the next take, minutes later, as a step that
+        # silently falls through. Refuse here, where the cause is obvious.
+        fit = _mode_fit(cfg, modes_mod.resolve(cfg, None, forced=name))
+        if fit.get("known") and not fit.get("fits"):
+            need_gb = fit["needed_mb"] / 1024
+            free_gb = fit.get("free_mb", 0) / 1024
+            which = ", ".join(fit.get("pending") or [])
+            print(f"{RED}{name} needs {need_gb:.1f} GB of VRAM and only "
+                  f"{free_gb:.1f} GB is free{RESET}", file=sys.stderr)
+            print(f"{DIM}it would have to load {which}{RESET}", file=sys.stderr)
+            for h in fit.get("holders") or []:
+                print(f"{DIM}  {h['used_mb'] / 1024:.1f} GB  {h['name']} "
+                      f"(pid {h['pid']}){RESET}", file=sys.stderr)
+            if not force:
+                print(f"{DIM}close one of those, pick a mode with a smaller model, "
+                      f"or repeat with --force{RESET}", file=sys.stderr)
+                return 1
+            print(f"{YELLOW}--force given, switching anyway{RESET}", file=sys.stderr)
+        switching["mode"] = name
+        if switching.get("by_window"):
+            print(f"{YELLOW}note: switching by window is on, so this only applies "
+                  f"where nothing matches{RESET}")
+        return save(f"every take now uses {name}")
+
+    if args.action == "auto":
+        if not need(1, "auto on|off"):
+            return 1
+        want = rest[0].lower() in ("on", "true", "yes", "1")
+        switching["by_window"] = want
+        return save("mode follows the focused window" if want
+                    else f"mode is fixed at {switching.get('mode', 'default')}")
 
     if args.action == "list":
         active = modes_mod.resolve(cfg, active_window())
         if args.json:
+            from . import gpu
+
+            # Resolved once: ping and nvidia-smi per mode would be a dozen
+            # subprocesses for a list of six.
+            live = _live_model_keys()
             rows = []
             for name in modes_mod.names(cfg):
                 mode = modes_mod.resolve(cfg, None, forced=name)
                 raw = table.get(name, {})
+                fit = gpu.fits_chain(_mode_wants(cfg, mode), live)
                 rows.append(mode.as_dict() | {
                     "match": list(raw.get("match") or []),
                     "prompt": str(raw.get("prompt", "") or ""),
                     "paste_key": str(raw.get("paste_key", "") or ""),
                     "active": name == active.name,
+                    "fits": fit.get("fits", True),
+                    "vram_known": fit.get("known", False),
+                    "needs_mb": fit.get("needed_mb", 0),
+                    "free_mb": fit.get("free_mb", 0),
+                    "pending": fit.get("pending") or [],
                 })
             print(json.dumps({"active": active.name, "modes": rows,
                               "llm": sorted(cfg.get("llm", {})),
-                              "fields": list(_MODE_FIELDS)},
+                              "fields": list(_MODE_FIELDS),
+                              "switching": dict(switching)},
                              ensure_ascii=False, indent=2))
             return 0
+        by_window = bool(switching.get("by_window"))
         for name in modes_mod.names(cfg):
             mode = modes_mod.resolve(cfg, None, forced=name)
             mark = f"{GREEN}*{RESET}" if name == active.name else " "
             match = ", ".join(table.get(name, {}).get("match") or []) or "fallback"
             chain = " -> ".join(["speech", *(st.llm for st in mode.steps)])
-            print(f"{mark} {name:<12}{chain:<34}{DIM}{match}{RESET}")
+            trigger = match if by_window else f"{DIM}{match}{RESET}"
+            print(f"{mark} {name:<12}{chain:<34}{DIM}{trigger}{RESET}")
+        print()
+        if by_window:
+            print(f"{DIM}The mode follows the focused window.{RESET}")
+        else:
+            print(f"Every take uses {BOLD}{switching.get('mode', 'default')}{RESET}. "
+                  f"{DIM}The window lists above are inert — omavoi mode auto on{RESET}")
         return 0
 
     if args.action == "show":
@@ -647,7 +900,22 @@ def cmd_mode(args: argparse.Namespace) -> int:
     if args.action == "which":
         win = active_window()
         mode = modes_mod.resolve(cfg, win)
-        print(f"{mode.name}  {DIM}window={win.cls or '?'} matched={mode.matched_on or '-'}{RESET}")
+        # The config on disk and the daemon's copy of it can differ for a
+        # moment, and only the daemon's answer is the one that types.
+        live, reachable = "", True
+        try:
+            live = str(daemon.request({"cmd": "status"}, timeout=3).get("mode", ""))
+        except (ConnectionError, OSError):
+            reachable = False
+        print(f"{mode.name}  {DIM}window={win.cls or '?'} "
+              f"matched={mode.matched_on or '-'}{RESET}")
+        if not reachable:
+            print(f"{DIM}(daemon not running; this is the config on disk){RESET}")
+        elif live and live != mode.name:
+            print(f"{YELLOW}the daemon is still on {live} — it picks up a change "
+                  f"within about a second{RESET}")
+        elif live:
+            print(f"{DIM}the daemon agrees{RESET}")
         return 0
 
     # -- mutations ---------------------------------------------------------
@@ -733,7 +1001,10 @@ def cmd_mode(args: argparse.Namespace) -> int:
                 print(f"{RED}no [llm.{llm}] defined; see omavoi model list{RESET}",
                       file=sys.stderr)
                 return 1
-            steps.append({"llm": llm, "prompt": " ".join(rest[3:])})
+            # Never leave a step without instructions: an LLM handed a bare
+            # transcript answers it, and the answer is what gets typed.
+            steps.append({"llm": llm,
+                          "prompt": " ".join(rest[3:]) or config.DEFAULT_STEP_PROMPT})
         elif op in ("rm", "prompt", "llm"):
             if len(rest) < 3 or not rest[2].isdigit():
                 print(f"{RED}usage: omavoi mode step <mode> {op} <index> [...]{RESET}",
@@ -747,7 +1018,7 @@ def cmd_mode(args: argparse.Namespace) -> int:
             if op == "rm":
                 steps.pop(index)
             elif op == "prompt":
-                steps[index]["prompt"] = " ".join(rest[3:])
+                steps[index]["prompt"] = " ".join(rest[3:]) or config.DEFAULT_STEP_PROMPT
             else:
                 llm = rest[3] if len(rest) > 3 else ""
                 if llm not in cfg.get("llm", {}):
@@ -889,6 +1160,81 @@ def cmd_setup(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_inject(args: argparse.Namespace) -> int:
+    """Put known text into the focused window, without saying anything.
+
+    Injection failures are hard to pin down from dictation: you cannot tell a
+    bad transcript from a paste that never landed. This does only the last
+    step, with text you chose, so the question becomes one thing at a time.
+    """
+    import time as _time
+
+    from .inject import Injector
+    from .window import active_window
+
+    cfg = config.load()
+    if args.method:
+        cfg["inject"]["method"] = args.method
+    if args.paste_via:
+        cfg["inject"]["paste_method"] = args.paste_via
+
+    text = args.text or "omavoi one line"
+    if args.lines > 1:
+        text = "\n".join(f"{text} {i + 1}" for i in range(args.lines))
+
+    print(f"{DIM}focus the target window now — injecting in {args.delay}s{RESET}")
+    _time.sleep(args.delay)
+
+    if args.via_daemon:
+        try:
+            reply = daemon.request({"cmd": "inject", "text": text}, timeout=120)
+        except (ConnectionError, OSError) as exc:
+            print(f"{RED}{exc}{RESET}", file=sys.stderr)
+            return 1
+        inj = reply.get("inject", {})
+        win_info = reply.get("window", {})
+        print(f"  injected by  the daemon process")
+        print(f"  window       {win_info.get('class', '?')}  "
+              f"xwayland={win_info.get('xwayland')}")
+        print(f"  route        {inj.get('method')}  paste_via={inj.get('paste_via') or '—'}")
+        mark = f"{GREEN}ok{RESET}" if inj.get("ok") else f"{RED}failed{RESET}"
+        print(f"  result       {mark}  {inj.get('error') or ''}")
+        return 0 if inj.get("ok") else 1
+
+    win = active_window()
+
+    # XTEST delivers to whatever X11 thinks is focused. If the compositor has
+    # not handed X11 focus to the client, keys land nowhere and every layer
+    # above reports success.
+    xfocus = "n/a"
+    if shutil.which("xdotool"):
+        env = dict(os.environ)
+        env.setdefault("DISPLAY", ":0")
+        probe = subprocess.run(["xdotool", "getwindowfocus", "getwindowname"],
+                               capture_output=True, timeout=5, env=env)
+        xfocus = (probe.stdout.decode("utf-8", "replace").strip()
+                  or probe.stderr.decode("utf-8", "replace").strip() or "?")
+
+    injector = Injector(cfg)
+    profile: dict[str, Any] = {}
+    if args.method:
+        profile["inject"] = args.method
+    result = injector.inject(text, win, profile)
+
+    print(f"  window       {win.cls or '?'}  xwayland={win.xwayland}")
+    print(f"  x11 focus    {xfocus}")
+    print(f"  route        {result.method}"
+          + (f" (fell back from {cfg['inject']['method']})" if result.fell_back else ""))
+    print(f"  paste via    {cfg['inject'].get('paste_method', 'shortcut')}")
+    print(f"  lines        {len(text.splitlines())}")
+    mark = f"{GREEN}ok{RESET}" if result.ok else f"{RED}failed{RESET}"
+    print(f"  result       {mark} in {result.seconds:.2f}s"
+          + (f"  {result.error}" if result.error else ""))
+    print(f"\n{DIM}omavoi reports what it did, not what the app accepted — "
+          f"look at the window.{RESET}")
+    return 0 if result.ok else 1
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     from . import cudaenv
     from .hotkey import find_devices, key_code
@@ -913,8 +1259,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     print(f"\n{BOLD}external commands{RESET}")
     for tool, needed in [("pw-record", True), ("wtype", True), ("wl-copy", True),
-                         ("wl-paste", False), ("hyprctl", True), ("notify-send", False),
-                         ("ffmpeg", False)]:
+                         ("wl-paste", False), ("hyprctl", True), ("xdotool", True),
+                         ("notify-send", False), ("ffmpeg", False)]:
         found = shutil.which(tool)
         check(tool, bool(found) or not needed,
               found or (f"{RED}missing{RESET}" if needed else f"{DIM}optional, absent{RESET}"))
@@ -1097,11 +1443,27 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_setup)
 
     p = sub.add_parser("mode", help="inspect and edit the modes")
-    p.add_argument("action", choices=["list", "show", "which", "new", "rm", "set",
-                                      "match", "unmatch", "step"])
+    p.add_argument("action", choices=["list", "show", "which", "use", "auto", "new",
+                                      "rm", "set", "match", "unmatch", "step"])
     p.add_argument("rest", nargs="*", help="arguments for the action")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--force", action="store_true",
+                   help="switch even if the mode's models will not fit in VRAM")
     p.set_defaults(func=cmd_mode)
+
+    p = sub.add_parser("inject", help="type test text into the focused window")
+    p.add_argument("text", nargs="?", default="", help="what to inject")
+    p.add_argument("--delay", type=float, default=3.0,
+                   help="seconds to focus the target first (default 3)")
+    p.add_argument("--lines", type=int, default=1, help="inject this many lines")
+    p.add_argument("--method", default="", choices=["", "wtype", "clipboard"],
+                   help="force a route instead of auto")
+    p.add_argument("--paste-via", default="",
+                   choices=["", "shortcut", "wtype", "xdotool"],
+                   dest="paste_via", help="how the paste keystroke is sent")
+    p.add_argument("--via-daemon", action="store_true", dest="via_daemon",
+                   help="have the daemon inject instead of this process")
+    p.set_defaults(func=cmd_inject)
 
     p = sub.add_parser("doctor", help="check the whole setup")
     p.add_argument("--mic", action="store_true", help="also measure 2s of microphone input")

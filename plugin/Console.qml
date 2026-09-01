@@ -35,11 +35,11 @@ Item {
 
   readonly property int pad: Style.space(22)
   readonly property var tabs: [
-    { key: "history", label: "History" },
-    { key: "modes", label: "Modes" },
-    { key: "models", label: "Models" },
-    { key: "dictionary", label: "Dictionary" },
-    { key: "settings", label: "Settings" }
+    { key: "history", label: strings.t("nav.history") },
+    { key: "modes", label: strings.t("nav.modes") },
+    { key: "models", label: strings.t("nav.models") },
+    { key: "dictionary", label: strings.t("nav.dictionary") },
+    { key: "settings", label: strings.t("nav.settings") }
   ]
 
   function open(payloadJson) {
@@ -59,6 +59,9 @@ Item {
 
   function refresh() {
     probeSetup.running = true
+    // The config carries the UI language, which every tab needs — not just
+    // the one that displays the config.
+    configProc.running = true
     if (ready) loadTab()
   }
 
@@ -93,6 +96,11 @@ Item {
   onTabChanged: if (opened && ready) loadTab()
 
   IpcLink { id: link }
+
+  Strings {
+    id: strings
+    lang: (root.configData.ui && root.configData.ui.language) || ""
+  }
 
   Connections {
     target: link
@@ -133,7 +141,7 @@ Item {
     id: applier
     onExited: function (code, status) {
       root.pulling = ({})
-      root.refresh()
+      root.settle()
     }
   }
 
@@ -142,7 +150,20 @@ Item {
   // that is a quoting bug waiting to happen.
   Process {
     id: argRunner
+    onExited: function (code, status) { root.settle() }
+  }
+
+  // The daemon reads its config once at startup. Without this every edit made
+  // here writes to disk and changes nothing until the next restart — which is
+  // exactly how a mode with an LLM step can sit there running zero steps.
+  Process {
+    id: reloader
+    command: ["omavoi", "reload"]
     onExited: function (code, status) { root.refresh() }
+  }
+
+  function settle() {
+    reloader.running = true
   }
 
   // A download says nothing until it finishes, so ask the catalogue what it
@@ -287,10 +308,34 @@ Item {
 
               Item { Layout.fillWidth: true }
 
+              // Same row as the tabs, because it is the same kind of choice:
+              // which view of the program you are looking at.
+              Dropdown {
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: Style.space(150)
+                visible: root.ready
+                showLabel: false
+                // The code is the value, so what comes back from `changed`
+                // is what goes into the config unmapped.
+                value: strings.active
+                options: {
+                  var out = []
+                  for (var i = 0; i < strings.languages.length; i++)
+                    out.push({ value: strings.languages[i].code,
+                               label: strings.languages[i].name })
+                  return out
+                }
+                onChanged: function (code) {
+                  root.applyArgs(["omavoi", "config", "set", "ui.language", code])
+                }
+              }
+
               Text {
                 text: root.ready
-                      ? (link.state === "stopped" ? "daemon stopped" : link.state)
-                      : ("setup " + root.setupReport.done + "/" + root.setupReport.total)
+                      ? (link.state === "stopped" ? strings.t("state.stopped")
+                                                  : strings.t("state." + link.state))
+                      : (strings.t("setup.prefix") + root.setupReport.done
+                         + "/" + root.setupReport.total)
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: root.ready && link.state !== "stopped" ? "#9ece6a" : "#e0af68"
@@ -314,7 +359,7 @@ Item {
               spacing: Style.space(6)
 
               Text {
-                text: "Two more pieces to install"
+                text: strings.t("setup.title")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.heading
                 color: Color.foreground
@@ -322,9 +367,7 @@ Item {
               Text {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                text: "Nothing here runs until you press it, and every step shows the "
-                    + "exact command first. Omarchy deliberately runs nothing from inside "
-                    + "a plugin folder, so this screen asks instead."
+                text: strings.t("setup.blurb")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: Color.muted
@@ -396,7 +439,8 @@ Item {
                     }
 
                     Button {
-                      text: modelData.needs_root ? "Copy" : "Run"
+                      text: modelData.needs_root ? strings.t("setup.copy")
+                                                 : strings.t("setup.run")
                       onClicked: {
                         if (modelData.needs_root) {
                           // Root work belongs in a terminal the user is
@@ -425,9 +469,9 @@ Item {
               RowLayout {
                 Layout.topMargin: Style.space(18)
                 spacing: Style.space(10)
-                Button { text: "Re-check"; onClicked: root.refresh() }
+                Button { text: strings.t("setup.recheck"); onClicked: root.refresh() }
                 Text {
-                  text: "or run  omavoi setup  in a terminal — same steps, same order"
+                  text: strings.t("setup.hint")
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
                   color: Color.muted
@@ -491,7 +535,8 @@ Item {
                       Layout.fillWidth: true
                       elide: Text.ElideRight
                       text: modelData.text ? modelData.text
-                                           : ("dropped — " + (modelData.rejected || ""))
+                                           : (strings.t("hist.dropped")
+                                              + (modelData.rejected || ""))
                       font.family: Style.font.family
                       font.pixelSize: Style.font.body
                       color: modelData.text ? Color.foreground : Color.muted
@@ -505,7 +550,7 @@ Item {
                 Text {
                   anchors.centerIn: parent
                   visible: root.takes.length === 0
-                  text: "no takes yet — hold " + (link.hotkey || "your key") + " and talk"
+                  text: strings.tf("hist.none", link.hotkey || strings.t("hist.yourkey"))
                   font.family: Style.font.family
                   font.pixelSize: Style.font.body
                   color: Color.muted
@@ -546,14 +591,18 @@ Item {
                       if (!root.take) return []
                       var a = root.take.audio || {}, s = root.take.asr || {}
                       return [
-                        { k: "audio", v: (a.seconds || 0).toFixed(2) + "s" },
-                        { k: "level", v: (a.rms_dbfs || 0).toFixed(1) + " dBFS" },
-                        { k: "decode", v: (s.decode_seconds || 0).toFixed(2) + "s" },
+                        { k: strings.t("hist.audio"), v: (a.seconds || 0).toFixed(2) + "s" },
+                        { k: strings.t("hist.level"),
+                          v: (a.rms_dbfs || 0).toFixed(1) + " dBFS" },
+                        { k: strings.t("hist.decode"),
+                          v: (s.decode_seconds || 0).toFixed(2) + "s" },
                         { k: "RTF", v: (s.rtf || 0).toFixed(3) },
-                        { k: "model", v: s.model || "?" },
-                        { k: "language", v: s.language || "?" },
-                        { k: "mode", v: (root.take.mode && root.take.mode.name) || "?" },
-                        { k: "injected", v: (root.take.inject && root.take.inject.method) || "—" }
+                        { k: strings.t("hist.model"), v: s.model || "?" },
+                        { k: strings.t("hist.language"), v: s.language || "?" },
+                        { k: strings.t("hist.mode"),
+                          v: (root.take.mode && root.take.mode.name) || "?" },
+                        { k: strings.t("hist.injected"),
+                          v: (root.take.inject && root.take.inject.method) || "—" }
                       ]
                     }
                     ColumnLayout {
@@ -579,7 +628,7 @@ Item {
                            && root.take.raw_text !== root.take.text
                   Layout.fillWidth: true
                   wrapMode: Text.Wrap
-                  text: "model said:  " + (root.take ? root.take.raw_text : "")
+                  text: strings.t("hist.said") + (root.take ? root.take.raw_text : "")
                   font.family: Style.font.family
                   font.pixelSize: Style.font.body
                   color: Color.muted
@@ -591,7 +640,7 @@ Item {
                   visible: root.take && root.take.post
                            && root.take.post.changes && root.take.post.changes.length
                   Text {
-                    text: "POST-PROCESSING"
+                    text: strings.t("hist.post")
                     font.family: Style.font.family
                     font.pixelSize: Style.font.caption
                     font.letterSpacing: 1
@@ -616,7 +665,7 @@ Item {
                   visible: root.take && root.take.asr && root.take.asr.segments
                            && root.take.asr.segments.length
                   Text {
-                    text: "SEGMENT CONFIDENCE"
+                    text: strings.t("hist.segments")
                     font.family: Style.font.family
                     font.pixelSize: Style.font.caption
                     font.letterSpacing: 1
@@ -680,11 +729,11 @@ Item {
                   Layout.topMargin: Style.space(6)
                   spacing: Style.space(8)
                   Button {
-                    text: "Copy"
+                    text: strings.t("hist.copy")
                     onClicked: root.run("omavoi last --raw | wl-copy")
                   }
                   Button {
-                    text: "Play"
+                    text: strings.t("hist.play")
                     visible: root.take && root.take.wav
                     onClicked: root.run("pw-play " + JSON.stringify(root.take.wav))
                   }
@@ -695,6 +744,7 @@ Item {
 
           // ---- modes / models / dictionary / settings -----------------
           ModesView {
+            strings: strings
             visible: root.ready && root.tab === "modes"
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -704,16 +754,17 @@ Item {
           }
 
           ModelsView {
+            strings: strings
             visible: root.ready && root.tab === "models"
             Layout.fillWidth: true
             Layout.fillHeight: true
             payload: root.modelsData
-            running: link.backend
             pulling: root.pulling
             onCommand: function (c) { root.apply(c) }
           }
 
           DictionaryView {
+            strings: strings
             visible: root.ready && root.tab === "dictionary"
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -724,6 +775,7 @@ Item {
           }
 
           SettingsView {
+            strings: strings
             visible: root.ready && root.tab === "settings"
             Layout.fillWidth: true
             Layout.fillHeight: true

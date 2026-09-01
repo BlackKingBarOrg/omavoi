@@ -14,16 +14,15 @@ Item {
 
   readonly property string socketPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omavoi.sock"
 
-  // "stopped" means nothing is listening — usually the daemon is not installed.
+  // "stopped" means nothing is listening — usually the daemon is restarting.
   property string state: "stopped"
-  property bool alive: sock.connected
+  property bool alive: false
   property real level: 0
   property real seconds: 0
   property string mode: ""
   property string backend: ""
   property string hotkey: ""
 
-  // Last completed take, for the HUD's done state.
   property string lastText: ""
   property string lastRejected: ""
   property int lastChanges: 0
@@ -38,30 +37,47 @@ Item {
 
   Process { id: runner }
 
-  Socket {
-    id: sock
-    path: link.socketPath
-    connected: true
-    parser: SplitParser {
-      onRead: function (line) { link._digest(line) }
-    }
-    onConnectionStateChanged: {
-      if (connected) {
-        write(JSON.stringify({ cmd: "subscribe" }) + "\n")
-      } else {
-        link.state = "stopped"
-        link.level = 0
+  // The socket is rebuilt rather than reconnected. `connected` is a binding
+  // that the first disconnect breaks, and assigning to it afterwards does not
+  // reliably dial again — which is how the HUD ended up silently deaf after a
+  // daemon restart. Destroying the object and making a new one has no such
+  // ambiguity.
+  Loader {
+    id: holder
+    active: true
+    sourceComponent: Component {
+      Socket {
+        path: link.socketPath
+        connected: true
+        parser: SplitParser {
+          onRead: function (line) { link._digest(line) }
+        }
+        onConnectionStateChanged: {
+          link.alive = connected
+          if (connected) {
+            write(JSON.stringify({ cmd: "subscribe" }) + "\n")
+          } else {
+            link.state = "stopped"
+            link.level = 0
+            retry.restart()
+          }
+        }
       }
     }
   }
 
-  // The daemon may not exist yet, or may be restarting. Retry slowly: each
-  // attempt logs a socket error, and a fast loop would bury the journal.
+  // Rebuild on a cadence while there is nothing listening. The daemon may
+  // simply not be installed yet, so this stays quiet and slow rather than
+  // hammering a socket that will not exist for hours.
   Timer {
-    interval: 5000
+    id: retry
+    interval: 3000
     repeat: true
-    running: !sock.connected
-    onTriggered: sock.connected = true
+    running: !link.alive
+    onTriggered: {
+      holder.active = false
+      holder.active = true
+    }
   }
 
   function _digest(line) {
@@ -85,7 +101,8 @@ Item {
       link.lastRejected = msg.rejected || ""
       link.lastChanges = msg.changes || 0
       link.lastWarnings = msg.warnings || []
-      link.takeFinished(link.lastText, link.lastRejected, link.lastChanges, link.lastWarnings)
+      link.takeFinished(link.lastText, link.lastRejected,
+                        link.lastChanges, link.lastWarnings)
       return
     }
     // The first line after subscribing is a full status snapshot.
