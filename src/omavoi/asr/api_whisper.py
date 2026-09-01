@@ -100,9 +100,23 @@ class ApiWhisperBackend:
         self._client = httpx.Client(timeout=self.timeout)
         log.info("api backend ready: %s %s", self.provider, self.model_name)
 
+    def state(self) -> dict[str, Any]:
+        return {
+            "backend": self.name,
+            "engine": f"api:{self.provider}",
+            "model": self.model_name,
+            "device": "remote",
+            # Nothing is resident to be warm or cold; having a usable client
+            # is the whole of being ready.
+            "live": self._client is not None,
+            "url": self.base_url,
+            "pid": 0,
+        }
+
     def describe(self) -> str:
+        st = self.state()
         return (
-            f"api:{self.provider} {self.model_name} @ {self.base_url} "
+            f"{st['engine']} {st['model']} @ {st['url']} "
             f"key={secrets.redact(self._key)}"
         )
 

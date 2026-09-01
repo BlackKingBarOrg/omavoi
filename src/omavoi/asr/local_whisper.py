@@ -85,9 +85,21 @@ class LocalWhisperBackend:
             self.model_id, self.device, self.compute_type, time.monotonic() - started,
         )
 
+    def state(self) -> dict[str, Any]:
+        return {
+            "backend": self.name,
+            "engine": "faster-whisper",
+            "model": self.model_id,
+            "device": f"{self.device}/{self.compute_type}",
+            "live": self._model is not None,
+            "url": "",
+            "pid": 0,
+        }
+
     def describe(self) -> str:
-        state = "loaded" if self._model is not None else "not loaded"
-        return f"{self.model_id} [{self.device}/{self.compute_type}] ({state})"
+        st = self.state()
+        state = "loaded" if st["live"] else "not loaded"
+        return f"{st['model']} [{st['device']}] ({state})"
 
     def transcribe(
         self,

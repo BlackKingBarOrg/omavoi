@@ -71,9 +71,26 @@ class LlamaLocalBackend:
 
     # -- lifecycle ---------------------------------------------------------
 
+    def state(self) -> dict[str, Any]:
+        live = self._proc is not None and self._proc.poll() is None
+        return {
+            "name": self.name,
+            "backend": self.backend,
+            "engine": "llama.cpp",
+            "model": self.model_key,
+            "remote": False,
+            # This server is started on the first take that names it, so cold
+            # is the normal state and not a fault. `_fail` is the fault.
+            "live": live,
+            "url": self._url if live else "",
+            "pid": self._proc.pid if live else 0,
+            "problem": self._fail,
+        }
+
     def describe(self) -> str:
-        state = "running" if self._proc and self._proc.poll() is None else "not started"
-        return f"{self.name}: llama.cpp {self.model_key} ({state})"
+        st = self.state()
+        state = "running" if st["live"] else "not started"
+        return f"{self.name}: llama.cpp {st['model']} ({state})"
 
     def _ensure(self) -> str:
         """Start the server if it is not up. Returns an error string, or ""."""

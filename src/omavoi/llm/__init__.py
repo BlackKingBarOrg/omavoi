@@ -76,6 +76,63 @@ class Registry:
                 except Exception:
                     log.debug("could not stop %s", getattr(backend, "name", backend))
 
+    def update(self, cfg: dict[str, Any]) -> None:
+        """Adopt a new config without restarting what did not change.
+
+        A managed llama-server takes seconds to come up and holds gigabytes of
+        VRAM. Rebuilding the registry on every reload — and the console reloads
+        after every click — orphaned the running server: its process kept the
+        memory, the new registry reported it cold, and the next take started a
+        second one. Only entries whose own definition changed are dropped.
+        """
+        defs = dict(cfg.get("llm", {}))
+        for name, built in list(self._built.items()):
+            if name in defs and defs[name] == self._defs.get(name):
+                continue
+            stop = getattr(built, "close", None)
+            if callable(stop):
+                try:
+                    stop()
+                except Exception:
+                    log.debug("could not stop %s", name)
+            del self._built[name]
+            log.info("llm %r changed or went away — dropped its running instance", name)
+        self._defs = defs
+        self._why.clear()
+
+    def states(self) -> list[dict[str, Any]]:
+        """What every configured LLM is doing right now.
+
+        Constructing a backend is side-effect-free — no server starts, no
+        request goes out — so an entry no take has reached yet can still say
+        what it would be. The throwaway is not cached, which keeps `live`
+        meaning "running now" rather than "has been asked about".
+        """
+        out: list[dict[str, Any]] = []
+        for name in self.names():
+            backend = self._built.get(name)
+            if backend is None:
+                try:
+                    backend = _build_one(name, self._defs[name])
+                except Exception as exc:
+                    defn = self._defs[name]
+                    out.append({
+                        "name": name,
+                        "backend": str(defn.get("backend", "")),
+                        "engine": "",
+                        "model": str(defn.get("model", "")),
+                        "remote": True,
+                        "live": False,
+                        "url": "",
+                        "pid": 0,
+                        "problem": str(exc),
+                    })
+                    continue
+            st = dict(backend.state())
+            st["problem"] = st.get("problem") or self._why.get(name, "")
+            out.append(st)
+        return out
+
     def why(self, name: str) -> str:
         """Why `get` returned None, for the warning the user actually sees."""
         return self._why.get(name, "not configured")

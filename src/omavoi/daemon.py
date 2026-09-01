@@ -167,6 +167,13 @@ class Daemon:
             "uptime": round(time.time() - self._boot, 1),
             "takes": self._takes,
             "backend": self.backend.describe(),
+            # Structured, because "which engine is actually running" cannot be
+            # read out of the sentence above, and the config only says which
+            # one was asked for.
+            "engines": {
+                "speech": self.backend.state(),
+                "llm": self.pipeline.llms.states(),
+            },
             # What the daemon would actually use, from its own copy of the
             # config. The CLI reads the file, and the two differ for about a
             # second after an edit — this is the answer that types.
@@ -301,7 +308,13 @@ class Daemon:
         )
         self.cfg = new
         self._config_stamp = self._stamp()
-        self.pipeline = Pipeline(new, self.backend, Injector(new), History(new))
+        # The registry is carried over, not rebuilt: it owns running llama
+        # servers, and a reload is not a reason to drop 5 GB of resident
+        # weights and start again on the next take.
+        llms = self.pipeline.llms
+        llms.update(new)
+        self.pipeline = Pipeline(new, self.backend, Injector(new), History(new),
+                                 registry=llms)
         log.info("config reloaded%s", "; speech settings changed, restart the daemon" if model_changed else "")
         return {"ok": True, "reloaded": True, "model_restart_required": model_changed}
 

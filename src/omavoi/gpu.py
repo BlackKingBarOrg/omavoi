@@ -106,6 +106,41 @@ def fits(weights_mb: int, ctx_size: int = 4096, gpu_layers: int = 99) -> dict[st
     return out
 
 
+def fits_chain(wants: list[dict[str, Any]], live: set[str]) -> dict[str, Any]:
+    """Whether a whole chain of local models can be resident at once.
+
+    A mode is speech plus zero or more LLM passes, and they all have to stay
+    loaded together — swapping per take costs seconds. So the question that
+    matters before switching modes is not "does this model fit" but "does
+    everything this mode needs fit alongside what is already up".
+
+    `wants` is [{"key", "weights_mb", "ctx_size", "gpu_layers"}]; anything in
+    `live` is already resident and so already counted in used_mb.
+    """
+    info = vram()
+    pending = [w for w in wants if w["key"] not in live]
+    want = sum(needed_mb(int(w.get("weights_mb", 0)),
+                         int(w.get("ctx_size", 4096)),
+                         int(w.get("gpu_layers", 99))) for w in pending)
+    out: dict[str, Any] = {
+        "known": bool(info),
+        "fits": True,
+        "needed_mb": want,
+        "pending": [w["key"] for w in pending],
+    }
+    if not info:
+        # No NVIDIA GPU to interrogate: do not block. The runtime will cope or
+        # fail loudly on its own, and guessing here would block a working setup.
+        return out
+    free = int(info.get("free_mb", 0))
+    out.update({"fits": want <= free, "free_mb": free,
+                "total_mb": info.get("total_mb", 0), "name": info.get("name", "")})
+    if not out["fits"]:
+        out["holders"] = [{"pid": h.pid, "name": h.name, "used_mb": h.used_mb}
+                          for h in holders()]
+    return out
+
+
 def explain_shortfall(check: dict[str, Any], model: str) -> str:
     """One line a user can act on."""
     free = check.get("free_mb", 0)

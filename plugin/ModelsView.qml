@@ -10,8 +10,6 @@ import qs.Ui
 Item {
   id: root
   property var payload: ({ models: [], llm: [], vram: ({}), active: "", backend: "", root: "" })
-  // What the daemon actually loaded, so an unapplied change is visible.
-  property string running: ""
   property var pulling: ({})
   readonly property int pad: Style.space(20)
   property var strings: null
@@ -24,12 +22,31 @@ Item {
   function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
 
   readonly property bool ggml: payload.backend === "local-whispercpp"
+  // A gguf LLM is also fmt=ggml, so the format alone put chat models in the
+  // speech table — with a Use button that would have written one into
+  // speech.model. The two families split on `kind`.
   readonly property var speechModels: (payload.models || []).filter(function (m) {
-    return root.ggml ? m.fmt === "ggml" : m.fmt === "ct2"
+    return m.kind === "speech" && (root.ggml ? m.fmt === "ggml" : m.fmt === "ct2")
   })
-  readonly property bool stale: running !== "" && payload.active !== undefined
-      && String(payload.active) !== ""
-      && running.indexOf(String(payload.active).replace("ggml:", "")) === -1
+  readonly property var llmModels: (payload.models || []).filter(function (m) {
+    return m.kind === "llm"
+  })
+  // What the daemon has actually loaded. The config only says what was asked
+  // for, and the two differ from the moment of an edit until a restart.
+  readonly property var engines: payload.engines || ({})
+  readonly property var speechNow: engines.speech || ({})
+  readonly property bool daemonUp: payload.daemon === true
+  readonly property bool speechLive: root.speechNow.live === true
+  readonly property bool stale: root.daemonUp && root.speechLive
+      && (String(root.speechNow.model || "") !== String(root.payload.active || "")
+          || String(root.speechNow.backend || "") !== String(root.payload.backend || ""))
+
+  // "127.0.0.1:43593" reads better in a strip than the whole URL.
+  function hostport(url) {
+    var u = String(url || "")
+    if (u === "") return ""
+    return u.replace(/^[a-z]+:\/\//, "")
+  }
 
   RowLayout {
     anchors.fill: parent
@@ -64,6 +81,52 @@ Item {
             font.pixelSize: Style.font.caption
             color: Color.muted
           }
+        }
+
+        // -- what is loaded right now --
+        //
+        // The whole page below this is the config: which engine is selected,
+        // which weights are on disk. None of it answers "and what is running",
+        // which is the question you have while dictation is behaving oddly.
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: Style.space(8)
+          Text {
+            text: root.t("models.now")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            font.letterSpacing: 1
+            color: Color.muted
+          }
+          Text {
+            visible: !root.daemonUp
+            Layout.fillWidth: true
+            text: root.t("models.nodaemon")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            color: Color.urgent
+          }
+          Text {
+            visible: root.daemonUp
+            text: root.speechLive
+                  ? (root.speechNow.engine + "  " + root.speechNow.model
+                     + "  [" + root.speechNow.device + "]")
+                  : root.t("models.notloaded")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.body
+            color: root.speechLive ? Color.foreground : Color.urgent
+          }
+          Text {
+            visible: root.daemonUp && root.speechLive && root.speechNow.url
+            Layout.fillWidth: true
+            elide: Text.ElideRight
+            text: root.hostport(root.speechNow.url)
+                  + (root.speechNow.pid ? "  pid " + root.speechNow.pid : "")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            color: Qt.darker(Color.muted, 1.1)
+          }
+          Item { Layout.fillWidth: true }
         }
 
         // -- engines, single choice --
@@ -107,6 +170,16 @@ Item {
                 color: on ? Color.accent : "transparent"
                 border.width: 1
                 border.color: on ? Color.accent : Color.muted
+              }
+              Text {
+                // The dot to the left is the selection; this says whether the
+                // selection is what is actually up.
+                visible: root.daemonUp && root.speechLive
+                         && String(root.speechNow.backend || "") === eng.id
+                text: "▶"
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                color: Color.accent
               }
               Text {
                 Layout.preferredWidth: Style.space(112)
@@ -167,7 +240,7 @@ Item {
               Text {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                text: root.t("models.loaded") + root.running + "   ·   "
+                text: root.t("models.loaded") + root.speechNow.model + "   ·   "
                     + root.t("models.configured") + root.payload.active
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -210,10 +283,14 @@ Item {
 
             Text {
               Layout.preferredWidth: Style.space(12)
-              text: m.active ? "●" : (m.downloaded ? "○" : "")
+              // ▶ is loaded right now, ● is selected but not loaded, ○ is
+              // merely on disk. The first two coincide most of the time; when
+              // they do not, that is the thing worth seeing.
+              text: m.running ? "▶" : (m.active ? "●" : (m.downloaded ? "○" : ""))
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
-              color: m.active ? Color.accent : Color.muted
+              color: m.running ? Color.accent
+                               : (m.active ? Color.urgent : Color.muted)
             }
             Text {
               Layout.preferredWidth: Style.space(178)
@@ -243,7 +320,14 @@ Item {
               spacing: Style.space(7)
               Item { Layout.fillWidth: true }
               Text {
-                visible: m.downloaded && !m.ours
+                visible: m.running === true
+                text: root.t("models.running")
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                color: Color.accent
+              }
+              Text {
+                visible: m.downloaded && !m.ours && m.running !== true
                 text: root.t("models.ondisk")
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -351,6 +435,13 @@ Item {
                 Layout.fillWidth: true
                 spacing: Style.space(8)
                 Text {
+                  visible: root.daemonUp && l.live_running === true && !l.remote
+                  text: "▶"
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption
+                  color: Color.accent
+                }
+                Text {
                   text: l.name
                   font.family: Style.font.family
                   font.pixelSize: Style.font.body
@@ -372,6 +463,17 @@ Item {
                   font.pixelSize: Style.font.caption
                   color: l.remote ? Color.urgent : Color.accent
                 }
+                // Cold is the resting state for a managed server — it starts
+                // on the first take that names it — so this is not a warning.
+                Text {
+                  visible: root.daemonUp
+                  text: l.live_running
+                        ? (l.remote ? root.t("models.ready") : root.t("models.running"))
+                        : (l.remote ? "" : root.t("models.cold"))
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption
+                  color: l.live_running ? Color.accent : Qt.darker(Color.muted, 1.1)
+                }
               }
 
               RowLayout {
@@ -389,6 +491,13 @@ Item {
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
                   color: Color.muted
+                }
+                Text {
+                  visible: l.live_running === true && l.live_url && !l.remote
+                  text: root.hostport(l.live_url)
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption
+                  color: Qt.darker(Color.muted, 1.1)
                 }
                 Text {
                   visible: l.key_env && !l.has_key
@@ -419,6 +528,110 @@ Item {
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
           color: Qt.darker(Color.muted, 1.1)
+        }
+
+        // -- the LLM catalogue --
+        //
+        // These live under LLM, not in the speech table above: they are both
+        // gguf, but "use this one" means a mode's step names it, never a
+        // global switch, so there is deliberately no Use button here.
+        RowLayout {
+          Layout.topMargin: Style.space(10)
+          Layout.fillWidth: true
+          Text {
+            text: root.t("models.list") + "gguf"
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            font.letterSpacing: 1
+            color: Color.muted
+          }
+          Item { Layout.fillWidth: true }
+          Text {
+            text: root.t("models.llmcathint")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            color: Color.muted
+          }
+        }
+
+        Repeater {
+          model: root.llmModels
+          RowLayout {
+            readonly property var m: modelData
+            Layout.fillWidth: true
+            spacing: Style.space(10)
+
+            Text {
+              Layout.preferredWidth: Style.space(12)
+              text: m.running ? "▶" : (m.downloaded ? "○" : "")
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              color: m.running ? Color.accent : Color.muted
+            }
+            Text {
+              Layout.preferredWidth: Style.space(150)
+              text: m.key
+              font.family: Style.font.family
+              font.pixelSize: Style.font.body
+              color: Color.foreground
+            }
+            Text {
+              Layout.preferredWidth: Style.space(46)
+              horizontalAlignment: Text.AlignRight
+              text: (m.size_mb / 1024).toFixed(1) + "G"
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Color.muted
+            }
+            // Won't-fit is worth saying before the download, not after — and
+            // never about the model that is loaded right now, whose own
+            // weights are most of what the free-VRAM figure is missing.
+            Text {
+              visible: m.fits === false && m.running !== true
+              text: root.t("models.needs") + " "
+                    + (m.needed_mb / 1024).toFixed(1) + "G"
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Color.urgent
+            }
+            Text {
+              Layout.fillWidth: true
+              elide: Text.ElideRight
+              text: m.note
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              color: Color.muted
+            }
+            RowLayout {
+              Layout.preferredWidth: Style.space(130)
+              spacing: Style.space(7)
+              Item { Layout.fillWidth: true }
+              Text {
+                visible: m.running === true
+                text: root.t("models.running")
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                color: Color.accent
+              }
+              Text {
+                visible: !m.downloaded && root.pulling[m.key] === true
+                text: root.t("models.downloading")
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                color: Color.accent
+              }
+              Button {
+                visible: !m.downloaded && root.pulling[m.key] !== true
+                text: root.t("models.download")
+                onClicked: root.command("omavoi model pull " + m.key)
+              }
+              Button {
+                visible: m.downloaded && m.ours && m.running !== true
+                text: root.t("models.remove")
+                onClicked: root.command("omavoi model rm " + m.key)
+              }
+            }
+          }
         }
 
         // -- VRAM --

@@ -17,6 +17,9 @@ Item {
   readonly property int pad: Style.space(18)
 
   property var strings: null
+  // The mode a click just refused to enter, so the reason appears next to the
+  // mode rather than only in a log the user will never open.
+  property string blocked: ""
 
   signal command(string cmd)
   signal commandArgs(var argv)
@@ -120,6 +123,16 @@ Item {
                 font.pixelSize: Style.font.caption
                 color: Qt.darker(Color.muted, 1.1)
               }
+              // A mode that cannot load its model is not a mode you can be in.
+              Text {
+                visible: m.vram_known === true && m.fits === false
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+                text: root.tf("modes.wontfit", (m.needs_mb / 1024).toFixed(1) + "G")
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                color: Color.urgent
+              }
             }
             MouseArea {
               anchors.fill: parent
@@ -130,7 +143,15 @@ Item {
               // With window matching on there is nothing to switch, so a
               // click only selects.
               onClicked: {
+                // Selecting always works — you need to open a mode to fix the
+                // step that does not fit. Only entering it is refused, and the
+                // CLI refuses the same switch for the same reason.
                 root.selected = m.name
+                if (m.vram_known === true && m.fits === false) {
+                  root.blocked = m.name
+                  return
+                }
+                root.blocked = ""
                 if (!root.byWindow && (root.switching.mode || "default") !== m.name)
                   root.commandArgs(["omavoi", "mode", "use", m.name])
               }
@@ -254,6 +275,15 @@ Item {
             font.family: Style.font.family
             font.pixelSize: Style.font.heading
             color: Color.foreground
+          }
+          Text {
+            visible: root.blocked !== "" && root.blocked === root.current
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.t("modes.blocked")
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            color: Color.urgent
           }
           Text {
             visible: root.mode && root.mode.active === true

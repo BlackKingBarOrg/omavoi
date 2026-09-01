@@ -32,10 +32,27 @@ class ClaudeCliBackend:
         self.model = str(cfg.get("model", "") or "haiku")
         self.timeout = float(cfg.get("timeout", 60.0))
 
-    def describe(self) -> str:
+    def state(self) -> dict[str, Any]:
         found = shutil.which(self.binary)
-        return (f"{self.name}: claude-cli {self.model} "
-                f"({found or 'claude not on PATH'})")
+        return {
+            "name": self.name,
+            "backend": self.backend,
+            "engine": "claude-cli",
+            "model": self.model,
+            # The process is local; the inference is not.
+            "remote": True,
+            # Nothing stays resident — each take spawns the CLI — so being on
+            # PATH is as ready as this backend gets.
+            "live": bool(found),
+            "url": found or "",
+            "pid": 0,
+            "problem": "" if found else f"{self.binary} is not on PATH",
+        }
+
+    def describe(self) -> str:
+        st = self.state()
+        return (f"{self.name}: claude-cli {st['model']} "
+                f"({st['url'] or 'claude not on PATH'})")
 
     def complete(self, system: str, text: str, *, timeout: float = 0.0) -> LlmResult:
         started = time.monotonic()

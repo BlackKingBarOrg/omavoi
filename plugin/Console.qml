@@ -759,7 +759,6 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             payload: root.modelsData
-            running: link.backend
             pulling: root.pulling
             onCommand: function (c) { root.apply(c) }
           }
