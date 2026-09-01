@@ -42,12 +42,8 @@ def vram() -> dict[str, Any]:
         return {}
 
 
-def holders(limit: int = 3) -> list[Holder]:
-    """The processes holding the most VRAM, biggest first.
-
-    Naming them turns "not enough memory" into something the user can act
-    on — it is usually one obvious program, not a mystery.
-    """
+def compute_apps() -> list[Holder]:
+    """Every process nvidia-smi reports holding VRAM, biggest first."""
     if shutil.which("nvidia-smi") is None:
         return []
     try:
@@ -68,9 +64,41 @@ def holders(limit: int = 3) -> list[Holder]:
             name = parts[1].split()[0].rsplit("/", 1)[-1] if parts[1] else "?"
             found.append(Holder(int(parts[0]), name, int(parts[2])))
         found.sort(key=lambda h: -h.used_mb)
-        return found[:limit]
+        return found
     except (subprocess.SubprocessError, OSError, ValueError):
         return []
+
+
+def holders(limit: int = 3) -> list[Holder]:
+    """The processes holding the most VRAM, biggest first.
+
+    Naming them turns "not enough memory" into something the user can act
+    on — it is usually one obvious program, not a mystery.
+    """
+    return compute_apps()[:limit]
+
+
+def usage_by_pid() -> dict[int, int]:
+    """VRAM per process, for attributing a bar to the models that hold it."""
+    return {h.pid: h.used_mb for h in compute_apps()}
+
+
+def segments(total_used_mb: int, speech_pid: int, llm_pids: set[int]) -> list[dict[str, Any]]:
+    """Split the used VRAM into ours-for-speech, ours-for-LLM, and everything else.
+
+    The remainder is computed rather than summed from the other processes:
+    nvidia-smi's total includes memory no compute app claims (the display,
+    mostly), and a stacked bar that does not add up to the number printed
+    beside it is worse than one honest catch-all.
+    """
+    by_pid = usage_by_pid()
+    speech_mb = by_pid.get(speech_pid, 0) if speech_pid else 0
+    llm_mb = sum(by_pid.get(p, 0) for p in llm_pids)
+    return [
+        {"kind": "speech", "used_mb": speech_mb},
+        {"kind": "llm", "used_mb": llm_mb},
+        {"kind": "other", "used_mb": max(0, int(total_used_mb) - speech_mb - llm_mb)},
+    ]
 
 
 def needed_mb(weights_mb: int, ctx_size: int = 4096, gpu_layers: int = 99) -> int:

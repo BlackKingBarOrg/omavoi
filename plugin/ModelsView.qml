@@ -41,6 +41,27 @@ Item {
       && (String(root.speechNow.model || "") !== String(root.payload.active || "")
           || String(root.speechNow.backend || "") !== String(root.payload.backend || ""))
 
+  // The theme gives accent, urgent and muted, and in most omarchy themes
+  // accent equals foreground — not enough to tell two model families apart.
+  // These are the two colours this console already uses for local-and-good
+  // and for attention, so the bar stays in the same vocabulary as the badges.
+  readonly property color speechColor: "#9ece6a"
+  readonly property color llmColor: "#e0af68"
+  readonly property color otherColor: Qt.rgba(Color.foreground.r, Color.foreground.g,
+                                              Color.foreground.b, 0.28)
+
+  readonly property var vramSegments: (payload.vram && payload.vram.segments) || []
+  function segColor(kind) {
+    if (kind === "speech") return root.speechColor
+    if (kind === "llm") return root.llmColor
+    return root.otherColor
+  }
+  function segLabel(kind) {
+    if (kind === "speech") return root.t("models.seg.speech")
+    if (kind === "llm") return root.t("models.llm")
+    return root.t("models.seg.other")
+  }
+
   // "127.0.0.1:43593" reads better in a strip than the whole URL.
   function hostport(url) {
     var u = String(url || "")
@@ -649,16 +670,83 @@ Item {
             color: Color.muted
           }
           Rectangle {
+            id: vramTrack
             Layout.fillWidth: true
             implicitHeight: Style.space(14)
             color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
+
+            readonly property int totalMb: ((root.payload.vram || {}).total_mb || 0)
+
+            // Stacked left to right in the order the segments arrive, so the
+            // two families keep the same place every time you look.
+            Row {
+              anchors.fill: parent
+              spacing: 0
+              Repeater {
+                model: root.vramSegments
+                Rectangle {
+                  readonly property var seg: modelData
+                  visible: seg.used_mb > 0
+                  width: vramTrack.totalMb > 0
+                         ? vramTrack.width * Math.max(0, Math.min(1,
+                             seg.used_mb / vramTrack.totalMb))
+                         : 0
+                  height: vramTrack.height
+                  color: root.segColor(seg.kind)
+                  opacity: seg.kind === "other" ? 1.0 : 0.8
+                }
+              }
+            }
+
+            // Fallback for a daemon too old to send segments: the single fill
+            // this replaced, rather than an empty track.
             Rectangle {
-              width: parent.width * Math.max(0, Math.min(1,
-                     ((root.payload.vram || {}).used_mb || 0)
-                     / ((root.payload.vram || {}).total_mb || 1)))
+              visible: root.vramSegments.length === 0
+              width: vramTrack.totalMb > 0
+                     ? vramTrack.width * Math.max(0, Math.min(1,
+                         ((root.payload.vram || {}).used_mb || 0) / vramTrack.totalMb))
+                     : 0
               height: parent.height
               color: Color.accent
               opacity: 0.65
+            }
+          }
+
+          // -- legend --
+          //
+          // A two-colour bar with no key is a puzzle, and which colour is
+          // which is exactly the thing being asked.
+          Flow {
+            Layout.fillWidth: true
+            spacing: Style.space(14)
+            visible: root.vramSegments.length > 0
+            Repeater {
+              model: root.vramSegments
+              Row {
+                readonly property var seg: modelData
+                visible: seg.used_mb > 0
+                spacing: Style.space(5)
+                Rectangle {
+                  anchors.verticalCenter: parent.verticalCenter
+                  width: Style.space(9); height: Style.space(9)
+                  radius: Style.space(2)
+                  color: root.segColor(seg.kind)
+                  opacity: seg.kind === "other" ? 1.0 : 0.8
+                }
+                Text {
+                  text: root.segLabel(seg.kind) + "  "
+                        + (seg.used_mb / 1024).toFixed(1) + " GB"
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption
+                  color: Color.foreground
+                }
+                Text {
+                  text: seg.label
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption
+                  color: Qt.darker(Color.muted, 1.1)
+                }
+              }
             }
           }
           RowLayout {

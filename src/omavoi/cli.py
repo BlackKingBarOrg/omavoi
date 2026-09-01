@@ -281,6 +281,37 @@ def _is_remote(backend: str, base_url: str) -> bool:
     return host not in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
 
 
+def _vram_split(engines: dict[str, Any]) -> dict[str, Any]:
+    """VRAM, with the part our own two model families hold broken out.
+
+    One bar for "13.4 of 16.3 GB used" does not say whether the speech model
+    or the LLM is the thing filling it, which is the only actionable question
+    when a chain stops fitting.
+    """
+    from . import gpu
+
+    info = gpu.vram()
+    if not info:
+        return info
+    speech = engines.get("speech") or {}
+    speech_pid = int(speech.get("pid", 0) or 0) if speech.get("live") else 0
+    llms = [e for e in (engines.get("llm") or []) if e.get("live") and e.get("pid")]
+    llm_pids = {int(e["pid"]) for e in llms}
+
+    labels = {
+        "speech": (f"{speech.get('engine', '')} {speech.get('model', '')}".strip()
+                   if speech_pid else ""),
+        "llm": ", ".join(f"{e['name']} {e['model']}" for e in llms),
+        "other": "",
+    }
+    out = dict(info)
+    out["segments"] = [
+        seg | {"label": labels.get(seg["kind"], "")}
+        for seg in gpu.segments(int(info.get("used_mb", 0)), speech_pid, llm_pids)
+    ]
+    return out
+
+
 def _llm_live(engines: dict[str, Any], name: str) -> dict[str, Any]:
     """The daemon's view of one LLM, merged into its config row.
 
@@ -377,7 +408,7 @@ def cmd_model(args: argparse.Namespace) -> int:
                               "llm": llms,
                               "engines": engines or None,
                               "daemon": bool(live),
-                              "vram": gpu.vram()}, ensure_ascii=False, indent=2))
+                              "vram": _vram_split(engines)}, ensure_ascii=False, indent=2))
             return 0
         print(f"{BOLD}  {'model':<24}{'size':>7}  {'state':<10}notes{RESET}")
         groups = [
