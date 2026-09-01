@@ -85,6 +85,16 @@ class Transcript:
         }
 
 
+class NotReady(RuntimeError):
+    """The machine is not set up for this backend yet.
+
+    Distinct from a transient failure because it will not fix itself: a
+    missing package, absent weights, an API backend with no key. The daemon
+    exits with a code systemd is told not to retry, so a fresh install shows
+    one actionable line instead of five stack traces and a start-limit.
+    """
+
+
 class Backend(Protocol):
     name: str
 

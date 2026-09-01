@@ -223,7 +223,13 @@ def pull(key: str) -> Path:
         downloaded = hf_hub_download(entry.repo, entry.filename, local_dir=str(target))
         return Path(downloaded)
 
-    from faster_whisper.utils import download_model
+    try:
+        from faster_whisper.utils import download_model
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            f"{key} is a CTranslate2 model, which needs faster-whisper. "
+            f"Run: uv tool install --reinstall omavoi[cuda]"
+        ) from exc
 
     return Path(download_model(entry.repo, cache_dir=str(root), local_files_only=False))
 

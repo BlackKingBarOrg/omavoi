@@ -25,7 +25,7 @@ import numpy as np
 
 from .. import models
 from .api_whisper import encode_wav
-from .base import Segment, Transcript
+from .base import NotReady, Segment, Transcript
 
 log = logging.getLogger(__name__)
 
@@ -105,13 +105,13 @@ class WhisperCppBackend:
 
         binary = self.binary or find_server()
         if not binary:
-            raise RuntimeError(
+            raise NotReady(
                 "no whisper.cpp server binary found. On Arch/Omarchy: "
                 "sudo pacman -S --needed whisper-cpp ggml-cpu ggml-vulkan"
             )
         path = models.local_path(self.model_key)
         if path is None:
-            raise RuntimeError(
+            raise NotReady(
                 f"{self.model_key} is not downloaded. Run: omavoi model pull {self.model_key}"
             )
         self._model_path = str(path)
@@ -142,7 +142,9 @@ class WhisperCppBackend:
                 out = b""
                 if self._proc.stdout is not None:
                     out = self._proc.stdout.read() or b""
-                raise RuntimeError(
+                # Usually a missing ggml compute backend, which no amount of
+                # restarting will conjure.
+                raise NotReady(
                     "whisper.cpp server exited on startup:\n" + _explain(out)
                 )
             try:

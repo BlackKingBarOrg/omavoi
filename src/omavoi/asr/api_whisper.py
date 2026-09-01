@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 
 from .. import secrets
-from .base import Segment, Transcript
+from .base import NotReady, Segment, Transcript
 
 log = logging.getLogger(__name__)
 
@@ -90,10 +90,10 @@ class ApiWhisperBackend:
         import httpx
 
         if not self.base_url:
-            raise RuntimeError(f"unknown provider {self.provider!r} and no base_url set")
+            raise NotReady(f"unknown provider {self.provider!r} and no base_url set")
         self._key = secrets.resolve(self.key_env, self.key_name)
         if self.key_env and not self._key:
-            raise RuntimeError(
+            raise NotReady(
                 f"no API key: set {self.key_env}, or add "
                 f'{self.key_name} = "..." to ~/.config/omavoi/secrets.toml'
             )

@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 
 from .. import cudaenv, models
-from .base import Segment, Transcript
+from .base import NotReady, Segment, Transcript
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +55,14 @@ class LocalWhisperBackend:
 
     def load(self) -> None:
         cudaenv.preload()
-        from faster_whisper import WhisperModel
+        try:
+            from faster_whisper import WhisperModel
+        except ModuleNotFoundError as exc:
+            raise NotReady(
+                "the CUDA engine needs faster-whisper, which is not installed. "
+                "Run: uv tool install --reinstall omavoi[cuda] — or pick "
+                "Local / Vulkan, which needs no extra"
+            ) from exc
 
         source = models.resolve_for_load(self.model_id)
         kwargs: dict[str, Any] = {

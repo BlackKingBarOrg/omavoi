@@ -4,9 +4,41 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import Backend, Segment, Transcript
+from .base import Backend, NotReady, Segment, Transcript
 
-__all__ = ["Backend", "Segment", "Transcript", "build", "BACKENDS"]
+__all__ = ["Backend", "NotReady", "Segment", "Transcript", "build", "BACKENDS",
+           "why_unavailable"]
+
+
+def why_unavailable(name: str) -> str:
+    """Why this backend cannot run here, or "" if it can.
+
+    Checked before a command writes the backend into the config, not after.
+    Writing one the daemon cannot load is how `speech.backend = api` once left
+    a daemon failing on every start for most of a day while the old process
+    kept serving.
+    """
+    if name == "local-whispercpp":
+        from .local_whispercpp import find_server
+
+        if find_server() is None:
+            return ("whisper.cpp is not installed. "
+                    "Run: sudo pacman -S --needed whisper-cpp ggml-cpu ggml-vulkan")
+        return ""
+    if name == "local-whisper":
+        import importlib.util
+
+        if importlib.util.find_spec("faster_whisper") is None:
+            return ("the CUDA engine needs faster-whisper. "
+                    "Run: uv tool install --reinstall omavoi[cuda]")
+        return ""
+    if name == "api":
+        from .. import secrets
+
+        return "" if secrets.resolve("OPENAI_API_KEY", "openai") else (
+            "the API backend needs a key: set OPENAI_API_KEY, or put it in "
+            "~/.config/omavoi/secrets.toml")
+    return ""
 
 # name -> (aliases, one-line description)
 BACKENDS: dict[str, tuple[tuple[str, ...], str]] = {

@@ -16,12 +16,19 @@ dependencies = [
     "huggingface-hub>=0.24",
     "evdev>=1.7",
     "pypinyin>=0.53",
-    "faster-whisper>=1.1.0",
 ]
 
 [project.optional-dependencies]
+# faster-whisper is one of three speech backends and not the default one. It
+# drags in CTranslate2, PyAV and onnxruntime — about 300 MB of the 400 MB a
+# plain install used to weigh, for an engine that only runs on NVIDIA. Both of
+# its import sites are inside functions, so this costs no code.
+ct2 = [
+    "faster-whisper>=1.1.0",
+]
 # CT2 needs cuDNN 9 / cuBLAS at runtime; Omarchy ships neither system-wide.
 cuda = [
+    "faster-whisper>=1.1.0",
     "nvidia-cublas-cu12>=12.8",
     "nvidia-cudnn-cu12>=9.1",
 ]

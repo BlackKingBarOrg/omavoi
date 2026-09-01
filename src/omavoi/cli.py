@@ -16,7 +16,7 @@ from typing import Any
 
 import numpy as np
 
-from . import __version__, config, daemon, models, paths
+from . import __version__, asr, config, daemon, models, paths
 
 log = logging.getLogger("omavoi")
 
@@ -76,6 +76,13 @@ def cmd_daemon(args: argparse.Namespace) -> int:
     except daemon.AlreadyRunning as exc:
         print(f"{RED}{exc}{RESET}", file=sys.stderr)
         return 1
+    except asr.NotReady as exc:
+        # EX_CONFIG. The unit sets RestartPreventExitStatus=78, so a machine
+        # that is simply not set up yet reports one line instead of five stack
+        # traces and a start-limit — and the first-run screen can read it.
+        print(f"{RED}not ready:{RESET} {exc}", file=sys.stderr)
+        log.error("not ready: %s", exc)
+        return 78
     except KeyboardInterrupt:
         pass
     return 0
@@ -472,6 +479,14 @@ def cmd_model(args: argparse.Namespace) -> int:
         if not models.is_downloaded(key):
             print(f"{YELLOW}{key} is not downloaded yet, fetching{RESET}")
             models.pull(key)
+        why = asr.why_unavailable(spec.backend)
+        if why and not getattr(args, "force", False):
+            print(f"{RED}{key} runs on {spec.backend}, which is not usable here"
+                  f"{RESET}", file=sys.stderr)
+            print(f"{DIM}{why}{RESET}", file=sys.stderr)
+            print(f"{DIM}nothing was changed; repeat with --force to switch anyway"
+                  f"{RESET}", file=sys.stderr)
+            return 1
         config.set_path("speech.backend", spec.backend)
         config.set_path("speech.model", spec.key if spec.fmt == models.GGML else spec.id)
         print(f"{GREEN}ok{RESET} using {key} via {spec.backend} "
@@ -1428,6 +1443,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("action", choices=["list", "pull", "rm", "use"])
     p.add_argument("models", nargs="*", help="e.g. large-v3 or ggml:large-v3")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--force", action="store_true",
+                   help="switch even to a backend that is not installed here")
     p.set_defaults(func=cmd_model)
 
     p = sub.add_parser("config", help="inspect and change settings")
