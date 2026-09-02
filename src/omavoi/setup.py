@@ -136,7 +136,13 @@ def check(cfg: dict[str, Any]) -> Report:
             detail = ("whisper.cpp is installed but no CPU ggml backend is — "
                       "it will abort while loading the model")
         else:
-            detail = f"{server}, backends: {', '.join(sorted(backends)) or 'none'}"
+            # Naming every plugin listed a dozen CPU microarchitectures twice,
+            # on the first screen a new user reads. What matters is which
+            # accelerators are there, not which -march variants.
+            kinds = sorted({
+                b.split("libggml-")[-1].split(".")[0].split("-")[0] for b in backends
+            })
+            detail = f"{server}, backends: {', '.join(kinds) or 'none'}"
         steps.append(Step(
             "engine", "Speech engine (Vulkan)", ok,
             detail=detail,
@@ -173,6 +179,37 @@ def check(cfg: dict[str, Any]) -> Report:
         detail=str(models.local_path(key)) if have else f"not downloaded, {size}",
         command=f"omavoi model pull {key}",
     ))
+
+    # 3b. The LLM engine, but only when a mode actually reaches for a local
+    # one. Nothing needs it for plain dictation, and the failure it causes is
+    # the quietest in the program: the step falls through, the previous text is
+    # kept, and the take is indistinguishable from one with no LLM at all.
+    wants_local = sorted({
+        name for name, entry in (cfg.get("llm") or {}).items()
+        if str(entry.get("backend", "")).strip().lower()
+        in ("llama-local", "llama.cpp", "llamacpp")
+        and any(str(step.get("llm", "")) == name
+                for mode in (cfg.get("modes") or {}).values()
+                for step in (mode.get("steps") or []))
+    })
+    if wants_local:
+        from .llm.llama_local import find_server
+
+        binary = find_server()
+        used_by = ", ".join(wants_local)
+        steps.append(Step(
+            "llm-engine", "LLM engine (llama.cpp)", binary is not None,
+            detail=binary if binary else f"llama-server is not installed, needed by {used_by}",
+            command="sudo pacman -S --needed llama-cpp",
+            needs_root=True,
+            # Optional: plain dictation does not need it. Without this the
+            # console hid its own tabs behind the checklist because one engine
+            # nobody had asked for yet was absent.
+            optional=True,
+            note="About 7 MB. Without it a mode's LLM step falls through and the "
+                 "take arrives as plain dictation with nothing on screen to say why "
+                 "— the reason is in the History tab.",
+        ))
 
     # 4. The hotkey. This is the one step that cannot be finished in place.
     group = _in_input_group()
