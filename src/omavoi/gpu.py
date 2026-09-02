@@ -58,6 +58,80 @@ def _rss_mb(pid: int) -> int:
     return resident * os.sysconf("SC_PAGE_SIZE") // (1024 * 1024)
 
 
+# fdinfo prints a unit beside each figure, and the kernel is free to pick a
+# different one per line.
+_DRM_UNITS = {"B": 1 / 1024, "KiB": 1, "MiB": 1024, "GiB": 1024 * 1024}
+
+
+def _drm_mem_kib(pid: int) -> int:
+    """GPU memory one process holds, from the DRM fdinfo the kernel exports.
+
+    RSS is the wrong question for a model on the GPU. Weights uploaded through
+    Vulkan become buffer objects, which are not pages of the process that owns
+    them: whisper-server shows 111 MB of RSS while holding 1.9 GB of GTT. Ask
+    RSS and a 547 MB model reads as free, and the bar drops the whole cost
+    into "other programs" -- the one thing it exists to tell apart.
+
+    Summed over regions from drm-total-*, not drm-resident-*. Which region
+    holds a buffer is the driver's business and it moves them: idle, xe walks
+    the weights out of gtt into system, where it publishes a total and no
+    resident figure at all. Reading resident watched the same model swing
+    between 1.9 GB and 90 MB depending on how recently anyone had spoken,
+    while the totals stayed put. drm-shared-* is a subset rather than a
+    further amount, so it is left out; and one process can hold several fds
+    against the same client, so the client id is what deduplicates them.
+
+    A unit is required, which is also what separates a memory line from
+    drm-total-cycles-*: the engine counters share the prefix, carry no unit,
+    and would otherwise add trillions of KiB to the bar.
+    """
+    try:
+        fds = os.listdir(f"/proc/{pid}/fdinfo")
+    except OSError:
+        return 0
+    total = 0
+    seen: set[str] = set()
+    for fd in fds:
+        try:
+            with open(f"/proc/{pid}/fdinfo/{fd}", encoding="ascii",
+                      errors="replace") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        if "drm-driver" not in text:
+            continue
+        fields: dict[str, str] = {}
+        for line in text.splitlines():
+            key, _, value = line.partition(":")
+            fields[key.strip()] = value.strip()
+        # A driver that does not report a client id gets no deduplication
+        # rather than having every one of its fds collapse into one.
+        client = fields.get("drm-client-id") or f"fd:{fd}"
+        if client in seen:
+            continue
+        seen.add(client)
+        for key, value in fields.items():
+            if not key.startswith("drm-total-"):
+                continue
+            parts = value.split()
+            if len(parts) < 2 or not parts[0].isdigit():
+                continue
+            unit = _DRM_UNITS.get(parts[1])
+            if unit is None:
+                continue
+            total += int(int(parts[0]) * unit)
+    return total
+
+
+def _engine_mem_mb(pid: int) -> int:
+    """What one engine costs on unified memory: its pages plus its buffers.
+
+    The two do not overlap -- a buffer object is not mapped into the process
+    holding it -- so they add rather than one covering the other.
+    """
+    return _rss_mb(pid) + _drm_mem_kib(pid) // 1024
+
+
 def _pci_name(slot: str) -> str:
     """The card's marketing name, when pciutils is installed to say it."""
     if not slot or shutil.which("lspci") is None:
@@ -222,10 +296,10 @@ def segments(total_used_mb: int, speech_pid: int, llm_pids: set[int]) -> list[di
     """
     by_pid = usage_by_pid()
     if shutil.which("nvidia-smi") is None:
-        # No compute-app list to ask. On unified memory a model's cost is its
-        # resident pages, and "other" is then the rest of the machine -- which
-        # is the same catch-all as on a card, for the same reason.
-        by_pid = {pid: _rss_mb(pid) for pid in {speech_pid, *llm_pids} if pid}
+        # No compute-app list to ask, so ask the kernel per process. "other" is
+        # then the rest of the machine -- the same catch-all as on a card, for
+        # the same reason.
+        by_pid = {pid: _engine_mem_mb(pid) for pid in {speech_pid, *llm_pids} if pid}
     speech_mb = by_pid.get(speech_pid, 0) if speech_pid else 0
     llm_mb = sum(by_pid.get(p, 0) for p in llm_pids)
     return [
