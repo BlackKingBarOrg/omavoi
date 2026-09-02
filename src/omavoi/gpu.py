@@ -8,6 +8,8 @@ assertion several screens long, and the step then falls through silently.
 
 from __future__ import annotations
 
+import os
+import shlex
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -21,7 +23,105 @@ class Holder:
     used_mb: int
 
 
-def vram() -> dict[str, Any]:
+def _meminfo_mb() -> tuple[int, int]:
+    """Total and in-use system memory in MB, from /proc/meminfo.
+
+    MemAvailable rather than MemFree: page cache is reclaimable, and counting
+    it as used shows an idle machine at 90%.
+    """
+    total = avail = 0
+    try:
+        with open("/proc/meminfo", encoding="ascii") as fh:
+            for line in fh:
+                if line.startswith("MemTotal:"):
+                    total = int(line.split()[1])
+                elif line.startswith("MemAvailable:"):
+                    avail = int(line.split()[1])
+                    if total:
+                        break
+    except (OSError, ValueError, IndexError):
+        return 0, 0
+    return total // 1024, max(0, (total - avail) // 1024)
+
+
+def _rss_mb(pid: int) -> int:
+    """Resident memory of one process in MB.
+
+    On a unified-memory GPU the weights are ordinary system pages, so RSS is
+    what the model actually costs -- there is no separate pool to query.
+    """
+    try:
+        with open(f"/proc/{pid}/statm", encoding="ascii") as fh:
+            resident = int(fh.read().split()[1])
+    except (OSError, ValueError, IndexError):
+        return 0
+    return resident * os.sysconf("SC_PAGE_SIZE") // (1024 * 1024)
+
+
+def _pci_name(slot: str) -> str:
+    """The card's marketing name, when pciutils is installed to say it."""
+    if not slot or shutil.which("lspci") is None:
+        return ""
+    try:
+        out = subprocess.run(["lspci", "-mm", "-s", slot],
+                             capture_output=True, timeout=3, check=False)
+        if out.returncode != 0:
+            return ""
+        # -mm quotes each field: slot, class, vendor, device, then revision
+        # and subsystem. Field 3 is the one a person would recognise.
+        fields = shlex.split(out.stdout.decode())
+        return fields[3] if len(fields) > 3 else ""
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return ""
+
+
+def _integrated() -> dict[str, str]:
+    """The integrated GPU, when that is all this machine has.
+
+    Returns {} for anything carrying memory of its own, because a pool has a
+    real total to report and this fallback would only paper over it:
+      - Intel discrete cards publish lmem_total_bytes.
+      - amdgpu publishes mem_info_vram_total, but on an APU that is a BIOS
+        carve-out the runtime spills past into GTT, so neither number alone
+        is the budget. That one wants a case of its own, not this one.
+    """
+    try:
+        cards = sorted(c for c in os.listdir("/sys/class/drm")
+                       if c.startswith("card") and "-" not in c)
+    except OSError:
+        return {}
+
+    found: dict[str, str] = {}
+    for card in cards:
+        dev = f"/sys/class/drm/{card}/device"
+        try:
+            entries = set(os.listdir(f"/sys/class/drm/{card}")) | set(os.listdir(dev))
+        except OSError:
+            continue
+        # Any card with its own memory anywhere on the machine disqualifies
+        # the whole fallback -- that is the card the models will land on.
+        if entries & {"lmem_total_bytes", "mem_info_vram_total"}:
+            return {}
+        if found:
+            continue
+        try:
+            driver = os.path.basename(os.readlink(f"{dev}/driver"))
+        except OSError:
+            continue
+        slot = ""
+        try:
+            with open(f"{dev}/uevent", encoding="ascii") as fh:
+                for line in fh:
+                    if line.startswith("PCI_SLOT_NAME="):
+                        slot = line.strip().split("=", 1)[1]
+                        break
+        except OSError:
+            pass
+        found = {"driver": driver, "slot": slot, "name": _pci_name(slot)}
+    return found
+
+
+def _nvidia_vram() -> dict[str, Any]:
     """Used and total VRAM in MB, or {} when there is no NVIDIA GPU."""
     if shutil.which("nvidia-smi") is None:
         return {}
@@ -40,6 +140,35 @@ def vram() -> dict[str, Any]:
                 "free_mb": max(0, total_mb - used_mb)}
     except (subprocess.SubprocessError, OSError, ValueError, IndexError):
         return {}
+
+
+def vram() -> dict[str, Any]:
+    """Used and total memory the GPU draws on, or {} when there is nothing to say.
+
+    Two shapes come back, and callers have to tell them apart. A discrete
+    NVIDIA card owns a pool and nvidia-smi reports it. An integrated GPU owns
+    nothing: its device memory *is* system RAM -- Vulkan advertises the device
+    as UMA and llama.cpp allocates from ordinary pages -- so the honest total
+    there is MemTotal, and the payload carries `unified` to say so rather than
+    letting a caller print it as if a card had that much to itself.
+    """
+    info = _nvidia_vram()
+    if info:
+        return info
+    card = _integrated()
+    if not card:
+        return {}
+    total_mb, used_mb = _meminfo_mb()
+    if not total_mb:
+        return {}
+    return {
+        "name": card.get("name") or "integrated GPU",
+        "driver": card.get("driver", ""),
+        "unified": True,
+        "used_mb": used_mb,
+        "total_mb": total_mb,
+        "free_mb": max(0, total_mb - used_mb),
+    }
 
 
 def compute_apps() -> list[Holder]:
@@ -92,6 +221,11 @@ def segments(total_used_mb: int, speech_pid: int, llm_pids: set[int]) -> list[di
     beside it is worse than one honest catch-all.
     """
     by_pid = usage_by_pid()
+    if shutil.which("nvidia-smi") is None:
+        # No compute-app list to ask. On unified memory a model's cost is its
+        # resident pages, and "other" is then the rest of the machine -- which
+        # is the same catch-all as on a card, for the same reason.
+        by_pid = {pid: _rss_mb(pid) for pid in {speech_pid, *llm_pids} if pid}
     speech_mb = by_pid.get(speech_pid, 0) if speech_pid else 0
     llm_mb = sum(by_pid.get(p, 0) for p in llm_pids)
     return [
@@ -118,9 +252,12 @@ def fits(weights_mb: int, ctx_size: int = 4096, gpu_layers: int = 99) -> dict[st
     """Whether the model fits in what is free right now, and why not."""
     info = vram()
     want = needed_mb(weights_mb, ctx_size, gpu_layers)
-    if not info:
-        # No NVIDIA GPU to interrogate: do not block, the runtime will cope
-        # or fail loudly on its own.
+    if not info or info.get("unified"):
+        # Nothing with a pool of its own to interrogate: either no NVIDIA GPU,
+        # or an integrated one whose budget is system RAM. Do not block. The
+        # runtime will cope or fail loudly, and overcommitting shared memory
+        # costs swap rather than the allocation failure this guard is for --
+        # a different conversation, and not one to have by refusing to start.
         return {"known": False, "fits": True, "needed_mb": want}
     free = int(info.get("free_mb", 0))
     ok = free >= want
@@ -157,14 +294,17 @@ def fits_chain(wants: list[dict[str, Any]], live: set[str],
                          int(w.get("ctx_size", 4096)),
                          int(w.get("gpu_layers", 99))) for w in pending)
     out: dict[str, Any] = {
-        "known": bool(info),
+        # Unified memory is not knowledge of a pool: claiming otherwise would
+        # have the UI print a budget it cannot show a total for.
+        "known": bool(info) and not info.get("unified"),
         "fits": True,
         "needed_mb": want,
         "pending": [w["key"] for w in pending],
     }
-    if not info:
-        # No NVIDIA GPU to interrogate: do not block. The runtime will cope or
-        # fail loudly on its own, and guessing here would block a working setup.
+    if not info or info.get("unified"):
+        # As in fits(): no pool of its own to interrogate, so do not block. The
+        # runtime will cope or fail loudly, and guessing here would block a
+        # working setup.
         return out
     free = int(info.get("free_mb", 0))
     available = free + max(0, int(reclaimable_mb))
