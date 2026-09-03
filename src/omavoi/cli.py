@@ -495,6 +495,24 @@ def cmd_model(args: argparse.Namespace) -> int:
     return 1
 
 
+def _why_not_that_llm_model(key: str, value: str) -> str:
+    """Why `llm.<name>.model = value` would not work, or "" if it would."""
+    parts = str(key).split(".")
+    if len(parts) != 3 or parts[0] != "llm" or parts[2] != "model":
+        return ""
+    spec = models.spec(value)
+    if spec is None:
+        known = ", ".join(m.key for m in models.CATALOG if m.kind == models.LLM)
+        return f"{value} is not a model in the catalogue. Local ones: {known}"
+    if spec.kind != models.LLM:
+        return f"{value} is a speech model, not an LLM"
+    if not models.is_downloaded(value):
+        gb = spec.size_mb / 1024
+        return (f"{value} is not downloaded ({gb:.1f} GB). "
+                f"Run: omavoi model pull {value}")
+    return ""
+
+
 def cmd_config(args: argparse.Namespace) -> int:
     path = paths.config_file()
     if args.action == "path":
@@ -521,6 +539,15 @@ def cmd_config(args: argparse.Namespace) -> int:
             return 1
         return 0
     if args.action == "set":
+        # Pointing an LLM at weights that are not there is accepted by the
+        # config and then falls through on every take, which reads as the LLM
+        # step doing nothing rather than as a missing download.
+        why = _why_not_that_llm_model(args.key, args.value)
+        if why and not getattr(args, "force", False):
+            print(f"{RED}{why}{RESET}", file=sys.stderr)
+            print(f"{DIM}nothing was changed; repeat with --force to set it anyway"
+                  f"{RESET}", file=sys.stderr)
+            return 1
         try:
             value = config.set_path(args.key, args.value)
         except KeyError:

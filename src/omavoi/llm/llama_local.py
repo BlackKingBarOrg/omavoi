@@ -68,6 +68,9 @@ class LlamaLocalBackend:
         self._client: Any = None
         self._url = ""
         self._fail = ""
+        # What _fail happened with, so installing the binary or downloading the
+        # weights re-arms the attempt instead of being remembered as broken.
+        self._fail_key: tuple[str, str] = ("", "")
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -84,7 +87,10 @@ class LlamaLocalBackend:
             "live": live,
             "url": self._url if live else "",
             "pid": self._proc.pid if live else 0,
-            "problem": self._fail,
+            # Asked, not remembered: the preconditions are no longer cached, so
+            # reading _fail here would have reported a model as fine while
+            # every take fell through on a missing binary.
+            "problem": self.why_not(),
         }
 
     def describe(self) -> str:
@@ -92,24 +98,43 @@ class LlamaLocalBackend:
         state = "running" if st["live"] else "not started"
         return f"{self.name}: llama.cpp {st['model']} ({state})"
 
+    def why_not(self) -> str:
+        """Why a take would fall through right now, without starting anything."""
+        if self._proc is not None and self._proc.poll() is None:
+            return ""
+        if not (self.binary or find_server()):
+            return ("llama-server is not installed. "
+                    "On Arch/Omarchy: sudo pacman -S --needed llama-cpp")
+        if models.local_path(self.model_key) is None:
+            return (f"{self.model_key} is not downloaded. "
+                    f"Run: omavoi model pull {self.model_key}")
+        return self._fail
+
     def _ensure(self) -> str:
         """Start the server if it is not up. Returns an error string, or ""."""
         if self._proc is not None and self._proc.poll() is None:
             return ""
-        if self._fail:
-            return self._fail
-
+        # The two things the user fixes from outside are checked fresh every
+        # time, never cached: installing llama-cpp and downloading the weights
+        # both leave the config untouched, so nothing drops this object and a
+        # remembered "not downloaded" outlived the download — every later take
+        # fell through without looking at the disk again.
         binary = self.binary or find_server()
         if not binary:
-            self._fail = ("llama-server is not installed. "
-                          "On Arch/Omarchy: sudo pacman -S --needed llama-cpp")
-            return self._fail
+            return ("llama-server is not installed. "
+                    "On Arch/Omarchy: sudo pacman -S --needed llama-cpp")
 
         path = models.local_path(self.model_key)
         if path is None:
-            self._fail = (f"{self.model_key} is not downloaded. "
-                          f"Run: omavoi model pull {self.model_key}")
+            return (f"{self.model_key} is not downloaded. "
+                    f"Run: omavoi model pull {self.model_key}")
+
+        # A server that failed to start is worth remembering — respawning a
+        # broken one on every take is its own problem — but only for the
+        # binary and weights it failed with. Either changing re-arms it.
+        if self._fail and self._fail_key == (binary, str(path)):
             return self._fail
+        self._fail = ""
 
         # Check before spawning rather than letting llama.cpp discover it.
         # Its own failure is a multi-screen assertion, and by the time it
@@ -151,6 +176,7 @@ class LlamaLocalBackend:
                 if self._proc.stdout is not None:
                     out = self._proc.stdout.read() or b""
                 self._fail = "llama-server exited on startup:\n" + _explain(out)
+                self._fail_key = (binary, str(path))
                 return self._fail
             try:
                 r = self._client.get(f"{self._url}/health", timeout=1.0)
@@ -160,6 +186,7 @@ class LlamaLocalBackend:
             except Exception:
                 time.sleep(0.4)
         self._fail = f"llama-server was not ready within {self.startup_timeout:.0f}s"
+        self._fail_key = (binary, str(path))
         return self._fail
 
     def close(self) -> None:
