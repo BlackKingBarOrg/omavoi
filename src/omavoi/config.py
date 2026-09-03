@@ -365,6 +365,14 @@ def load(path: Path | None = None) -> dict[str, Any]:
     return merged
 
 
+def _speech_spec(key: str) -> Any:
+    """The catalogue entry for a speech model key, or None."""
+    from . import models
+
+    spec = models.spec(key)
+    return spec if spec is not None and spec.kind == models.SPEECH else None
+
+
 def validate(cfg: dict[str, Any]) -> list[str]:
     """Non-fatal complaints, surfaced by `omavoi doctor`."""
     from . import asr
@@ -395,6 +403,14 @@ def validate(cfg: dict[str, Any]) -> list[str]:
         problems.append("audio.preroll_seconds cannot be negative")
 
     modes = cfg.get("modes", {})
+    for name, mode in modes.items():
+        want = str((mode or {}).get("speech_model", "") or "")
+        if not want:
+            continue
+        if _speech_spec(want) is None:
+            problems.append(
+                f"modes.{name}.speech_model={want!r} is not a speech model in the catalogue"
+            )
     if "default" not in modes:
         problems.append("no [modes.default]; there must be a fallback mode")
     for name, mode in modes.items():

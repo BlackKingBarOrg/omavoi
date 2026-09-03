@@ -172,6 +172,42 @@ class Daemon:
         mode = modes.resolve(self.cfg, None, self.forced_mode)
         return {str(step.llm) for step in (mode.steps or []) if getattr(step, "llm", "")}
 
+    def _apply_mode_speech_model(self) -> None:
+        """Load the weights the mode in use names, if they differ.
+
+        Done when the mode changes rather than when the take arrives: a swap
+        measured 3.7 s from spawn to a usable transcription for large-v3, and
+        that belongs to the switch, not to the sentence you are dictating. A
+        mode that names nothing leaves whatever is loaded alone.
+        """
+        if self._state != IDLE:
+            # Mid-take. The next mode change or the end of this take gets it.
+            return
+        mode = modes.resolve(self.cfg, None, self.forced_mode)
+        want = str(getattr(mode, "speech_model", "") or "") or str(
+            self.cfg["speech"].get("model", "")
+        )
+        try:
+            loaded = str(self.backend.state().get("model", ""))
+        except Exception:
+            return
+        if not want or want == loaded:
+            return
+        use = getattr(self.backend, "use", None)
+        if not callable(use):
+            return
+        with self._lock:
+            self._set_state(BUSY)
+        try:
+            use(want)
+            log.info("mode %s: speech model is now %s", mode.name, want)
+        except Exception as exc:
+            # Keeping the old weights is better than a mode that cannot hear.
+            log.error("mode %s wanted speech model %s: %s", mode.name, want, exc)
+        finally:
+            with self._lock:
+                self._set_state(IDLE)
+
     def _release_idle_llms(self) -> None:
         """Stop local LLM servers the current mode does not use.
 
@@ -316,6 +352,7 @@ class Daemon:
                 return {"ok": False, "error": f"no such mode: {name}"}
             self.forced_mode = name
             self._release_idle_llms()
+            self._apply_mode_speech_model()
             return {"ok": True, "forced_mode": name}
         if cmd == "start":
             return self.begin()
@@ -352,6 +389,7 @@ class Daemon:
         self.pipeline = Pipeline(new, self.backend, Injector(new), History(new),
                                  registry=llms)
         self._release_idle_llms()
+        self._apply_mode_speech_model()
         log.info("config reloaded%s", "; speech settings changed, restart the daemon" if model_changed else "")
         return {"ok": True, "reloaded": True, "model_restart_required": model_changed}
 

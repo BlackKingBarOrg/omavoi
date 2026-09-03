@@ -104,6 +104,14 @@ class Backend(Protocol):
     def describe(self) -> str:
         """One line for `omavoi status`."""
 
+    def use(self, model_key: str) -> None:
+        """Load a different model, if this backend can.
+
+        A mode may name its own speech model — turbo for a terminal, large for
+        prose — and switching modes should switch the weights rather than ask
+        for a restart. Backends that cannot swap raise NotReady and say so.
+        """
+
     def state(self) -> dict[str, Any]:
         """What is actually running, structured, for the UI.
 

@@ -513,6 +513,86 @@ def _why_not_that_llm_model(key: str, value: str) -> str:
     return ""
 
 
+def cmd_llm(args: argparse.Namespace) -> int:
+    """Manage the [llm.<name>] entries a mode's steps reach for by name.
+
+    An entry is the unit a mode names, so running two local models means two
+    entries — one per model — and each mode's step picks the one it wants.
+    Creating one needed editing the config by hand, because `config set`
+    refuses a path that is not already there.
+    """
+    cfg = config.load()
+    entries: dict[str, Any] = cfg.setdefault("llm", {})
+    rest = list(args.rest)
+
+    if args.action == "list":
+        if args.json:
+            print(json.dumps(entries, ensure_ascii=False, indent=2))
+            return 0
+        used: dict[str, list[str]] = {}
+        for mode_name, mode in (cfg.get("modes") or {}).items():
+            for step in mode.get("steps") or []:
+                used.setdefault(str(step.get("llm", "")), []).append(mode_name)
+        for name, entry in sorted(entries.items()):
+            by = ", ".join(sorted(used.get(name, []))) or f"{DIM}unused{RESET}"
+            print(f"  {name:12s} {entry.get('backend', '?'):14s} "
+                  f"{str(entry.get('model', '')):24s} {by}")
+        return 0
+
+    if args.action == "add":
+        if len(rest) < 2:
+            print(f"{RED}usage: omavoi llm add <name> <llm-model-key>{RESET}", file=sys.stderr)
+            return 1
+        name, key = rest[0], rest[1]
+        if name in entries and not args.force:
+            print(f"{RED}[llm.{name}] already exists{RESET}", file=sys.stderr)
+            print(f"{DIM}point it somewhere else with: omavoi config set "
+                  f"llm.{name}.model <key>{RESET}", file=sys.stderr)
+            return 1
+        spec = models.spec(key)
+        if spec is None or spec.kind != models.LLM:
+            known = ", ".join(m.key for m in models.CATALOG if m.kind == models.LLM)
+            print(f"{RED}{key} is not an LLM in the catalogue{RESET}", file=sys.stderr)
+            print(f"{DIM}one of: {known}{RESET}", file=sys.stderr)
+            return 1
+        if not models.is_downloaded(key) and not args.force:
+            print(f"{RED}{key} is not downloaded ({spec.size_mb / 1024:.1f} GB){RESET}",
+                  file=sys.stderr)
+            print(f"{DIM}omavoi model pull {key}{RESET}", file=sys.stderr)
+            return 1
+        entries[name] = {"backend": "llama-local", "model": key}
+        config.write(cfg)
+        print(f"{GREEN}ok{RESET} [llm.{name}] runs {key}")
+        print(f"{DIM}a mode reaches it with: omavoi mode step <mode> add {name}{RESET}")
+        return 0
+
+    if args.action == "rm":
+        if not rest:
+            print(f"{RED}usage: omavoi llm rm <name>{RESET}", file=sys.stderr)
+            return 1
+        name = rest[0]
+        if name not in entries:
+            print(f"{RED}no [llm.{name}]{RESET}", file=sys.stderr)
+            return 1
+        # A step naming a removed entry falls through on every take, which is
+        # the quietest failure this program has.
+        naming = sorted({
+            mode_name for mode_name, mode in (cfg.get("modes") or {}).items()
+            for step in (mode.get("steps") or [])
+            if str(step.get("llm", "")) == name
+        })
+        if naming and not args.force:
+            print(f"{RED}{name} is named by: {', '.join(naming)}{RESET}", file=sys.stderr)
+            print(f"{DIM}remove those steps first, or repeat with --force{RESET}",
+                  file=sys.stderr)
+            return 1
+        del entries[name]
+        config.write(cfg)
+        print(f"{GREEN}ok{RESET} [llm.{name}] removed")
+        return 0
+    return 1
+
+
 def cmd_config(args: argparse.Namespace) -> int:
     path = paths.config_file()
     if args.action == "path":
@@ -770,7 +850,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
     return 1
 
 
-_MODE_FIELDS = ("language", "prompt", "inject", "paste_key")
+_MODE_FIELDS = ("language", "speech_model", "prompt", "inject", "paste_key")
 
 
 def _mode_wants(cfg: dict[str, Any], mode: Any) -> list[dict[str, Any]]:
@@ -1031,6 +1111,33 @@ def cmd_mode(args: argparse.Namespace) -> int:
             print(f"{RED}unknown field {field!r}; one of {', '.join(_MODE_FIELDS)}{RESET}",
                   file=sys.stderr)
             return 1
+        # Refused where it is written, not warned about on the next load: a
+        # mode whose speech_model does not exist keeps the previous weights and
+        # sounds exactly like a mode that works.
+        if field == "speech_model" and value.strip():
+            spec = models.spec(value.strip())
+            if spec is None or spec.kind != models.SPEECH:
+                known = ", ".join(m.key for m in models.CATALOG if m.kind == models.SPEECH)
+                print(f"{RED}{value} is not a speech model{RESET}", file=sys.stderr)
+                print(f"{DIM}one of: {known}{RESET}", file=sys.stderr)
+                return 1
+            if not models.is_downloaded(value.strip()):
+                print(f"{RED}{value} is not downloaded "
+                      f"({spec.size_mb / 1024:.1f} GB){RESET}", file=sys.stderr)
+                print(f"{DIM}omavoi model pull {value.strip()}{RESET}", file=sys.stderr)
+                return 1
+            # A mode changes the weights, never the engine: the running engine
+            # reads one format, and the swap would be refused at mode-switch
+            # time instead of here, which is the wrong place to find out.
+            running = str(cfg["speech"].get("backend", ""))
+            wants_ggml = running == "local-whispercpp"
+            if (spec.fmt == models.GGML) != wants_ggml:
+                print(f"{RED}{value} is a {spec.fmt} model and the engine in use "
+                      f"({running}) reads {'ggml' if wants_ggml else 'ct2'}{RESET}",
+                      file=sys.stderr)
+                print(f"{DIM}a mode can change the weights, not the engine"
+                      f"{RESET}", file=sys.stderr)
+                return 1
         table[name][field] = value
         return save(f"{name}.{field} set")
 
@@ -1473,6 +1580,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force", action="store_true",
                    help="switch even to a backend that is not installed here")
     p.set_defaults(func=cmd_model)
+
+    p = sub.add_parser("llm", help="the [llm.<name>] entries a mode's steps name")
+    p.add_argument("action", choices=["list", "add", "rm"])
+    p.add_argument("rest", nargs="*", help="add <name> <llm-model-key> | rm <name>")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--force", action="store_true")
+    p.set_defaults(func=cmd_llm)
 
     p = sub.add_parser("config", help="inspect and change settings")
     p.add_argument("action", choices=["init", "show", "get", "set", "edit", "path"])

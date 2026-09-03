@@ -100,6 +100,13 @@ class ApiWhisperBackend:
         self._client = httpx.Client(timeout=self.timeout)
         log.info("api backend ready: %s %s", self.provider, self.model_name)
 
+    def use(self, model_key: str) -> None:
+        # Nothing is resident, so this is only a name in the next request.
+        key = str(model_key or "").strip()
+        if key and key != self.model_name:
+            log.info("switching speech model: %s -> %s", self.model_name, key)
+            self.model_name = key
+
     def state(self) -> dict[str, Any]:
         return {
             "backend": self.name,

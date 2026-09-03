@@ -92,6 +92,15 @@ class LocalWhisperBackend:
             self.model_id, self.device, self.compute_type, time.monotonic() - started,
         )
 
+    def use(self, model_key: str) -> None:
+        key = str(model_key or "").strip()
+        if not key or key == self.model_id:
+            return
+        log.info("switching speech model: %s -> %s", self.model_id, key)
+        self._model = None
+        self.model_id = key
+        self.load()
+
     def state(self) -> dict[str, Any]:
         return {
             "backend": self.name,
