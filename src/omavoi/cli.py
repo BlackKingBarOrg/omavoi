@@ -669,12 +669,11 @@ def cmd_secrets(args: argparse.Namespace) -> int:
 
 
 def cmd_llm(args: argparse.Namespace) -> int:
-    """Manage the [llm.<name>] entries a mode's steps reach for by name.
+    """Inspect the three configurations a mode's steps reach for by name.
 
-    An entry is the unit a mode names, so running two local models means two
-    entries — one per model — and each mode's step picks the one it wants.
-    Creating one needed editing the config by hand, because `config set`
-    refuses a path that is not already there.
+    Three and only three — the agent, the local model, one remote endpoint —
+    so there is nothing to add or remove. Which weights the local one runs is
+    a per-step choice: `omavoi mode step <mode> model <index> <key>`.
     """
     cfg = config.load()
     entries: dict[str, Any] = cfg.setdefault("llm", {})
@@ -694,33 +693,6 @@ def cmd_llm(args: argparse.Namespace) -> int:
                   f"{str(entry.get('model', '')):24s} {by}")
         return 0
 
-    if args.action == "add":
-        if len(rest) < 2:
-            print(f"{RED}usage: omavoi llm add <name> <llm-model-key>{RESET}", file=sys.stderr)
-            return 1
-        name, key = rest[0], rest[1]
-        if name in entries and not args.force:
-            print(f"{RED}[llm.{name}] already exists{RESET}", file=sys.stderr)
-            print(f"{DIM}point it somewhere else with: omavoi config set "
-                  f"llm.{name}.model <key>{RESET}", file=sys.stderr)
-            return 1
-        spec = models.spec(key)
-        if spec is None or spec.kind != models.LLM:
-            known = ", ".join(m.key for m in models.CATALOG if m.kind == models.LLM)
-            print(f"{RED}{key} is not an LLM in the catalogue{RESET}", file=sys.stderr)
-            print(f"{DIM}one of: {known}{RESET}", file=sys.stderr)
-            return 1
-        if not models.is_downloaded(key) and not args.force:
-            print(f"{RED}{key} is not downloaded ({spec.size_mb / 1024:.1f} GB){RESET}",
-                  file=sys.stderr)
-            print(f"{DIM}omavoi model pull {key}{RESET}", file=sys.stderr)
-            return 1
-        entries[name] = {"backend": "llama-local", "model": key}
-        config.write(cfg)
-        print(f"{GREEN}ok{RESET} [llm.{name}] runs {key}")
-        print(f"{DIM}a mode reaches it with: omavoi mode step <mode> add {name}{RESET}")
-        return 0
-
     if args.action == "check":
         name = rest[0] if rest else "api"
         entry = entries.get(name)
@@ -729,30 +701,6 @@ def cmd_llm(args: argparse.Namespace) -> int:
             return 1
         return _check_endpoint(name, entry, as_json=args.json)
 
-    if args.action == "rm":
-        if not rest:
-            print(f"{RED}usage: omavoi llm rm <name>{RESET}", file=sys.stderr)
-            return 1
-        name = rest[0]
-        if name not in entries:
-            print(f"{RED}no [llm.{name}]{RESET}", file=sys.stderr)
-            return 1
-        # A step naming a removed entry falls through on every take, which is
-        # the quietest failure this program has.
-        naming = sorted({
-            mode_name for mode_name, mode in (cfg.get("modes") or {}).items()
-            for step in (mode.get("steps") or [])
-            if str(step.get("llm", "")) == name
-        })
-        if naming and not args.force:
-            print(f"{RED}{name} is named by: {', '.join(naming)}{RESET}", file=sys.stderr)
-            print(f"{DIM}remove those steps first, or repeat with --force{RESET}",
-                  file=sys.stderr)
-            return 1
-        del entries[name]
-        config.write(cfg)
-        print(f"{GREEN}ok{RESET} [llm.{name}] removed")
-        return 0
     return 1
 
 
@@ -1788,9 +1736,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_secrets)
 
     p = sub.add_parser("llm", help="the [llm.<name>] entries a mode's steps name")
-    p.add_argument("action", choices=["list", "add", "rm", "check"])
-    p.add_argument("rest", nargs="*",
-                   help="add <name> <llm-model-key> | rm <name> | check [name]")
+    # No add or rm: there are three configurations and migrate() folds anything
+    # else away on the next load, so a command that made a fourth reported a
+    # success that did not survive it.
+    p.add_argument("action", choices=["list", "check"])
+    p.add_argument("rest", nargs="*", help="check [name]")
     p.add_argument("--json", action="store_true")
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=cmd_llm)
