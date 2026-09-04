@@ -495,10 +495,38 @@ def cmd_model(args: argparse.Namespace) -> int:
     return 1
 
 
+def _why_not_that_hotkey(key: str, value: str) -> str:
+    """Why this key name will not work, or "" if it will.
+
+    validate() warned about it on the next load, by which time the daemon had
+    already started with no hotkey at all — which from the outside looks
+    exactly like a broken microphone.
+    """
+    if str(key) != "hotkey.key" or not str(value).strip():
+        return ""
+    from .hotkey import HotkeyUnavailable, key_code
+
+    try:
+        key_code(value)
+    except HotkeyUnavailable as exc:
+        return str(exc)
+    except ModuleNotFoundError:
+        return ""
+    return ""
+
+
 def _why_not_that_llm_model(key: str, value: str) -> str:
     """Why `llm.<name>.model = value` would not work, or "" if it would."""
     parts = str(key).split(".")
     if len(parts) != 3 or parts[0] != "llm" or parts[2] != "model":
+        return ""
+    # Only the local configuration runs weights from the catalogue. For the
+    # API and the agent, `model` is the provider's own name — gpt-4o-mini,
+    # haiku — and checking those against the catalogue refused every valid
+    # value, which is how the remote API became impossible to configure.
+    entry = (config.load().get("llm") or {}).get(parts[1]) or {}
+    if str(entry.get("backend", "")).strip().lower() not in (
+            "llama-local", "llama.cpp", "llamacpp"):
         return ""
     spec = models.spec(value)
     if spec is None:
@@ -511,6 +539,133 @@ def _why_not_that_llm_model(key: str, value: str) -> str:
         return (f"{value} is not downloaded ({gb:.1f} GB). "
                 f"Run: omavoi model pull {value}")
     return ""
+
+
+def _check_endpoint(name: str, entry: dict[str, Any], *, as_json: bool = False) -> int:
+    """Ask an OpenAI-compatible endpoint for its model list.
+
+    One GET answers everything that can be wrong before a take: whether the
+    host resolves, whether TLS holds, whether the key is accepted, whether the
+    thing at the other end speaks this API at all — and it returns the model
+    names, so the model does not have to be typed from memory. A chat
+    completion would answer the same questions and bill for the privilege.
+    """
+    import httpx
+
+    from . import secrets
+
+    base = str(entry.get("base_url") or "").rstrip("/")
+    if not base:
+        out = {"ok": False, "error": f"llm.{name}.base_url is not set"}
+    else:
+        key_env = str(entry.get("key_env", ""))
+        key = secrets.resolve(key_env, str(entry.get("key_name", "") or name))
+        headers = {"Authorization": f"Bearer {key}"} if key else {}
+        try:
+            r = httpx.get(f"{base}/models", headers=headers, timeout=12.0)
+            if r.status_code in (401, 403):
+                out = {"ok": False, "status": r.status_code,
+                       "error": ("the endpoint refused the key" if key else
+                                 f"this endpoint needs a key; set {key_env or 'one'}")}
+            elif r.status_code >= 400:
+                out = {"ok": False, "status": r.status_code,
+                       "error": f"{base}/models returned {r.status_code}"}
+            else:
+                body = r.json()
+                got = body.get("data") if isinstance(body, dict) else body
+                ids = [str(m.get("id", "")) for m in (got or []) if isinstance(m, dict)]
+                out = {"ok": True, "status": r.status_code, "models": [i for i in ids if i],
+                       "key": secrets.redact(key) if key_env else ""}
+        except httpx.HTTPError as exc:
+            out = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        except ValueError:
+            out = {"ok": False, "status": r.status_code,
+                   "error": "the answer was not JSON — is this an OpenAI-compatible API?"}
+
+    if as_json:
+        print(json.dumps(out | {"name": name, "base_url": base}, ensure_ascii=False))
+        return 0 if out.get("ok") else 1
+    if out.get("ok"):
+        models_seen = out.get("models") or []
+        print(f"{GREEN}ok{RESET} {base} answered with {len(models_seen)} models")
+        for m in models_seen[:12]:
+            print(f"  {m}")
+        if len(models_seen) > 12:
+            print(f"{DIM}  … and {len(models_seen) - 12} more{RESET}")
+        return 0
+    print(f"{RED}{out.get('error')}{RESET}", file=sys.stderr)
+    return 1
+
+
+def cmd_hotkey(args: argparse.Namespace) -> int:
+    """Read one key press, so the key can be chosen by pressing it."""
+    from .hotkey import HotkeyUnavailable, capture
+
+    if args.action != "capture":
+        return 1
+    try:
+        name = capture(timeout=args.timeout)
+    except HotkeyUnavailable as exc:
+        if args.json:
+            print(json.dumps({"ok": False, "error": str(exc)}))
+        else:
+            print(f"{RED}{exc}{RESET}", file=sys.stderr)
+        return 1
+    except ModuleNotFoundError:
+        msg = "evdev is not installed"
+        print(json.dumps({"ok": False, "error": msg}) if args.json
+              else f"{RED}{msg}{RESET}", file=sys.stderr if not args.json else sys.stdout)
+        return 1
+    if not name:
+        if args.json:
+            print(json.dumps({"ok": False, "error": "nothing was pressed"}))
+        else:
+            print(f"{DIM}nothing was pressed{RESET}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps({"ok": True, "key": name}))
+    else:
+        print(name)
+    return 0
+
+
+def cmd_secrets(args: argparse.Namespace) -> int:
+    """Keys, read from stdin and never from a command line."""
+    from . import secrets
+
+    if args.action == "list":
+        stored = secrets.load_file()
+        if not stored:
+            print(f"{DIM}nothing stored in {paths.secrets_file()}{RESET}")
+            return 0
+        for name in sorted(stored):
+            print(f"  {name:20s} {secrets.redact(stored[name])}")
+        return 0
+
+    if args.action == "set":
+        if not args.name:
+            print(f"{RED}usage: omavoi secrets set <name>   "
+                  f"(the value comes from stdin){RESET}", file=sys.stderr)
+            return 1
+        if sys.stdin.isatty():
+            print(f"{DIM}paste the key, then press ctrl-D{RESET}", file=sys.stderr)
+        value = sys.stdin.read().strip()
+        if not value:
+            print(f"{RED}nothing on stdin{RESET}", file=sys.stderr)
+            return 1
+        secrets.store(args.name, value)
+        print(f"{GREEN}ok{RESET} {args.name} = {secrets.redact(value)} "
+              f"{DIM}in {paths.secrets_file()}{RESET}")
+        return 0
+
+    if args.action == "rm":
+        if not args.name:
+            print(f"{RED}usage: omavoi secrets rm <name>{RESET}", file=sys.stderr)
+            return 1
+        secrets.store(args.name, "")
+        print(f"{GREEN}ok{RESET} {args.name} removed")
+        return 0
+    return 1
 
 
 def cmd_llm(args: argparse.Namespace) -> int:
@@ -565,6 +720,14 @@ def cmd_llm(args: argparse.Namespace) -> int:
         print(f"{GREEN}ok{RESET} [llm.{name}] runs {key}")
         print(f"{DIM}a mode reaches it with: omavoi mode step <mode> add {name}{RESET}")
         return 0
+
+    if args.action == "check":
+        name = rest[0] if rest else "api"
+        entry = entries.get(name)
+        if entry is None:
+            print(f"{RED}no [llm.{name}]{RESET}", file=sys.stderr)
+            return 1
+        return _check_endpoint(name, entry, as_json=args.json)
 
     if args.action == "rm":
         if not rest:
@@ -622,7 +785,8 @@ def cmd_config(args: argparse.Namespace) -> int:
         # Pointing an LLM at weights that are not there is accepted by the
         # config and then falls through on every take, which reads as the LLM
         # step doing nothing rather than as a missing download.
-        why = _why_not_that_llm_model(args.key, args.value)
+        why = _why_not_that_hotkey(args.key, args.value) \
+            or _why_not_that_llm_model(args.key, args.value)
         if why and not getattr(args, "force", False):
             print(f"{RED}{why}{RESET}", file=sys.stderr)
             print(f"{DIM}nothing was changed; repeat with --force to set it anyway"
@@ -1181,7 +1345,7 @@ def cmd_mode(args: argparse.Namespace) -> int:
             # transcript answers it, and the answer is what gets typed.
             steps.append({"llm": llm,
                           "prompt": " ".join(rest[3:]) or config.DEFAULT_STEP_PROMPT})
-        elif op in ("rm", "prompt", "llm"):
+        elif op in ("rm", "prompt", "llm", "model"):
             if len(rest) < 3 or not rest[2].isdigit():
                 print(f"{RED}usage: omavoi mode step <mode> {op} <index> [...]{RESET}",
                       file=sys.stderr)
@@ -1195,6 +1359,33 @@ def cmd_mode(args: argparse.Namespace) -> int:
                 steps.pop(index)
             elif op == "prompt":
                 steps[index]["prompt"] = " ".join(rest[3:]) or config.DEFAULT_STEP_PROMPT
+            elif op == "model":
+                # Which weights this step runs, when it names the local
+                # configuration. Empty goes back to the configuration's own.
+                want = rest[3] if len(rest) > 3 else ""
+                if want:
+                    spec = models.spec(want)
+                    if spec is None or spec.kind != models.LLM:
+                        known = ", ".join(m.key for m in models.CATALOG
+                                          if m.kind == models.LLM)
+                        print(f"{RED}{want} is not an LLM in the catalogue{RESET}",
+                              file=sys.stderr)
+                        print(f"{DIM}one of: {known}{RESET}", file=sys.stderr)
+                        return 1
+                    if not models.is_downloaded(want):
+                        print(f"{RED}{want} is not downloaded "
+                              f"({spec.size_mb / 1024:.1f} GB){RESET}", file=sys.stderr)
+                        print(f"{DIM}omavoi model pull {want}{RESET}", file=sys.stderr)
+                        return 1
+                    entry = cfg.get("llm", {}).get(steps[index].get("llm", ""), {})
+                    if str(entry.get("backend", "")) not in (
+                            "llama-local", "llama.cpp", "llamacpp"):
+                        print(f"{RED}step {index} names "
+                              f"{steps[index].get('llm')!r}, which is not the local "
+                              f"configuration — only that one runs weights from the "
+                              f"catalogue{RESET}", file=sys.stderr)
+                        return 1
+                steps[index]["model"] = want
             else:
                 llm = rest[3] if len(rest) > 3 else ""
                 if llm not in cfg.get("llm", {}):
@@ -1202,11 +1393,15 @@ def cmd_mode(args: argparse.Namespace) -> int:
                     return 1
                 steps[index]["llm"] = llm
         else:
-            print(f"{RED}unknown step op {op!r}: add, rm, prompt, llm{RESET}", file=sys.stderr)
+            print(f"{RED}unknown step op {op!r}: add, rm, prompt, llm, model{RESET}",
+                  file=sys.stderr)
             return 1
 
         table[name]["steps"] = steps
-        return save(f"{name} chain: " + " -> ".join(["speech", *(s["llm"] for s in steps)]))
+        return save(f"{name} chain: " + " -> ".join(
+            ["speech", *(s["llm"] + (f"({s['model'].replace('llm:', '')})"
+                                     if s.get("model") else "")
+                         for s in steps)]))
 
     print(f"{RED}unknown action {args.action!r}{RESET}", file=sys.stderr)
     return 1
@@ -1581,9 +1776,21 @@ def build_parser() -> argparse.ArgumentParser:
                    help="switch even to a backend that is not installed here")
     p.set_defaults(func=cmd_model)
 
+    p = sub.add_parser("hotkey", help="choose the push-to-talk key by pressing it")
+    p.add_argument("action", choices=["capture"])
+    p.add_argument("--timeout", type=float, default=10.0)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_hotkey)
+
+    p = sub.add_parser("secrets", help="API keys, read from stdin")
+    p.add_argument("action", choices=["list", "set", "rm"])
+    p.add_argument("name", nargs="?", help="which key")
+    p.set_defaults(func=cmd_secrets)
+
     p = sub.add_parser("llm", help="the [llm.<name>] entries a mode's steps name")
-    p.add_argument("action", choices=["list", "add", "rm"])
-    p.add_argument("rest", nargs="*", help="add <name> <llm-model-key> | rm <name>")
+    p.add_argument("action", choices=["list", "add", "rm", "check"])
+    p.add_argument("rest", nargs="*",
+                   help="add <name> <llm-model-key> | rm <name> | check [name]")
     p.add_argument("--json", action="store_true")
     p.add_argument("--force", action="store_true")
     p.set_defaults(func=cmd_llm)

@@ -208,6 +208,42 @@ class Daemon:
             with self._lock:
                 self._set_state(IDLE)
 
+    def _rebind_hotkey(self) -> None:
+        """Put the listener on the key the config now names.
+
+        A reload rebuilt everything except this, so changing the key did
+        nothing until the daemon was restarted — and status reported the file's
+        value, which made the config look like it had taken effect.
+        """
+        want_key = str(self.cfg["hotkey"].get("key", ""))
+        want_mode = str(self.cfg["hotkey"].get("mode", "push_to_talk"))
+        if not self.cfg["hotkey"].get("enabled", True):
+            if self.hotkey is not None:
+                self.hotkey.stop()
+                self.hotkey = None
+                log.info("hotkey disabled")
+            return
+        if self.hotkey is not None:
+            if (self.hotkey.key_name == want_key
+                    and self.hotkey.mode == want_mode):
+                return
+            self.hotkey.stop()
+            self.hotkey = None
+        try:
+            self.hotkey = HotkeyListener(
+                self.cfg,
+                on_press=lambda: self.begin(),
+                on_release=lambda: self.end(),
+                on_toggle=lambda: self.toggle(),
+            )
+            self.hotkey.start()
+            log.info("hotkey rebound to %s (%s)", want_key, want_mode)
+        except HotkeyUnavailable as exc:
+            # No hotkey at all is the one outcome that looks like a broken
+            # microphone, so it is said loudly and left visible in status.
+            log.error("hotkey unavailable after rebind: %s", exc)
+            self.hotkey = None
+
     def _release_idle_llms(self) -> None:
         """Stop local LLM servers the current mode does not use.
 
@@ -249,8 +285,14 @@ class Daemon:
             "switching": dict(self.cfg.get("switching", {})),
             "hotkey": {
                 "enabled": bool(self.hotkey),
-                "key": self.cfg["hotkey"]["key"],
-                "mode": self.cfg["hotkey"]["mode"],
+                # What the listener is bound to, not what the file says. These
+                # differed silently after a rebind, so the config was checked,
+                # found correct, and the key still did nothing.
+                "key": (self.hotkey.key_name if self.hotkey
+                        else self.cfg["hotkey"]["key"]),
+                "mode": (self.hotkey.mode if self.hotkey
+                         else self.cfg["hotkey"]["mode"]),
+                "configured_key": self.cfg["hotkey"]["key"],
                 "devices": self.hotkey.device_names if self.hotkey else [],
             },
             "audio": {
@@ -390,6 +432,7 @@ class Daemon:
                                  registry=llms)
         self._release_idle_llms()
         self._apply_mode_speech_model()
+        self._rebind_hotkey()
         log.info("config reloaded%s", "; speech settings changed, restart the daemon" if model_changed else "")
         return {"ok": True, "reloaded": True, "model_restart_required": model_changed}
 

@@ -51,7 +51,7 @@ class Pipeline:
         current = text
 
         for index, step in enumerate(mode.steps):
-            backend = self.llms.get(step.llm)
+            backend = self.llms.get(step.llm, getattr(step, "model", "") or "")
             if backend is None:
                 why = self.llms.why(step.llm)
                 records.append({"llm": step.llm, "error": why, "kept": True})

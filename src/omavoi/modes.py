@@ -22,12 +22,17 @@ class Step:
     """One LLM pass. `llm` names an [llm.<name>] entry."""
 
     llm: str
+    # Which weights, when the entry is the local one. Empty uses whatever the
+    # entry is configured with. This is how two modes share the local slot and
+    # still run different models: three configurations, not three per model.
+    model: str = ""
     prompt: str = ""
     # Fall through to the previous stage's text rather than failing the take.
     timeout: float = 0.0
 
     def as_dict(self) -> dict[str, Any]:
-        return {"llm": self.llm, "prompt": self.prompt, "timeout": self.timeout}
+        return {"llm": self.llm, "model": self.model,
+                "prompt": self.prompt, "timeout": self.timeout}
 
 
 @dataclass(slots=True)
@@ -80,6 +85,7 @@ def _build(name: str, raw: dict[str, Any], base: dict[str, Any], matched_on: str
     steps = [
         Step(
             llm=str(step.get("llm", "")),
+            model=str(step.get("model", "") or ""),
             prompt=str(step.get("prompt", "")),
             timeout=float(step.get("timeout", 0.0) or 0.0),
         )

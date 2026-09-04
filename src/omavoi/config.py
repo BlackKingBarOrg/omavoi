@@ -116,6 +116,10 @@ DEFAULTS: dict[str, Any] = {
     },
     # Any number of LLMs, referenced from a mode by these names. An entry
     # costs nothing until a mode names it.
+    # Three configurations, one per kind of thing an LLM step can be, mirroring
+    # the three speech engines. Named for the kind, not for a vendor or a
+    # model: which weights the local one runs is a per-step choice, so two
+    # modes share this configuration and each gets its own server.
     "llm": {
         # Started and owned by the daemon, lazily: a mode with no LLM step
         # costs no VRAM. Models come from the same catalogue as the speech
@@ -135,25 +139,28 @@ DEFAULTS: dict[str, Any] = {
             # and then running out of budget. Nothing here needs deliberation.
             "thinking": False,
         },
-        # Uses whatever `claude` is logged in as, so it needs no key at all.
-        # Slow to start, which is why it suits a deliberate pass rather than
-        # every take.
-        "claude": {
-            "backend": "claude-cli",
-            "model": "haiku",
-            "base_url": "",
-            "key_env": "",
-            "key_name": "",
+        # Whichever coding agent Omarchy is set to. It is already logged in, so
+        # this needs no key; it costs several seconds of process startup, which
+        # is why it suits a deliberate pass rather than every take.
+        "agent": {
+            "backend": "agent-cli",
+            "agent": "",
+            "model": "",
             "timeout": 60.0,
             "max_tokens": 1024,
             "temperature": 0.2,
         },
-        "haiku": {
-            "backend": "anthropic",
-            "model": "claude-haiku-4-5-20251001",
+        # One remote endpoint. `backend` picks the wire format, because these
+        # are not all the same protocol: "openai" covers OpenAI, Groq,
+        # SiliconFlow, vLLM and most others, "anthropic" is Claude's own.
+        # Unconfigured on purpose — it is the one kind that sends your words
+        # off the machine, so it takes a deliberate URL and key.
+        "api": {
+            "backend": "openai",
+            "model": "",
             "base_url": "",
-            "key_env": "ANTHROPIC_API_KEY",
-            "key_name": "anthropic",
+            "key_env": "OPENAI_API_KEY",
+            "key_name": "openai",
             "timeout": 20.0,
             "max_tokens": 1024,
             "temperature": 0.2,
@@ -360,6 +367,18 @@ def load(path: Path | None = None) -> dict[str, Any]:
     for name, mode in merged.get("modes", {}).items():
         if isinstance(mode, dict):
             mode["rules"] = _RULE_DEFAULTS | dict(mode.get("rules") or {})
+    # Entries from before there were three of them. Reported, not silent: a
+    # fold rewrites the steps that named them.
+    folded = migrate(merged)
+    for note in folded:
+        log.info("config: %s", note)
+    if folded and path.exists():
+        # Written back, or the fold happens again on every load and the file
+        # keeps disagreeing with what is running.
+        try:
+            write(merged, path)
+        except OSError as exc:
+            log.warning("could not write the folded config back: %s", exc)
     for problem in validate(merged):
         log.warning("config: %s", problem)
     return merged
@@ -371,6 +390,74 @@ def _speech_spec(key: str) -> Any:
 
     spec = models.spec(key)
     return spec if spec is not None and spec.kind == models.SPEECH else None
+
+
+# The three configurations an LLM step can name. Anything else in [llm.*] is
+# from before they existed and gets folded into whichever of these matches its
+# backend, with the modes that named it rewritten to point at the fold.
+_LLM_KINDS = {
+    "local": ("llama-local", "llama.cpp", "llamacpp"),
+    "agent": ("agent-cli", "agent", "claude-cli", "claude-code", "claude"),
+    "api": ("openai", "openai-compatible", "ollama", "vllm", "llama-cpp", "anthropic"),
+}
+
+
+def _kind_of(backend: str) -> str:
+    b = str(backend).strip().lower()
+    for kind, names in _LLM_KINDS.items():
+        if b in names:
+            return kind
+    return ""
+
+
+def migrate(cfg: dict[str, Any]) -> list[str]:
+    """Fold stray [llm.*] entries into the three, in place.
+
+    An open-ended list of named entries put an implementation detail on screen
+    as a configuration surface: six rows, two of them called haiku for
+    different reasons. Folding is not lossless when someone had two remote
+    endpoints, so every fold is reported rather than done quietly.
+    """
+    notes: list[str] = []
+    entries: dict[str, Any] = cfg.setdefault("llm", {})
+    modes: dict[str, Any] = cfg.get("modes") or {}
+
+    for name in [n for n in list(entries) if n not in _LLM_KINDS]:
+        entry = dict(entries[name])
+        kind = _kind_of(entry.get("backend", ""))
+        if not kind:
+            continue
+        model = str(entry.get("model", "") or "")
+        target = entries.setdefault(kind, {})
+
+        if kind == "local":
+            # The weights move to the steps that wanted them, which is what a
+            # second local entry was standing in for.
+            for mode_name, mode in modes.items():
+                for step in mode.get("steps") or []:
+                    if str(step.get("llm", "")) == name:
+                        step["llm"] = kind
+                        if model and model != str(target.get("model", "")):
+                            step["model"] = model
+            notes.append(f"llm.{name} folded into llm.local; "
+                         f"the steps that used it now name their own weights")
+        else:
+            # For the other two there is one endpoint and one agent, so the
+            # first stray entry configures it and later ones only re-point.
+            if not str(target.get("model", "")) and model:
+                for field in ("backend", "model", "base_url", "key_env", "key_name"):
+                    if entry.get(field):
+                        target[field] = entry[field]
+                notes.append(f"llm.{name} became llm.{kind}")
+            else:
+                notes.append(f"llm.{name} dropped; llm.{kind} was already configured")
+            for mode_name, mode in modes.items():
+                for step in mode.get("steps") or []:
+                    if str(step.get("llm", "")) == name:
+                        step["llm"] = kind
+        del entries[name]
+
+    return notes
 
 
 def validate(cfg: dict[str, Any]) -> list[str]:

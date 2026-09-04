@@ -17,8 +17,10 @@ BACKENDS: dict[str, str] = {
     "anthropic": "The Claude API.",
     "llama-local": "A llama.cpp server omavoi starts and owns, with its models "
                    "in the same catalogue as the speech ones.",
-    "claude-cli": "The Claude Code CLI already logged in on this machine. No key "
-                  "needed; costs several seconds of startup per take.",
+    "agent-cli": "Whichever coding agent Omarchy is set to — `omarchy default "
+                 "agent` picks from pi, opencode, claude, codex, grok, gemini, "
+                 "copilot and others. Already logged in, so no key; costs "
+                 "several seconds of process startup per take.",
 }
 
 
@@ -37,10 +39,14 @@ def _build_one(name: str, cfg: dict[str, Any]) -> LlmBackend:
         from .llama_local import LlamaLocalBackend
 
         return LlamaLocalBackend(name, cfg)
-    if backend in ("claude-cli", "claude-code", "claude"):
-        from .claude_cli import ClaudeCliBackend
+    if backend in ("agent-cli", "agent", "claude-cli", "claude-code", "claude"):
+        from .agent_cli import AgentCliBackend
 
-        return ClaudeCliBackend(name, cfg)
+        # The claude-* names are kept so configs written before this stay
+        # valid; they pin the agent rather than following Omarchy's default.
+        if backend in ("claude-cli", "claude-code", "claude") and not cfg.get("agent"):
+            cfg = dict(cfg) | {"agent": "claude"}
+        return AgentCliBackend(name, cfg)
     if backend == "anthropic":
         from .anthropic import AnthropicBackend
 
@@ -59,6 +65,16 @@ class Registry:
         self._defs: dict[str, Any] = dict(cfg.get("llm", {}))
         self._built: dict[str, LlmBackend] = {}
         self._why: dict[str, str] = {}
+
+    @staticmethod
+    def _entry_of(key: str) -> str:
+        """The config entry a built key belongs to.
+
+        Keys are `name` or `name@model`. Everything that walks _built has to
+        split them, or a reload drops every instance and a sweep unloads the
+        one still in use.
+        """
+        return key.split("@", 1)[0]
 
     def __contains__(self, name: str) -> bool:
         return name in self._defs
@@ -86,7 +102,8 @@ class Registry:
         second one. Only entries whose own definition changed are dropped.
         """
         defs = dict(cfg.get("llm", {}))
-        for name, built in list(self._built.items()):
+        for key, built in list(self._built.items()):
+            name = self._entry_of(key)
             if name in defs and defs[name] == self._defs.get(name):
                 continue
             stop = getattr(built, "close", None)
@@ -95,8 +112,8 @@ class Registry:
                     stop()
                 except Exception:
                     log.debug("could not stop %s", name)
-            del self._built[name]
-            log.info("llm %r changed or went away — dropped its running instance", name)
+            del self._built[key]
+            log.info("llm %r changed or went away — dropped its running instance", key)
         self._defs = defs
         self._why.clear()
 
@@ -110,8 +127,8 @@ class Registry:
         Returns the names it unloaded, for the caller's log line.
         """
         freed: list[str] = []
-        for name, backend in self._built.items():
-            if name in needed:
+        for key, backend in self._built.items():
+            if self._entry_of(key) in needed:
                 continue
             try:
                 st = backend.state()
@@ -141,7 +158,18 @@ class Registry:
         meaning "running now" rather than "has been asked about".
         """
         out: list[dict[str, Any]] = []
+        # Every live instance first: a step running its own weights is a
+        # separate server and would otherwise be invisible.
+        seen: set[str] = set()
+        for key, backend in self._built.items():
+            st = dict(backend.state())
+            st["name"] = key
+            st["problem"] = st.get("problem") or self._why.get(key, "")
+            out.append(st)
+            seen.add(self._entry_of(key))
         for name in self.names():
+            if name in seen:
+                continue
             backend = self._built.get(name)
             if backend is None:
                 try:
@@ -169,14 +197,24 @@ class Registry:
         """Why `get` returned None, for the warning the user actually sees."""
         return self._why.get(name, "not configured")
 
-    def get(self, name: str) -> LlmBackend | None:
-        if name in self._built:
-            return self._built[name]
+    def get(self, name: str, model: str = "") -> LlmBackend | None:
+        """The backend for this entry, running `model` if one is asked for.
+
+        Keyed by both, because a step may name the local configuration and its
+        own weights: two modes then share one configuration and get one server
+        each. Without the model in the key they would fight over a single
+        backend and swap weights on alternate takes.
+        """
+        key = f"{name}@{model}" if model else name
+        if key in self._built:
+            return self._built[key]
         cfg = self._defs.get(name)
         if cfg is None:
             log.warning("no [llm.%s] defined", name)
-            self._why[name] = f"no [llm.{name}] in the config"
+            self._why[key] = f"no [llm.{name}] in the config"
             return None
+        if model:
+            cfg = dict(cfg) | {"model": model}
         try:
             backend = _build_one(name, cfg)
         except Exception as exc:
@@ -184,7 +222,7 @@ class Registry:
             # like a missing entry unless it says so — and after an upgrade
             # that adds one, the daemon needs restarting, not reloading.
             log.error("could not build llm %r: %s", name, exc)
-            self._why[name] = str(exc)
+            self._why[key] = str(exc)
             return None
-        self._built[name] = backend
+        self._built[key] = backend
         return backend

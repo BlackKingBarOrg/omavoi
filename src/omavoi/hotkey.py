@@ -56,6 +56,61 @@ def find_devices(code: int, explicit: list[str] | None = None) -> list[Any]:
     return found
 
 
+def capture(timeout: float = 10.0, explicit: list[str] | None = None) -> str:
+    """Wait for one key press and return its evdev name, or "" on timeout.
+
+    Reading, never grabbing: the key you press still reaches whatever has
+    focus. That is the same choice the listener makes, and it is why the keys
+    worth binding are the ones that do nothing on their own.
+    """
+    import select
+
+    from evdev import InputDevice, categorize, ecodes, list_devices
+
+    devices = []
+    for path in explicit or list_devices():
+        try:
+            dev = InputDevice(path)
+        except (OSError, PermissionError):
+            continue
+        if ecodes.EV_KEY in dev.capabilities():
+            devices.append(dev)
+        else:
+            dev.close()
+    if not devices:
+        raise HotkeyUnavailable(
+            "no readable input devices; membership of the `input` group takes "
+            "effect at your next login"
+        )
+
+    by_fd = {dev.fd: dev for dev in devices}
+    deadline = time.monotonic() + timeout
+    try:
+        while time.monotonic() < deadline:
+            ready, _, _ = select.select(list(by_fd), [], [],
+                                        max(0.0, deadline - time.monotonic()))
+            for fd in ready:
+                for event in by_fd[fd].read():
+                    if event.type != ecodes.EV_KEY or event.value != 1:
+                        continue
+                    # Keyboard keys only. A mouse reports its buttons as
+                    # EV_KEY too, so the first capture picked up a stray
+                    # left-click — and a button is not something the config's
+                    # key_code() can resolve anyway.
+                    names = ecodes.KEY.get(event.code)
+                    if isinstance(names, (list, tuple)):
+                        names = next((n for n in names
+                                      if str(n).startswith("KEY_")), names[0])
+                    if not names or not str(names).startswith("KEY_"):
+                        continue
+                    # KEY_RIGHTALT -> RIGHTALT, which is what the config takes.
+                    return str(names).replace("KEY_", "", 1)
+        return ""
+    finally:
+        for dev in devices:
+            dev.close()
+
+
 class HotkeyListener:
     """Calls on_press/on_release (push_to_talk) or on_toggle (toggle)."""
 
