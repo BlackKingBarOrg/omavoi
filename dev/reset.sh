@@ -28,12 +28,17 @@ KEEP_PACKAGES=0
 PLUGIN_ID="ai.bkblab.omavoi"
 PLUGIN_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/$PLUGIN_ID"
 
-# Only what Omavoi is the reason for. Deliberately absent:
-#   ggml-cpu   another package depends on it; -Rns refuses anyway
+# Only what Omavoi is the reason for. ggml-cpu is in the list because the
+# install is the only reason it is on the machine: pacman reports it as
+# `Required By: None`, an optdepend of ggml that nothing pulls in on its own.
+# Leaving it behind would hide the one package whose absence breaks the model
+# load with an assert instead of an error, which is exactly what the install
+# has to get right. ggml itself is a dependency of whisper-cpp, so -Rns takes
+# it with them. Deliberately absent:
 #   wtype      Omarchy ships it in its base set, and voxtype uses it
 #   xdotool    a general tool, and not ours to take
 #   uv         explicitly installed by the user, and used for other things
-PACKAGES=(whisper-cpp ggml-vulkan llama-cpp)
+PACKAGES=(whisper-cpp ggml-vulkan ggml-cpu llama-cpp)
 
 say() { printf '  %s\n' "$*"; }
 step() { printf '\n%s\n' "$*"; }
@@ -44,8 +49,13 @@ if [[ -x "$PLUGIN_DIR/install.sh" ]]; then
 else
   say "no plugin installed, skipping"
   systemctl --user disable --now omavoid.service 2>/dev/null && say "disabled omavoid.service"
-  rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/omavoid.service" \
-    && say "removed a stray unit file"
+  # `rm -f` succeeds on a path that was never there, so the message has to test
+  # for the file rather than the command — the same trap install.sh documents.
+  unit="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/omavoid.service"
+  if [[ -e "$unit" ]]; then
+    rm -f "$unit"
+    say "removed a stray unit file"
+  fi
   systemctl --user daemon-reload
 fi
 systemctl --user reset-failed omavoid 2>/dev/null
@@ -53,7 +63,11 @@ systemctl --user reset-failed omavoid 2>/dev/null
 step "2. the plugin"
 # Through omarchy, not rm -rf: it also takes the widget out of shell.json,
 # which a directory delete leaves behind pointing at nothing.
-if [[ -d "$PLUGIN_DIR" ]]; then
+# -e alone is false for a symlink whose target is gone, and a dev checkout that
+# has been moved leaves exactly that. `omarchy plugin add` refuses the id while
+# the dangling link is there, so it has to go: -L catches it, and omarchy
+# unlinks rather than deletes when the target is a link.
+if [[ -e "$PLUGIN_DIR" || -L "$PLUGIN_DIR" ]]; then
   omarchy plugin remove "$PLUGIN_ID" --yes 2>&1 | sed 's/^/  /'
 else
   say "not installed, skipping"
@@ -112,7 +126,8 @@ fi
 
 step "state"
 command -v omavoi >/dev/null && say "!! omavoi is still on PATH" || say "omavoi: gone"
-[[ -d "$PLUGIN_DIR" ]] && say "!! plugin dir remains" || say "plugin: gone"
+[[ -e "$PLUGIN_DIR" || -L "$PLUGIN_DIR" ]] && say "!! plugin dir remains" \
+  || say "plugin: gone"
 command -v whisper-server >/dev/null && say "whisper-server: still present" \
   || say "whisper-server: gone"
 leftover="$(find "$HOME" -maxdepth 6 -iname '*omavoi*' \
