@@ -597,9 +597,114 @@ def _check_endpoint(name: str, entry: dict[str, Any], *, as_json: bool = False) 
     return 1
 
 
+def _hotkey_report() -> dict[str, Any]:
+    """Everything that can be wrong with the hotkey, answered at once.
+
+    The key not working has had four different causes in this program and one
+    message for all of them. Each line below is a separate question, so the
+    answer says which one it is instead of naming the likeliest.
+    """
+    import grp
+    import os
+
+    from . import daemon as daemon_mod
+    from .hotkey import HotkeyUnavailable, explain_missing, key_code
+
+    cfg = config.load()
+    want = str(cfg["hotkey"].get("key", ""))
+    out: dict[str, Any] = {"configured": want,
+                           "mode": str(cfg["hotkey"].get("mode", "")),
+                           "enabled": bool(cfg["hotkey"].get("enabled", True))}
+
+    try:
+        code = key_code(want)
+        out["code"] = code
+        out["name_ok"] = True
+    except HotkeyUnavailable as exc:
+        out["name_ok"] = False
+        out["problem"] = str(exc)
+        return out
+    except ModuleNotFoundError:
+        out["problem"] = "evdev is not installed; reinstall omavoi"
+        return out
+
+    try:
+        entry = grp.getgrnam("input")
+        user = os.environ.get("USER") or ""
+        out["group_listed"] = user in entry.gr_mem
+        out["group_held"] = entry.gr_gid in os.getgroups()
+    except KeyError:
+        out["group_listed"] = out["group_held"] = False
+
+    out["devices_problem"] = explain_missing(code, want)
+
+    info = daemon_mod.ping()
+    if info is None:
+        out["daemon"] = "not running"
+    else:
+        hk = info.get("hotkey") or {}
+        out["daemon"] = "running"
+        out["bound"] = str(hk.get("key", ""))
+        out["bound_devices"] = hk.get("devices") or []
+        out["listener"] = bool(hk.get("enabled"))
+        # The one that hid a bug for a whole session: the file said one thing
+        # and the listener was on another.
+        out["matches"] = str(hk.get("key", "")) == want
+    return out
+
+
 def cmd_hotkey(args: argparse.Namespace) -> int:
-    """Read one key press, so the key can be chosen by pressing it."""
+    """Read one key press, or say why the key is not working."""
     from .hotkey import HotkeyUnavailable, capture
+
+    if args.action == "check":
+        r = _hotkey_report()
+        if args.json:
+            print(json.dumps(r, ensure_ascii=False, indent=2))
+            return 0 if r.get("matches") and not r.get("devices_problem") else 1
+
+        def line(ok: bool, text: str) -> None:
+            mark = f"{GREEN}ok{RESET}  " if ok else f"{RED}no{RESET}  "
+            print(f"  {mark}{text}")
+
+        print(f"{BOLD}hotkey{RESET}    {r['configured']} ({r['mode']})")
+        if not r.get("enabled"):
+            line(False, "hotkey.enabled is false; nothing is listening by design")
+            return 1
+        if not r.get("name_ok"):
+            line(False, r.get("problem", "the key name is not an evdev key"))
+            print(f"{DIM}  omavoi hotkey capture   — press the key you want{RESET}")
+            return 1
+        line(True, f"{r['configured']} is a real evdev key (code {r['code']})")
+
+        if r.get("group_listed") and not r.get("group_held"):
+            line(False, "you are in the `input` group but this shell predates it "
+                        "— log out and back in")
+        elif not r.get("group_listed"):
+            line(False, "you are not in the `input` group")
+            print(f"{DIM}  sudo usermod -aG input $USER   then log out and back in{RESET}")
+        else:
+            line(True, "in the `input` group")
+
+        dp = r.get("devices_problem") or ""
+        line(not dp, dp or f"a device can emit {r['configured']}")
+
+        if r.get("daemon") != "running":
+            line(False, "the daemon is not running")
+            print(f"{DIM}  systemctl --user start omavoid{RESET}")
+            return 1
+        if not r.get("listener"):
+            line(False, "the daemon is running but has no key listener")
+            print(f"{DIM}  systemctl --user restart omavoid{RESET}")
+            return 1
+        if not r.get("matches"):
+            line(False, f"the daemon is listening on {r.get('bound')!r}, not "
+                        f"{r['configured']!r} — it did not pick up the change")
+            print(f"{DIM}  systemctl --user restart omavoid{RESET}")
+            return 1
+        line(True, "the daemon is listening on it: "
+                   + ", ".join(r.get("bound_devices") or []))
+        return 0 if not dp else 1
 
     if args.action != "capture":
         return 1
@@ -1725,7 +1830,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_model)
 
     p = sub.add_parser("hotkey", help="choose the push-to-talk key by pressing it")
-    p.add_argument("action", choices=["capture"])
+    p.add_argument("action", choices=["capture", "check"])
     p.add_argument("--timeout", type=float, default=10.0)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_hotkey)

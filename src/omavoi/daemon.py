@@ -22,6 +22,13 @@ from .window import active_window
 
 log = logging.getLogger(__name__)
 
+# Every hotkey failure ends up in front of someone who did not cause it and
+# cannot see the cause. Both notifications carry this, and the console page it
+# names diagnoses all four causes and fixes the two that need no password.
+_HOTKEY_ROUTE = ("Open the console with SUPER+ALT+V and look at Settings \u2192 "
+                 "hotkey: it names which of the causes this is and fixes the two "
+                 "that need no password. From a terminal: `omavoi hotkey check`.")
+
 IDLE, RECORDING, BUSY = "idle", "recording", "transcribing"
 
 
@@ -235,14 +242,35 @@ class Daemon:
                 on_press=lambda: self.begin(),
                 on_release=lambda: self.end(),
                 on_toggle=lambda: self.toggle(),
+                on_availability=self._hotkey_availability,
             )
             self.hotkey.start()
             log.info("hotkey rebound to %s (%s)", want_key, want_mode)
         except HotkeyUnavailable as exc:
             # No hotkey at all is the one outcome that looks like a broken
             # microphone, so it is said loudly and left visible in status.
+            #
+            # A failed rebind is worse than a failed start: the user pressed a
+            # key a second ago and the only evidence was a journal line. Now
+            # the key goes quiet *and* says so, with the place it can be
+            # looked at — a message naming a cause and no route is how the
+            # last one of these went unfixed for a week.
             log.error("hotkey unavailable after rebind: %s", exc)
+            notify.send(f"Omavoi: {want_key} cannot be used",
+                        f"{exc}\n\n{_HOTKEY_ROUTE}", urgency="critical")
             self.hotkey = None
+
+    def _hotkey_availability(self, ok: bool, detail: str) -> None:
+        """Say when the key stops being readable, and when it comes back.
+
+        Both directions, because a message that only ever appears when things
+        break leaves the user unsure whether the fix took.
+        """
+        if ok:
+            notify.send("Omavoi", detail, urgency="low")
+        else:
+            notify.send("Omavoi: the key stopped working",
+                        f"{detail}\n\n{_HOTKEY_ROUTE}", urgency="critical")
 
     def _release_idle_llms(self) -> None:
         """Stop local LLM servers the current mode does not use.
@@ -500,11 +528,13 @@ class Daemon:
                     on_press=lambda: self.begin(),
                     on_release=lambda: self.end(),
                     on_toggle=lambda: self.toggle(),
+                    on_availability=self._hotkey_availability,
                 )
                 self.hotkey.start()
             except HotkeyUnavailable as exc:
                 log.error("hotkey unavailable: %s", exc)
-                notify.send("Omavoi: hotkey unavailable", str(exc), urgency="critical")
+                notify.send("Omavoi: hotkey unavailable",
+                            f"{exc}\n\n{_HOTKEY_ROUTE}", urgency="critical")
 
         self._watcher = threading.Thread(target=self._watch_config,
                                          name="omavoi-config", daemon=True)
