@@ -73,12 +73,25 @@ def _ggml_backends() -> list[str]:
     return out
 
 
-def _in_input_group() -> bool:
+def _input_group() -> tuple[bool, bool]:
+    """(listed in the group, held by this session).
+
+    Two answers, because they disagree for as long as it takes to log out and
+    they need opposite advice. Collapsing them into one bool is how the setup
+    step told someone who had already run usermod to run usermod: the command
+    succeeded, changed nothing, and the step still said "not in the input
+    group" — a loop with no exit.
+    """
     try:
-        gid = grp.getgrnam("input").gr_gid
+        entry = grp.getgrnam("input")
     except KeyError:
-        return False
-    return gid in os.getgroups()
+        return (False, False)
+    user = os.environ.get("USER") or ""
+    return (user in entry.gr_mem, entry.gr_gid in os.getgroups())
+
+
+def _in_input_group() -> bool:
+    return _input_group()[1]
 
 
 def _unit_active() -> bool:
@@ -212,17 +225,32 @@ def check(cfg: dict[str, Any]) -> Report:
         ))
 
     # 4. The hotkey. This is the one step that cannot be finished in place.
-    group = _in_input_group()
-    steps.append(Step(
-        "hotkey", f"Hotkey ({cfg['hotkey']['key']} via evdev)", group,
-        detail="in the input group" if group else "not in the input group",
-        command="sudo usermod -aG input $USER",
-        needs_root=True,
-        optional=True,
-        note="The group only takes effect at your next login. Until then, bind a "
-             "non-modifier key such as F9 in Hyprland — modifier keys cannot be "
-             "bound that way, because pressing one fires the release binding at once.",
-    ))
+    listed, held = _input_group()
+    # The middle state gets its own step, because the command that reaches the
+    # other two cannot reach it and offering one anyway sends the user round
+    # the same loop.
+    if listed and not held:
+        steps.append(Step(
+            "hotkey", f"Hotkey ({cfg['hotkey']['key']} via evdev)", False,
+            detail="in the input group, but this session started before that",
+            command="",
+            needs_root=False,
+            optional=True,
+            note="Nothing left to install. A group is granted at login, so this "
+                 "session cannot see it however many times usermod is run — log "
+                 "out and back in and the key works.",
+        ))
+    else:
+        steps.append(Step(
+            "hotkey", f"Hotkey ({cfg['hotkey']['key']} via evdev)", held,
+            detail="in the input group" if held else "not in the input group",
+            command="sudo usermod -aG input $USER",
+            needs_root=True,
+            optional=True,
+            note="The group only takes effect at your next login. Until then, bind a "
+                 "non-modifier key such as F9 in Hyprland — modifier keys cannot be "
+                 "bound that way, because pressing one fires the release binding at once.",
+        ))
 
     # 5. Run it at login.
     steps.append(Step(

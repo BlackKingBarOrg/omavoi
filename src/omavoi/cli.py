@@ -1691,11 +1691,20 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     print(f"\n{BOLD}hotkey{RESET}")
     try:
+        from .hotkey import explain_missing
+
         code = key_code(cfg["hotkey"]["key"])
         devices = find_devices(code)
+        # Not a guess. `id -nG` was the worst possible thing to point at
+        # here: it reports the groups this session inherited, so someone who
+        # ran usermod and did not log out sees `input` absent, concludes they
+        # are not in the group, runs usermod again, and is told the same thing
+        # forever. explain_missing asks the four questions separately.
         check(f"{cfg['hotkey']['key']} readable on", bool(devices),
               f"{len(devices)} device(s)" if devices
-              else f"{RED}nothing (are you in the input group? check `id -nG`){RESET}")
+              else f"{RED}nothing{RESET} — "
+                   + (explain_missing(code, cfg["hotkey"]["key"])
+                      or "no reason could be determined"))
         for dev in devices:
             print(f"    {DIM}{dev.path}  {dev.name}{RESET}")
             dev.close()
