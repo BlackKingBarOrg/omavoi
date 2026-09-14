@@ -45,8 +45,6 @@ PACK = {
  "up.step.plugin": 'el plugin',
  "up.step.daemon": 'el demonio',
  "up.step.restart": 'reiniciar',
- "models.shared": 'Memoria compartida · ',
- "models.sharednote": 'Esta GPU no tiene memoria propia — los pesos son páginas del sistema como cualquier otra, y la barra de arriba es toda la máquina. Mantener los dos residentes sigue siendo el punto, pero aquí pasarse cuesta swap en lugar de un desalojo: el dictado se queda colgado en vez de solo ir más lento, y todo lo demás en la máquina se cuelga con él.',
  "nav.setup": 'Instalación',
  "setup.rootblurb": 'Los pasos de arriba que necesitan root se pueden hacer aquí, con una sola petición de contraseña — polkit trata pacman como auth_admin, así que en dos llamadas te la pide dos veces. Después se reinicia el demonio: recuerda que falta un motor durante toda la vida del proceso, así que instalar solo el binario lo dejaría diciendo que sigue faltando.',
  "setup.rootrun": 'Instalar esto',
@@ -55,9 +53,6 @@ PACK = {
  "nav.models": "Modelos",
  "nav.dictionary": "Diccionario",
  "nav.settings": "Ajustes",
- "lang.label": "Idioma",
-
- "state.ready": "Listo",
  "state.idle": "inactivo",
  "state.recording": "grabando",
  "state.transcribing": "transcribiendo",
@@ -68,7 +63,6 @@ PACK = {
  "setup.blurb": "Aquí no se ejecuta nada hasta que lo pulses, y cada paso muestra "
                 "primero el comando exacto. Omarchy no ejecuta nada desde una carpeta "
                 "de plugin a propósito, así que esta pantalla pregunta.",
- "setup.optional": "opcional",
  "setup.copy": "Copiar",
  "setup.run": "Ejecutar",
  "setup.recheck": "Volver a comprobar",
@@ -98,7 +92,6 @@ PACK = {
  "modes.speechmodel": 'pesos',
  "modes.speechglobal": 'lo que esté cargado',
  "modes.speechonly1": 'Para este motor solo hay un juego de pesos descargado. El resto está en la pestaña Modelos — uno más pequeño vale la pena para los modos donde importa más la velocidad que la precisión.',
- "modes.newllm": 'PESOS DESCARGADOS QUE NADIE NOMBRA TODAVÍA',
  "modes.newname": "nombre del nuevo modo",
  "modes.here": "aquí",
  "modes.fallback": "por defecto",
@@ -154,6 +147,7 @@ PACK = {
  "modes.nollm": "no hay ningún LLM configurado — mira la pestaña Modelos",
  "modes.inject.auto": "auto",
  "modes.inject.clipboard": "portapapeles",
+ "modes.inject.xdotool": 'xdotool',
  "modes.langauto": "auto",
  "modes.s4": "4  INSERCIÓN",
  "modes.injecthint": "auto escribe con wtype, salvo en clientes XWayland y aplicaciones "
@@ -177,14 +171,8 @@ PACK = {
  "models.notloaded": "sin cargar",
  "models.llmnone": 'ninguno cargado — cada uno arranca en su primer uso',
  "models.coldshort": 'en frío',
- "models.cold": "en frío · arranca al primer uso",
  "models.ready": "listo",
  "models.nodaemon": "no se alcanza el demonio — no se sabe qué está cargado",
- "models.col.name": 'ENTRADA',
- "models.col.model": 'MODELO',
- "models.col.engine": 'MOTOR',
- "models.col.state": 'ESTADO',
- "models.col.usedby": 'USADO POR',
  "models.f.edit": 'Editar',
  "models.f.close": 'Cerrar',
  "models.f.url": 'URL',
@@ -226,25 +214,14 @@ PACK = {
                    "se borran.",
  "models.llm": "LLM",
  "models.llmsub": "texto → texto · cuantos quieras, los modos los llaman por su nombre",
- "models.remote": "remoto",
- "models.local": "local",
  "models.nokey": "sin clave",
- "models.usedby": "usado por ",
- "models.unused": "ningún modo lo nombra — no cuesta nada hasta que alguno lo haga",
  "models.endpointnote": "Los endpoints viven bajo [llm.<name>] — omavoi config edit. Una "
                         "clave nunca va en la configuración: define su variable de entorno, "
                         "o ponla en secrets.toml.",
- "models.vram": "VRAM · ",
  "models.seg.speech": 'modelo de voz',
  "models.seg.other": 'otros programas',
- "models.seg.free": 'libre',
  "models.vramsub": "en uso en toda la máquina",
  "models.needs": "necesita",
- "models.vramnote": "Mantener los dos residentes es justamente el punto: una cadena que "
-                    "carga pesos en cada toma cuesta segundos, no milisegundos. Si te pasas, "
-                    "lo que se desaloja es el modelo de voz — el dictado va diez veces más "
-                    "lento sin que nada diga por qué.",
-
  "dict.rules": "reglas",
  "dict.names": "nombres",
  "dict.blurb": "oído → querido. Un prompt de decodificador es una pista que el modelo "
@@ -315,7 +292,6 @@ PACK = {
  "set.historynote": "El audio guardado es lo que permite volver a pasar una toma por otro "
                     "modelo, y la prueba en seco de los nombres. Ponlo a 0 y ambas cosas se "
                     "van con él.",
- "set.privacy": "ADÓNDE VA TU VOZ",
  "set.neverleaves": "El audio nunca sale de esta máquina",
  "set.privacynote": "El reconocimiento de voz corre en la GPU local en todos los modos. Un "
                     "modo cuyo paso de LLM sea un modelo remoto sí envía fuera el texto "

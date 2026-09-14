@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import io, os, sys, textwrap
+import io, os, re, sys, textwrap
 
 HEADER = '''import QtQuick
 
@@ -179,8 +179,6 @@ section("update", {
 })
 
 section("shared-and-setup", {
- "models.shared": ("Shared memory · ", "共享内存 · ", "หน่วยความจำร่วม · "),
- "models.sharednote": ("This GPU has no memory of its own — the weights are ordinary system pages, and the bar above is the whole machine. Keeping both resident is still the point, but overcommit here costs swap rather than an eviction: dictation stalls instead of merely slowing down, and everything else on the machine stalls with it.", "这块 GPU 没有独立显存 —— 权重就是普通的系统内存页，上面那条是全机内存。让两个模型都常驻依然是关键，但在这里超配的代价是 swap，不是被换出：听写会直接卡住，而不只是变慢，整台机器也会跟着卡。", "GPU ตัวนี้ไม่มีหน่วยความจำของตัวเอง — น้ำหนักอยู่ในหน่วยความจำระบบธรรมดา และแถบด้านบนคือทั้งเครื่อง การให้ทั้งสองตัวค้างไว้ยังคงเป็นหัวใจ แต่การจัดเกินโควตาที่นี่ต้องจ่ายด้วย swap ไม่ใช่การถูกไล่ออก: การพิมพ์ด้วยเสียงจะค้างไปเลย ไม่ใช่แค่ช้าลง และทั้งเครื่องจะค้างตามไปด้วย"),
  "nav.setup": ("Setup", "安装", "ตั้งค่า"),
  "setup.rootblurb": ("The steps above that need root can be done here, in one password prompt — polkit treats pacman as auth_admin, so asking in two calls means being asked twice. The daemon is restarted afterwards: it remembers a missing engine for the life of the process, so installing the binary alone would leave it still saying the engine is not there.", "上面需要 root 的步骤可以在这里一次做完，只弹一次密码框 —— polkit 把 pacman 当作 auth_admin，分两次调用就会问两次密码。装完会重启守护进程：它对「引擎未安装」的判断在进程存活期间是缓存的，只装二进制的话它仍会说引擎不在。", "ขั้นตอนด้านบนที่ต้องใช้ root ทำได้จากที่นี่ในการถามรหัสผ่านครั้งเดียว — polkit ถือว่า pacman เป็น auth_admin ถ้าเรียกสองครั้งก็จะถูกถามสองครั้ง หลังจากนั้นจะรีสตาร์ตเดมอน เพราะมันจำว่าเอนจินไม่มีอยู่ไปตลอดอายุโปรเซส การติดตั้งไบนารีอย่างเดียวจึงยังทำให้มันบอกว่าไม่มีเอนจิน"),
  "setup.rootrun": ("Install these", "一次装好", "ติดตั้งทั้งหมดนี้"),
@@ -192,11 +190,9 @@ section("nav", {
  "nav.models":      ("Models", "模型", "โมเดล"),
  "nav.dictionary":  ("Dictionary", "词典", "พจนานุกรม"),
  "nav.settings":    ("Settings", "设置", "ตั้งค่า"),
- "lang.label":      ("Language", "语言", "ภาษา"),
 })
 
 section("state", {
- "state.ready":        ("Ready", "就绪", "พร้อม"),
  "state.idle":         ("idle", "空闲", "ว่าง"),
  "state.recording":    ("recording", "录音中", "กำลังอัดเสียง"),
  "state.transcribing": ("transcribing", "转写中", "กำลังถอดเสียง"),
@@ -214,7 +210,6 @@ section("setup", {
                     "所以这个页面只能来问你。",
                     "ไม่มีอะไรทำงานจนกว่าคุณจะกด และทุกขั้นจะแสดงคำสั่งจริงให้ดูก่อน Omarchy ตั้งใจไม่รันสิ่งใด "
                     "จากในโฟลเดอร์ปลั๊กอิน หน้านี้จึงต้องถามคุณแทน"),
- "setup.optional": ("optional", "可选", "ไม่บังคับ"),
  "setup.copy":     ("Copy", "复制", "คัดลอก"),
  "setup.run":      ("Run", "运行", "รัน"),
  "setup.recheck":  ("Re-check", "重新检查", "ตรวจอีกครั้ง"),
@@ -260,9 +255,6 @@ section("modes", {
                        "对速度比准确率更重要的模式,值得备一个小的。",
                        "เอนจินนี้ดาวน์โหลดน้ำหนักไว้ชุดเดียว ที่เหลืออยู่ในแท็บโมเดล — "
                        "ตัวเล็กกว่าคุ้มที่จะมีไว้สำหรับโหมดที่เน้นความเร็วมากกว่าความแม่น"),
- "modes.newllm":      ("DOWNLOADED WEIGHTS NOTHING NAMES YET",
-                       "已下载但还没有条目引用的权重",
-                       "น้ำหนักที่ดาวน์โหลดแล้วแต่ยังไม่มีรายการใดเรียกใช้"),
  "modes.newname":    ("new mode name", "新模式名称", "ชื่อโหมดใหม่"),
  "modes.here":       ("here", "当前", "ที่นี่"),
  "modes.fallback":   ("fallback", "兜底", "สำรอง"),
@@ -345,6 +337,7 @@ section("modes", {
                       "ยังไม่ได้ตั้งค่า LLM — ดูที่แท็บโมเดล"),
  "modes.inject.auto":      ("auto", "自动", "อัตโนมัติ"),
  "modes.inject.clipboard": ("clipboard", "剪贴板", "คลิปบอร์ด"),
+ "modes.inject.xdotool": ("xdotool", "xdotool", "xdotool"),
  "modes.langauto":         ("auto", "自动", "อัตโนมัติ"),
  "modes.s4":         ("4  INJECT", "4  注入", "4  การป้อนข้อความ"),
  "modes.injecthint": ("auto types with wtype, except in XWayland clients and known Electron "
@@ -386,17 +379,10 @@ section("models", {
                     "都未加载 —— 各自在首次用到时启动",
                     "ยังไม่โหลด — แต่ละตัวเริ่มเมื่อถูกใช้ครั้งแรก"),
  "models.coldshort":  ("cold", "未启动", "ยังไม่เริ่ม"),
- "models.cold":      ("cold · starts on first use", "未启动 · 首次使用时启动",
-                      "ยังไม่เริ่ม · จะเริ่มเมื่อใช้ครั้งแรก"),
  "models.ready":     ("ready", "就绪", "พร้อม"),
  "models.nodaemon":  ("daemon not reachable — what is loaded is unknown",
                       "连不上守护进程 —— 无法得知加载了什么",
                       "ติดต่อเดมอนไม่ได้ — ไม่ทราบว่าโหลดอะไรไว้"),
- "models.col.name":   ("ENTRY", "条目", "รายการ"),
- "models.col.model":  ("MODEL", "模型", "โมเดล"),
- "models.col.engine": ("ENGINE", "引擎", "เอนจิน"),
- "models.col.state":  ("STATE", "状态", "สถานะ"),
- "models.col.usedby": ("USED BY", "被使用于", "ใช้โดย"),
  "models.f.edit":      ("Edit", "编辑", "แก้ไข"),
  "models.f.close":     ("Close", "收起", "ปิด"),
  "models.f.url":       ("URL", "URL", "URL"),
@@ -468,13 +454,7 @@ section("models", {
  "models.llmsub":    ("text → text · any number, named by modes",
                       "文本 → 文本 · 可配多个，由模式按名字引用",
                       "ข้อความ → ข้อความ · มีได้หลายตัว โหมดเรียกตามชื่อ"),
- "models.remote":    ("remote", "远程", "ระยะไกล"),
- "models.local":     ("local", "本地", "ในเครื่อง"),
  "models.nokey":     ("no key", "缺密钥", "ไม่มีคีย์"),
- "models.usedby":    ("used by ", "被使用于 ", "ใช้โดย "),
- "models.unused":    ("not named by any mode — costs nothing until one does",
-                      "没有任何模式引用它 —— 在被引用前不占任何资源",
-                      "ยังไม่มีโหมดใดเรียกใช้ — ไม่กินทรัพยากรจนกว่าจะมี"),
  "models.endpointnote":("Endpoints live under [llm.<name>] — omavoi config edit. A key never "
                       "goes in the config: set its environment variable, or put it in "
                       "secrets.toml.",
@@ -482,21 +462,11 @@ section("models", {
                       "设成环境变量，或者放进 secrets.toml。",
                       "ปลายทางอยู่ใต้ [llm.<name>] — omavoi config edit คีย์ไม่เคยอยู่ในไฟล์ตั้งค่า: "
                       "ตั้งเป็นตัวแปรสภาพแวดล้อม หรือใส่ใน secrets.toml"),
- "models.vram":      ("VRAM · ", "显存 · ", "VRAM · "),
  "models.seg.speech": ("speech model", "语音模型", "โมเดลเสียงพูด"),
  "models.seg.other":  ("other programs", "其他程序", "โปรแกรมอื่น"),
- "models.seg.free":   ("free", "空闲", "ว่าง"),
  "models.vramsub":   ("in use across the whole machine", "全机范围的占用",
                       "ที่ใช้อยู่ทั้งเครื่อง"),
  "models.needs":     ("needs", "需要", "ต้องใช้"),
- "models.vramnote":  ("Keeping both resident is the point: a chain that loads weights per take "
-                      "costs seconds, not milliseconds. Overcommit and the speech model is what "
-                      "gets evicted — dictation goes ten times slower with nothing to say why.",
-                      "让两个模型都常驻是关键：每次录音都重新加载权重要花几秒，而不是几毫秒。一旦超配，"
-                      "被换出去的就是语音模型 —— 听写会慢十倍，而且不会有任何提示告诉你为什么。",
-                      "การให้ทั้งสองตัวค้างในหน่วยความจำคือหัวใจ: สายที่โหลดน้ำหนักใหม่ทุกครั้งเสียเวลาเป็นวินาที "
-                      "ไม่ใช่มิลลิวินาที ถ้าจัดเกินโควตา ตัวที่ถูกไล่ออกคือโมเดลเสียงพูด — "
-                      "การพิมพ์ด้วยเสียงจะช้าลงสิบเท่าโดยไม่มีอะไรบอกสาเหตุ"),
 })
 
 section("dictionary", {
@@ -616,7 +586,6 @@ section("settings", {
                     "存下的音频是「换个模型重跑一次」和名称试运行的前提。设成 0，这两个功能也一起没了。",
                     "เสียงที่เก็บไว้คือสิ่งที่ทำให้รันรายการเดิมด้วยโมเดลอื่น และการทดลองรันชื่อ เป็นไปได้ "
                     "ตั้งเป็น 0 แล้วสองอย่างนั้นก็หายไปด้วย"),
- "set.privacy":    ("WHERE YOUR VOICE GOES", "你的声音去了哪里", "เสียงของคุณไปที่ไหน"),
  "set.neverleaves":("Audio never leaves this machine", "音频永不离开本机",
                     "เสียงไม่เคยออกจากเครื่องนี้"),
  "set.privacynote":("Speech runs on the local GPU in every mode. A mode whose LLM step is a "
@@ -667,10 +636,40 @@ open(os.path.join(_HERE, "..", "..", "Strings.qml"), "w").write(s)
 
 n = sum(len(e) for _, e in SECTIONS)
 keys = {k for _, e in SECTIONS for k in e}
+
+# Drift, reported as a failure rather than a line of output. Printing it and
+# exiting 0 is how a pack loses a key and nobody notices until a user sees a
+# dotted identifier where a sentence should be.
+problems = []
 for code, pack in EXTRA.items():
     missing = keys - set(pack)
     extra = set(pack) - keys
-    if missing or extra:
-        print(f"  {code}: MISSING {sorted(missing)} EXTRA {sorted(extra)}")
+    if missing:
+        problems.append(f"{code}: missing {sorted(missing)}")
+    if extra:
+        problems.append(f"{code}: has keys the canonical set does not: {sorted(extra)}")
+
+# And the other direction: a key the interface asks for and the table has not
+# got renders as the identifier itself, silently.
+_ROOT = os.path.join(_HERE, "..", "..")
+DYNAMIC = {f"modes.inject.{v}" for v in ("auto", "clipboard", "xdotool")} | {
+    f"state.{v}" for v in ("idle", "recording", "transcribing", "stopped")}
+asked, dead = set(), set()
+for name in sorted(os.listdir(_ROOT)):
+    if not name.endswith(".qml") or name == "Strings.qml":
+        continue
+    text = open(os.path.join(_ROOT, name), encoding="utf-8").read()
+    asked |= set(re.findall(r'\bt[f]?\("([^"]+)"', text))
+absent = sorted(a for a in asked if a not in keys and not a.endswith("."))
+if absent:
+    problems.append(f"used in QML and not in the table: {absent}")
+unused = sorted(keys - asked - DYNAMIC)
+if unused:
+    problems.append(f"in the table and never used: {unused}")
+
 print("keys per language:", n, "· languages:", len(LANGS),
       "· total entries:", n * len(LANGS))
+for line in problems:
+    print("  " + line)
+if problems:
+    raise SystemExit(1)

@@ -45,8 +45,6 @@ PACK = {
  "up.step.plugin": 'das Plugin',
  "up.step.daemon": 'der Dienst',
  "up.step.restart": 'neu starten',
- "models.shared": 'Gemeinsamer Speicher · ',
- "models.sharednote": 'Diese GPU hat keinen eigenen Speicher — die Gewichte sind gewöhnliche Systemseiten, und der Balken oben ist der ganze Rechner. Beide dauerhaft im Speicher zu halten bleibt der Punkt, aber Überbuchung kostet hier Swap statt einer Verdrängung: das Diktat bleibt stehen, statt nur langsamer zu werden, und alles andere auf dem Rechner bleibt mit stehen.',
  "nav.setup": 'Einrichtung',
  "setup.rootblurb": 'Die Schritte oben, die root brauchen, lassen sich hier erledigen, in einer einzigen Passwortabfrage — polkit behandelt pacman als auth_admin, zwei Aufrufe heißen also zweimal gefragt werden. Danach wird der Daemon neu gestartet: er merkt sich eine fehlende Engine für die Lebensdauer des Prozesses, das Binary allein zu installieren würde ihn weiterhin sagen lassen, sie fehle.',
  "setup.rootrun": 'Diese installieren',
@@ -55,9 +53,6 @@ PACK = {
  "nav.models": "Modelle",
  "nav.dictionary": "Wörterbuch",
  "nav.settings": "Einstellungen",
- "lang.label": "Sprache",
-
- "state.ready": "Bereit",
  "state.idle": "bereit",
  "state.recording": "Aufnahme",
  "state.transcribing": "Transkription",
@@ -68,7 +63,6 @@ PACK = {
  "setup.blurb": "Hier läuft nichts, bis du es anstößt, und jeder Schritt zeigt "
                 "vorher den genauen Befehl. Omarchy führt absichtlich nichts aus "
                 "einem Plugin-Ordner aus, deshalb fragt dieser Bildschirm.",
- "setup.optional": "optional",
  "setup.copy": "Kopieren",
  "setup.run": "Ausführen",
  "setup.recheck": "Neu prüfen",
@@ -99,7 +93,6 @@ PACK = {
  "modes.speechmodel": 'Gewichte',
  "modes.speechglobal": 'was geladen ist',
  "modes.speechonly1": 'Für diese Engine ist nur ein Satz Gewichte heruntergeladen. Der Rest steht im Tab Modelle — ein kleinerer lohnt sich für Modi, in denen Geschwindigkeit mehr zählt als Genauigkeit.',
- "modes.newllm": 'HERUNTERGELADENE GEWICHTE, DIE NOCH NIEMAND NENNT',
  "modes.newname": "Name des neuen Modus",
  "modes.here": "hier",
  "modes.fallback": "Rückfall",
@@ -158,6 +151,7 @@ PACK = {
  "modes.nollm": "kein LLM konfiguriert — siehe Tab Modelle",
  "modes.inject.auto": "auto",
  "modes.inject.clipboard": "Zwischenablage",
+ "modes.inject.xdotool": 'xdotool',
  "modes.langauto": "auto",
  "modes.s4": "4  EINFÜGEN",
  "modes.injecthint": "auto tippt mit wtype, außer in XWayland-Clients und bekannten "
@@ -181,14 +175,8 @@ PACK = {
  "models.notloaded": "nicht geladen",
  "models.llmnone": 'keiner geladen — jeder startet bei der ersten Nutzung',
  "models.coldshort": 'kalt',
- "models.cold": "kalt · startet beim ersten Gebrauch",
  "models.ready": "bereit",
  "models.nodaemon": "Dienst nicht erreichbar — was geladen ist, ist unbekannt",
- "models.col.name": 'EINTRAG',
- "models.col.model": 'MODELL',
- "models.col.engine": 'ENGINE',
- "models.col.state": 'ZUSTAND',
- "models.col.usedby": 'GENUTZT VON',
  "models.f.edit": 'Bearbeiten',
  "models.f.close": 'Schließen',
  "models.f.url": 'URL',
@@ -230,25 +218,14 @@ PACK = {
                    "und nie gelöscht.",
  "models.llm": "LLM",
  "models.llmsub": "Text → Text · beliebig viele, von Modi namentlich aufgerufen",
- "models.remote": "remote",
- "models.local": "lokal",
  "models.nokey": "kein Key",
- "models.usedby": "genutzt von ",
- "models.unused": "von keinem Modus genannt — kostet nichts, bis einer es tut",
  "models.endpointnote": "Endpunkte stehen unter [llm.<name>] — omavoi config edit. "
                         "Ein Key kommt nie in die Konfiguration: setze seine "
                         "Umgebungsvariable oder lege ihn in secrets.toml.",
- "models.vram": "VRAM · ",
  "models.seg.speech": 'Sprachmodell',
  "models.seg.other": 'andere Programme',
- "models.seg.free": 'frei',
  "models.vramsub": "im gesamten Rechner belegt",
  "models.needs": "braucht",
- "models.vramnote": "Beide dauerhaft im Speicher zu halten ist der Punkt: eine Kette, "
-                    "die Gewichte pro Aufnahme lädt, kostet Sekunden statt "
-                    "Millisekunden. Bei Überbuchung wird das Sprachmodell verdrängt "
-                    "— das Diktat wird zehnmal langsamer, ohne dass etwas sagt warum.",
-
  "dict.rules": "Regeln",
  "dict.names": "Namen",
  "dict.blurb": "gehört → gemeint. Ein Decoder-Prompt ist ein Hinweis, den das Modell "
@@ -320,7 +297,6 @@ PACK = {
  "set.historynote": "Gespeichertes Audio macht es möglich, eine Aufnahme mit einem "
                     "anderen Modell zu wiederholen und den Namens-Probelauf zu fahren. "
                     "Auf 0 gesetzt, verschwindet beides mit.",
- "set.privacy": "WOHIN DEINE STIMME GEHT",
  "set.neverleaves": "Audio verlässt diesen Rechner nie",
  "set.privacynote": "Die Spracherkennung läuft in jedem Modus auf der lokalen GPU. Ein "
                     "Modus, dessen LLM-Schritt ein Remote-Modell ist, schickt den "

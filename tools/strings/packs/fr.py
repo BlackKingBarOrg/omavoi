@@ -45,8 +45,6 @@ PACK = {
  "up.step.plugin": 'le plugin',
  "up.step.daemon": 'le démon',
  "up.step.restart": 'redémarrer',
- "models.shared": 'Mémoire partagée · ',
- "models.sharednote": "Ce GPU n'a pas de mémoire propre — les poids sont des pages système ordinaires, et la barre ci-dessus représente toute la machine. Garder les deux en mémoire reste tout l'intérêt, mais ici le surengagement coûte du swap plutôt qu'une éviction : la dictée se bloque au lieu de seulement ralentir, et tout le reste de la machine se bloque avec elle.",
  "nav.setup": 'Installation',
  "setup.rootblurb": "Les étapes ci-dessus qui demandent root peuvent être faites ici, en une seule demande de mot de passe — polkit traite pacman comme auth_admin, donc deux appels signifient deux demandes. Le démon est ensuite redémarré : il retient l'absence d'un moteur pour toute la durée du processus, installer le binaire seul le laisserait continuer à dire qu'il manque.",
  "setup.rootrun": 'Tout installer',
@@ -55,9 +53,6 @@ PACK = {
  "nav.models": "Modèles",
  "nav.dictionary": "Dictionnaire",
  "nav.settings": "Réglages",
- "lang.label": "Langue",
-
- "state.ready": "Prêt",
  "state.idle": "au repos",
  "state.recording": "enregistrement",
  "state.transcribing": "transcription",
@@ -68,7 +63,6 @@ PACK = {
  "setup.blurb": "Rien ne s'exécute ici avant que tu ne l'actionnes, et chaque étape "
                 "montre d'abord la commande exacte. Omarchy n'exécute délibérément "
                 "rien depuis un dossier de plugin, donc cet écran demande.",
- "setup.optional": "facultatif",
  "setup.copy": "Copier",
  "setup.run": "Exécuter",
  "setup.recheck": "Revérifier",
@@ -98,7 +92,6 @@ PACK = {
  "modes.speechmodel": 'poids',
  "modes.speechglobal": 'ce qui est chargé',
  "modes.speechonly1": "Un seul jeu de poids est téléchargé pour ce moteur. Les autres sont dans l'onglet Modèles — un plus petit vaut la peine pour les modes où la vitesse compte plus que la précision.",
- "modes.newllm": 'POIDS TÉLÉCHARGÉS QUE RIEN NE NOMME ENCORE',
  "modes.newname": "nom du nouveau mode",
  "modes.here": "ici",
  "modes.fallback": "par défaut",
@@ -154,6 +147,7 @@ PACK = {
  "modes.nollm": "aucun LLM configuré — voir l'onglet Modèles",
  "modes.inject.auto": "auto",
  "modes.inject.clipboard": "presse-papiers",
+ "modes.inject.xdotool": 'xdotool',
  "modes.langauto": "auto",
  "modes.s4": "4  INSERTION",
  "modes.injecthint": "auto tape avec wtype, sauf dans les clients XWayland et les "
@@ -177,14 +171,8 @@ PACK = {
  "models.notloaded": "non chargé",
  "models.llmnone": "aucun chargé — chacun démarre à sa première utilisation",
  "models.coldshort": 'à froid',
- "models.cold": "à froid · démarre à la première utilisation",
  "models.ready": "prêt",
  "models.nodaemon": "démon injoignable — impossible de savoir ce qui est chargé",
- "models.col.name": 'ENTRÉE',
- "models.col.model": 'MODÈLE',
- "models.col.engine": 'MOTEUR',
- "models.col.state": 'ÉTAT',
- "models.col.usedby": 'UTILISÉ PAR',
  "models.f.edit": 'Modifier',
  "models.f.close": 'Fermer',
  "models.f.url": 'URL',
@@ -226,25 +214,14 @@ PACK = {
                    "supprimés.",
  "models.llm": "LLM",
  "models.llmsub": "texte → texte · autant qu'on veut, appelés par leur nom depuis les modes",
- "models.remote": "distant",
- "models.local": "local",
  "models.nokey": "pas de clé",
- "models.usedby": "utilisé par ",
- "models.unused": "nommé par aucun mode — ne coûte rien tant que ce n'est pas le cas",
  "models.endpointnote": "Les points d'accès vivent sous [llm.<name>] — omavoi config edit. "
                         "Une clé ne va jamais dans la configuration : définis sa variable "
                         "d'environnement, ou mets-la dans secrets.toml.",
- "models.vram": "VRAM · ",
  "models.seg.speech": 'modèle de parole',
  "models.seg.other": 'autres programmes',
- "models.seg.free": 'libre',
  "models.vramsub": "utilisée sur toute la machine",
  "models.needs": "requiert",
- "models.vramnote": "Garder les deux en mémoire est tout l'intérêt : une chaîne qui charge "
-                    "les poids à chaque prise coûte des secondes, pas des millisecondes. "
-                    "En surengagement, c'est le modèle de parole qui est évincé — la dictée "
-                    "devient dix fois plus lente sans que rien n'en dise la raison.",
-
  "dict.rules": "règles",
  "dict.names": "noms",
  "dict.blurb": "entendu → voulu. Un prompt de décodeur est un indice que le modèle peut "
@@ -316,7 +293,6 @@ PACK = {
  "set.historynote": "L'audio stocké est ce qui rend possible de rejouer une prise sur un "
                     "autre modèle, et l'essai à blanc des noms. Mets-le à 0 et les deux "
                     "disparaissent avec.",
- "set.privacy": "OÙ VA TA VOIX",
  "set.neverleaves": "L'audio ne quitte jamais cette machine",
  "set.privacynote": "La reconnaissance vocale tourne sur le GPU local dans tous les modes. "
                     "Un mode dont l'étape LLM est un modèle distant, lui, envoie le texte "

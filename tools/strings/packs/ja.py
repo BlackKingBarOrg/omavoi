@@ -45,8 +45,6 @@ PACK = {
  "up.step.plugin": 'プラグイン',
  "up.step.daemon": 'デーモン',
  "up.step.restart": '再起動',
- "models.shared": '共有メモリ · ',
- "models.sharednote": 'この GPU に専用メモリはありません —— 重みは通常のシステムメモリ上にあり、上のバーは端末全体を表しています。両方を常駐させることが肝心なのは変わりませんが、ここで詰め込みすぎた代償は追い出しではなく swap です。入力は遅くなるのではなく止まり、端末の他のすべても一緒に止まります。',
  "nav.setup": 'セットアップ',
  "setup.rootblurb": '上の root が必要な手順は、ここでパスワード入力一回で済ませられます —— polkit は pacman を auth_admin として扱うため、二回に分けて呼べば二回聞かれます。その後デーモンを再起動します。エンジンが無いという判断はプロセスが生きている間キャッシュされるので、バイナリを入れるだけでは無いと言い続けます。',
  "setup.rootrun": 'まとめて入れる',
@@ -55,9 +53,6 @@ PACK = {
  "nav.models": "モデル",
  "nav.dictionary": "辞書",
  "nav.settings": "設定",
- "lang.label": "言語",
-
- "state.ready": "準備完了",
  "state.idle": "待機中",
  "state.recording": "録音中",
  "state.transcribing": "文字起こし中",
@@ -68,7 +63,6 @@ PACK = {
  "setup.blurb": "ここでは押すまで何も実行されず、各ステップは実行前に正確なコマンドを表示します。"
                 "Omarchy はプラグインフォルダの中身を意図的に一切実行しないので、"
                 "この画面が代わりに尋ねます。",
- "setup.optional": "任意",
  "setup.copy": "コピー",
  "setup.run": "実行",
  "setup.recheck": "再確認",
@@ -98,7 +92,6 @@ PACK = {
  "modes.speechmodel": '重み',
  "modes.speechglobal": '読み込まれているもの',
  "modes.speechonly1": 'このエンジン用にダウンロード済みの重みは一組だけです。残りは「モデル」タブにあります —— 正確さより速さが要るモードには小さいものを用意しておく価値があります。',
- "modes.newllm": 'ダウンロード済みで、まだどこからも呼ばれていない重み',
  "modes.newname": "新しいモード名",
  "modes.here": "現在",
  "modes.fallback": "フォールバック",
@@ -150,6 +143,7 @@ PACK = {
  "modes.nollm": "LLM が未設定です —— 「モデル」タブを確認してください",
  "modes.inject.auto": "自動",
  "modes.inject.clipboard": "クリップボード",
+ "modes.inject.xdotool": 'xdotool',
  "modes.langauto": "自動",
  "modes.s4": "4  入力",
  "modes.injecthint": "自動では wtype で打鍵しますが、XWayland クライアントと既知の Electron アプリでは"
@@ -172,14 +166,8 @@ PACK = {
  "models.notloaded": "未ロード",
  "models.llmnone": '未ロード — それぞれ初回の使用時に起動します',
  "models.coldshort": '停止中',
- "models.cold": "停止中 · 初回利用時に起動",
  "models.ready": "準備完了",
  "models.nodaemon": "デーモンに接続できません —— 何がロードされているか不明です",
- "models.col.name": 'エントリ',
- "models.col.model": 'モデル',
- "models.col.engine": 'エンジン',
- "models.col.state": '状態',
- "models.col.usedby": '使用中のモード',
  "models.f.edit": '編集',
  "models.f.close": '閉じる',
  "models.f.url": 'URL',
@@ -220,24 +208,14 @@ PACK = {
  "models.outside": "%1 の外で見つかった重みはその場所のまま使われ、削除されることはありません。",
  "models.llm": "LLM",
  "models.llmsub": "テキスト → テキスト · 数はいくつでも、モードが名前で呼び出します",
- "models.remote": "リモート",
- "models.local": "ローカル",
  "models.nokey": "キーなし",
- "models.usedby": "使用中のモード： ",
- "models.unused": "どのモードからも呼ばれていません —— 呼ばれるまで負荷はゼロです",
  "models.endpointnote": "エンドポイントは [llm.<name>] の下にあります —— omavoi config edit。"
                         "キーは決して設定ファイルに書きません。環境変数に設定するか、"
                         "secrets.toml に置いてください。",
- "models.vram": "VRAM · ",
  "models.seg.speech": '音声モデル',
  "models.seg.other": '他のプログラム',
- "models.seg.free": '空き',
  "models.vramsub": "端末全体での使用量",
  "models.needs": "必要",
- "models.vramnote": "両方を常駐させることが肝心です。録音ごとに重みを読み込む構成では"
-                    "ミリ秒ではなく秒単位のコストがかかります。詰め込みすぎると追い出されるのは"
-                    "音声モデルの側で —— 理由を告げるものが何もないまま、入力が十倍遅くなります。",
-
  "dict.rules": "ルール",
  "dict.names": "固有名詞",
  "dict.blurb": "聞こえた語 → 本来の語。デコーダーのプロンプトはモデルが無視できる助言にすぎませんが、"
@@ -305,7 +283,6 @@ PACK = {
  "set.takes": " 件",
  "set.historynote": "保存した音声があるからこそ、別のモデルで録音を再実行することも、"
                     "固有名詞のドライランもできます。0 にすると、その両方が一緒に失われます。",
- "set.privacy": "あなたの声はどこへ行くか",
  "set.neverleaves": "音声はこの端末から出ません",
  "set.privacynote": "音声認識はどのモードでもローカルの GPU で動きます。ただし LLM ステップに"
                     "リモートモデルを使うモードは、文字起こししたテキストを外へ送ります —— "

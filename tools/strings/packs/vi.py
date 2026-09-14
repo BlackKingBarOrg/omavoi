@@ -45,8 +45,6 @@ PACK = {
  "up.step.plugin": 'plugin',
  "up.step.daemon": 'dịch vụ',
  "up.step.restart": 'khởi động lại',
- "models.shared": 'Bộ nhớ dùng chung · ',
- "models.sharednote": 'GPU này không có bộ nhớ riêng — trọng số nằm trong bộ nhớ hệ thống thông thường, và thanh phía trên là toàn bộ máy. Giữ cả hai thường trú vẫn là điểm chính, nhưng vượt quá ở đây phải trả bằng swap chứ không phải bị đẩy ra: việc nhập bằng giọng sẽ treo hẳn thay vì chỉ chậm đi, và mọi thứ khác trên máy treo theo.',
  "nav.setup": 'Cài đặt',
  "setup.rootblurb": 'Các bước ở trên cần root có thể làm ngay tại đây, chỉ hỏi mật khẩu một lần — polkit xem pacman là auth_admin, gọi hai lần thì bị hỏi hai lần. Sau đó daemon được khởi động lại: nó ghi nhớ việc thiếu engine trong suốt vòng đời tiến trình, nên chỉ cài binary thôi thì nó vẫn báo là thiếu.',
  "setup.rootrun": 'Cài các mục này',
@@ -55,9 +53,6 @@ PACK = {
  "nav.models": "Mô hình",
  "nav.dictionary": "Từ điển",
  "nav.settings": "Cài đặt",
- "lang.label": "Ngôn ngữ",
-
- "state.ready": "Sẵn sàng",
  "state.idle": "rảnh",
  "state.recording": "đang ghi",
  "state.transcribing": "đang chuyển thành chữ",
@@ -68,7 +63,6 @@ PACK = {
  "setup.blurb": "Ở đây không có gì chạy cho đến khi bạn bấm, và mỗi bước đều hiện "
                 "đúng câu lệnh trước. Omarchy cố tình không chạy bất cứ thứ gì từ "
                 "trong thư mục plugin, nên màn hình này phải hỏi bạn.",
- "setup.optional": "không bắt buộc",
  "setup.copy": "Sao chép",
  "setup.run": "Chạy",
  "setup.recheck": "Kiểm tra lại",
@@ -98,7 +92,6 @@ PACK = {
  "modes.speechmodel": 'trọng số',
  "modes.speechglobal": 'cái đang được nạp',
  "modes.speechonly1": 'Chỉ có một bộ trọng số đã tải cho engine này. Phần còn lại ở thẻ Mô hình — một bộ nhỏ hơn đáng có cho những chế độ cần nhanh hơn là chính xác.',
- "modes.newllm": 'TRỌNG SỐ ĐÃ TẢI MÀ CHƯA CÓ MỤC NÀO GỌI',
  "modes.newname": "tên chế độ mới",
  "modes.here": "hiện tại",
  "modes.fallback": "dự phòng",
@@ -151,6 +144,7 @@ PACK = {
  "modes.nollm": "chưa cấu hình LLM nào — xem thẻ Mô hình",
  "modes.inject.auto": "tự động",
  "modes.inject.clipboard": "clipboard",
+ "modes.inject.xdotool": 'xdotool',
  "modes.langauto": "tự động",
  "modes.s4": "4  CHÈN CHỮ",
  "modes.injecthint": "tự động sẽ gõ bằng wtype, trừ các client XWayland và những ứng dụng "
@@ -174,14 +168,8 @@ PACK = {
  "models.notloaded": "chưa nạp",
  "models.llmnone": 'chưa nạp — mỗi cái khởi động khi dùng lần đầu',
  "models.coldshort": 'chưa chạy',
- "models.cold": "chưa khởi động · chạy khi dùng lần đầu",
  "models.ready": "sẵn sàng",
  "models.nodaemon": "không liên lạc được dịch vụ — không rõ đang nạp những gì",
- "models.col.name": 'MỤC',
- "models.col.model": 'MÔ HÌNH',
- "models.col.engine": 'ENGINE',
- "models.col.state": 'TRẠNG THÁI',
- "models.col.usedby": 'DÙNG BỞI',
  "models.f.edit": 'Sửa',
  "models.f.close": 'Đóng',
  "models.f.url": 'URL',
@@ -222,25 +210,14 @@ PACK = {
  "models.outside": "Trọng số tìm thấy ngoài %1 sẽ được dùng ngay tại chỗ và không bao giờ bị xóa.",
  "models.llm": "LLM",
  "models.llmsub": "chữ → chữ · bao nhiêu cũng được, các chế độ gọi theo tên",
- "models.remote": "từ xa",
- "models.local": "cục bộ",
  "models.nokey": "chưa có khóa",
- "models.usedby": "được dùng bởi ",
- "models.unused": "chưa chế độ nào gọi tên — chưa tốn gì cho đến khi có",
  "models.endpointnote": "Các endpoint nằm dưới [llm.<name>] — omavoi config edit. Khóa "
                         "không bao giờ nằm trong file cấu hình: hãy đặt biến môi trường "
                         "của nó, hoặc để trong secrets.toml.",
- "models.vram": "VRAM · ",
  "models.seg.speech": 'mô hình giọng nói',
  "models.seg.other": 'chương trình khác',
- "models.seg.free": 'còn trống',
  "models.vramsub": "đang dùng trên toàn máy",
  "models.needs": "cần",
- "models.vramnote": "Giữ cả hai thường trú mới là điểm chính: một chuỗi phải nạp trọng số "
-                    "mỗi lần ghi sẽ tốn hàng giây, không phải hàng mili giây. Nếu vượt quá "
-                    "dung lượng, thứ bị đẩy ra là mô hình giọng nói — việc nhập bằng giọng "
-                    "chậm đi mười lần mà không có gì nói cho bạn biết vì sao.",
-
  "dict.rules": "quy tắc",
  "dict.names": "tên riêng",
  "dict.blurb": "nghe thành → thật ra là. Prompt của bộ giải mã chỉ là gợi ý mà mô hình có "
@@ -309,7 +286,6 @@ PACK = {
  "set.takes": " bản ghi",
  "set.historynote": "Âm thanh đã lưu là thứ cho phép chạy lại một bản ghi trên mô hình khác, "
                     "và chạy thử phần tên riêng. Đặt về 0 thì cả hai mất theo.",
- "set.privacy": "GIỌNG CỦA BẠN ĐI ĐÂU",
  "set.neverleaves": "Âm thanh không bao giờ rời khỏi máy này",
  "set.privacynote": "Việc nhận dạng giọng nói chạy trên GPU cục bộ ở mọi chế độ. Nhưng chế "
                     "độ nào có bước LLM dùng mô hình từ xa thì đúng là gửi văn bản đã chuyển "
