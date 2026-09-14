@@ -818,8 +818,7 @@ Item {
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: Style.space(4)
-                  visible: root.take && root.take.warnings
-                           && root.take.warnings.length > 0
+                  visible: !!(root.take && (root.take.warnings || []).length)
                   Text {
                     text: strings.t("hist.problems")
                     font.family: Style.font.family
@@ -844,7 +843,7 @@ Item {
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: Style.space(4)
-                  visible: root.take && root.take.steps && root.take.steps.length > 0
+                  visible: !!(root.take && (root.take.steps || []).length)
                   Text {
                     text: strings.t("hist.steps")
                     font.family: Style.font.family
@@ -891,8 +890,8 @@ Item {
                 }
 
                 Text {
-                  visible: root.take && root.take.raw_text
-                           && root.take.raw_text !== root.take.text
+                  visible: !!(root.take && root.take.raw_text
+                              && root.take.raw_text !== root.take.text)
                   Layout.fillWidth: true
                   wrapMode: Text.Wrap
                   text: strings.t("hist.said") + (root.take ? root.take.raw_text : "")
@@ -904,8 +903,8 @@ Item {
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: Style.space(4)
-                  visible: root.take && root.take.post
-                           && root.take.post.changes && root.take.post.changes.length
+                  visible: !!(root.take && root.take.post
+                              && (root.take.post.changes || []).length)
                   Text {
                     text: strings.t("hist.post")
                     font.family: Style.font.family
@@ -929,8 +928,8 @@ Item {
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: Style.space(4)
-                  visible: root.take && root.take.asr && root.take.asr.segments
-                           && root.take.asr.segments.length
+                  visible: !!(root.take && root.take.asr
+                              && (root.take.asr.segments || []).length)
                   Text {
                     text: strings.t("hist.segments")
                     font.family: Style.font.family
@@ -1001,7 +1000,7 @@ Item {
                   }
                   Button {
                     text: strings.t("hist.play")
-                    visible: root.take && root.take.wav
+                    visible: !!(root.take && root.take.wav)
                     onClicked: root.run("pw-play " + JSON.stringify(root.take.wav))
                   }
                 }
