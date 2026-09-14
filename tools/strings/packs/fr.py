@@ -59,7 +59,8 @@ PACK = {
  "state.stopped": "démon arrêté",
 
  "setup.prefix": "installation ",
- "setup.title": "Encore deux éléments à installer",
+ "setup.title": 'Reste à installer : %1',
+ "setup.titledone": 'Tout est en place',
  "setup.blurb": "Rien ne s'exécute ici avant que tu ne l'actionnes, et chaque étape "
                 "montre d'abord la commande exacte. Omarchy n'exécute délibérément "
                 "rien depuis un dossier de plugin, donc cet écran demande.",

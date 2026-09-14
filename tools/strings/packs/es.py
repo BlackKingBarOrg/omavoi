@@ -59,7 +59,8 @@ PACK = {
  "state.stopped": "demonio detenido",
 
  "setup.prefix": "instalación ",
- "setup.title": "Faltan dos piezas por instalar",
+ "setup.title": 'Queda por instalar: %1',
+ "setup.titledone": 'Todo está en su sitio',
  "setup.blurb": "Aquí no se ejecuta nada hasta que lo pulses, y cada paso muestra "
                 "primero el comando exacto. Omarchy no ejecuta nada desde una carpeta "
                 "de plugin a propósito, así que esta pantalla pregunta.",

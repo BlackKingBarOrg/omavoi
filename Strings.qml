@@ -130,7 +130,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "setup ",
-      "setup.title": "Two more pieces to install",
+      "setup.title": "Still to install: %1",
+      "setup.titledone": "Everything is in place",
       "setup.blurb": "Nothing here runs until you press it, and every step shows the exact command first. Omarchy deliberately runs nothing from inside a plugin folder, so this screen asks instead.",
       "setup.copy": "Copy",
       "setup.run": "Run",
@@ -413,7 +414,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "安装 ",
-      "setup.title": "还有两个组件要装",
+      "setup.title": "还有 %1 个组件要装",
+      "setup.titledone": "全部都装好了",
       "setup.blurb": "这里的每一步都要你按下才会执行，并且会先把完整命令显示出来。Omarchy 有意不执行插件目录里的任何东西，所以这个页面只能来问你。",
       "setup.copy": "复制",
       "setup.run": "运行",
@@ -696,7 +698,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "ติดตั้ง ",
-      "setup.title": "เหลืออีกสองส่วนที่ต้องติดตั้ง",
+      "setup.title": "ยังต้องติดตั้ง: %1",
+      "setup.titledone": "ติดตั้งครบแล้ว",
       "setup.blurb": "ไม่มีอะไรทำงานจนกว่าคุณจะกด และทุกขั้นจะแสดงคำสั่งจริงให้ดูก่อน Omarchy ตั้งใจไม่รันสิ่งใด จากในโฟลเดอร์ปลั๊กอิน หน้านี้จึงต้องถามคุณแทน",
       "setup.copy": "คัดลอก",
       "setup.run": "รัน",
@@ -979,7 +982,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "Einrichtung ",
-      "setup.title": "Noch zwei Teile zu installieren",
+      "setup.title": "Noch zu installieren: %1",
+      "setup.titledone": "Alles ist vorhanden",
       "setup.blurb": "Hier läuft nichts, bis du es anstößt, und jeder Schritt zeigt vorher den genauen Befehl. Omarchy führt absichtlich nichts aus einem Plugin-Ordner aus, deshalb fragt dieser Bildschirm.",
       "setup.copy": "Kopieren",
       "setup.run": "Ausführen",
@@ -1262,7 +1266,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "installation ",
-      "setup.title": "Encore deux éléments à installer",
+      "setup.title": "Reste à installer : %1",
+      "setup.titledone": "Tout est en place",
       "setup.blurb": "Rien ne s'exécute ici avant que tu ne l'actionnes, et chaque étape montre d'abord la commande exacte. Omarchy n'exécute délibérément rien depuis un dossier de plugin, donc cet écran demande.",
       "setup.copy": "Copier",
       "setup.run": "Exécuter",
@@ -1545,7 +1550,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "instalación ",
-      "setup.title": "Faltan dos piezas por instalar",
+      "setup.title": "Queda por instalar: %1",
+      "setup.titledone": "Todo está en su sitio",
       "setup.blurb": "Aquí no se ejecuta nada hasta que lo pulses, y cada paso muestra primero el comando exacto. Omarchy no ejecuta nada desde una carpeta de plugin a propósito, así que esta pantalla pregunta.",
       "setup.copy": "Copiar",
       "setup.run": "Ejecutar",
@@ -1828,7 +1834,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "セットアップ ",
-      "setup.title": "あと二つインストールが必要です",
+      "setup.title": "あと %1 個インストールが必要",
+      "setup.titledone": "すべて揃っています",
       "setup.blurb": "ここでは押すまで何も実行されず、各ステップは実行前に正確なコマンドを表示します。Omarchy はプラグインフォルダの中身を意図的に一切実行しないので、この画面が代わりに尋ねます。",
       "setup.copy": "コピー",
       "setup.run": "実行",
@@ -2111,7 +2118,8 @@ Item {
 
       // ---- setup
       "setup.prefix": "cài đặt ",
-      "setup.title": "Còn hai phần nữa cần cài",
+      "setup.title": "Còn phải cài: %1",
+      "setup.titledone": "Mọi thứ đã sẵn sàng",
       "setup.blurb": "Ở đây không có gì chạy cho đến khi bạn bấm, và mỗi bước đều hiện đúng câu lệnh trước. Omarchy cố tình không chạy bất cứ thứ gì từ trong thư mục plugin, nên màn hình này phải hỏi bạn.",
       "setup.copy": "Sao chép",
       "setup.run": "Chạy",

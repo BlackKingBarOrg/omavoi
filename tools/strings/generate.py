@@ -201,8 +201,10 @@ section("state", {
 
 section("setup", {
  "setup.prefix":   ("setup ", "安装 ", "ติดตั้ง "),
- "setup.title":    ("Two more pieces to install", "还有两个组件要装",
-                    "เหลืออีกสองส่วนที่ต้องติดตั้ง"),
+ "setup.title":  ("Still to install: %1", "还有 %1 个组件要装",
+                  "ยังต้องติดตั้ง: %1"),
+ "setup.titledone": ("Everything is in place", "全部都装好了",
+                     "ติดตั้งครบแล้ว"),
  "setup.blurb":    ("Nothing here runs until you press it, and every step shows the exact "
                     "command first. Omarchy deliberately runs nothing from inside a plugin "
                     "folder, so this screen asks instead.",

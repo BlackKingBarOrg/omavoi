@@ -59,7 +59,8 @@ PACK = {
  "state.stopped": "Dienst gestoppt",
 
  "setup.prefix": "Einrichtung ",
- "setup.title": "Noch zwei Teile zu installieren",
+ "setup.title": 'Noch zu installieren: %1',
+ "setup.titledone": 'Alles ist vorhanden',
  "setup.blurb": "Hier läuft nichts, bis du es anstößt, und jeder Schritt zeigt "
                 "vorher den genauen Befehl. Omarchy führt absichtlich nichts aus "
                 "einem Plugin-Ordner aus, deshalb fragt dieser Bildschirm.",

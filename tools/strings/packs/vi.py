@@ -59,7 +59,8 @@ PACK = {
  "state.stopped": "dịch vụ đã dừng",
 
  "setup.prefix": "cài đặt ",
- "setup.title": "Còn hai phần nữa cần cài",
+ "setup.title": 'Còn phải cài: %1',
+ "setup.titledone": 'Mọi thứ đã sẵn sàng',
  "setup.blurb": "Ở đây không có gì chạy cho đến khi bạn bấm, và mỗi bước đều hiện "
                 "đúng câu lệnh trước. Omarchy cố tình không chạy bất cứ thứ gì từ "
                 "trong thư mục plugin, nên màn hình này phải hỏi bạn.",
