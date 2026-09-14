@@ -159,17 +159,14 @@ Item {
 
           RowLayout {
             spacing: Style.space(9)
-            Text {
+            OmText {
               text: root.t("models.speech")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.subtitle
+              size: "subtitle"
               font.letterSpacing: 2
               color: Color.foreground
             }
-            Text {
+            OmText {
               text: root.t("models.speechsub")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
@@ -182,39 +179,32 @@ Item {
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.space(8)
-            Text {
+            OmText {
               text: root.t("models.now")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.muted
             }
-            Text {
+            OmText {
               visible: !root.daemonUp
               Layout.fillWidth: true
               text: root.t("models.nodaemon")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.urgent
             }
-            Text {
+            OmText {
               visible: root.daemonUp
               text: root.speechLive
                     ? (root.speechNow.engine + "  " + root.speechNow.model
                        + "  [" + root.speechNow.device + "]")
                     : root.t("models.notloaded")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.body
+              size: "body"
               color: root.speechLive ? Color.foreground : Color.urgent
             }
-            Text {
+            OmText {
               visible: root.daemonUp && root.speechLive && root.speechNow.url
               Layout.fillWidth: true
               elide: Text.ElideRight
               text: root.hostport(root.speechNow.url)
                     + (root.speechNow.pid ? "  pid " + root.speechNow.pid : "")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.1)
             }
             Item { Layout.fillWidth: true }
@@ -281,19 +271,16 @@ Item {
               ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 1
-                Text {
+                OmText {
                   text: root.t("models.stale")
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.body
+                  size: "body"
                   color: Color.foreground
                 }
-                Text {
+                OmText {
                   Layout.fillWidth: true
                   elide: Text.ElideRight
                   text: root.t("models.loaded") + root.speechNow.model + "   ·   "
                       + root.t("models.configured") + root.payload.active
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.caption
                   color: Color.muted
                 }
               }
@@ -309,19 +296,15 @@ Item {
             Layout.topMargin: Style.space(6)
             Layout.fillWidth: true
             spacing: Style.space(9)
-            Text {
+            OmText {
               text: root.t("models.speechapi")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.muted
             }
-            Text {
+            OmText {
               Layout.fillWidth: true
               elide: Text.ElideRight
               text: root.t("models.speechapi.sub")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.15)
             }
             OmChip {
@@ -356,10 +339,8 @@ Item {
           RowLayout {
             Layout.topMargin: Style.space(8)
             Layout.fillWidth: true
-            Text {
+            OmText {
               text: root.t("models.list") + (root.ggml ? "ggml" : "ct2")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.muted
             }
@@ -368,20 +349,16 @@ Item {
             // engine selected it is still true and no longer relevant, and
             // saying so is cheaper than a user wondering why "use" changed
             // nothing they could hear.
-            Text {
+            OmText {
               visible: root.payload.backend === "api"
               Layout.maximumWidth: Style.space(300)
               wrapMode: Text.Wrap
               text: root.t("models.speechapi.cat")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: "#e0af68"
             }
-            Text {
+            OmText {
               visible: root.payload.backend !== "api"
               text: root.t("models.formathint")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
@@ -397,13 +374,11 @@ Item {
             }
           }
 
-          Text {
+          OmText {
             Layout.topMargin: Style.space(6)
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.tf("models.outside", root.payload.root || root.t("models.ourstore"))
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)
           }
         }
@@ -431,17 +406,14 @@ Item {
 
           RowLayout {
             spacing: Style.space(9)
-            Text {
+            OmText {
               text: root.t("models.llm")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.subtitle
+              size: "subtitle"
               font.letterSpacing: 2
               color: Color.foreground
             }
-            Text {
+            OmText {
               text: root.t("models.llmsub")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
@@ -454,27 +426,21 @@ Item {
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.space(8)
-            Text {
+            OmText {
               text: root.t("models.now")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.muted
             }
-            Text {
+            OmText {
               visible: !root.daemonUp
               Layout.fillWidth: true
               text: root.t("models.nodaemon")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.urgent
             }
-            Text {
+            OmText {
               visible: root.daemonUp && root.llmResident.length === 0
               Layout.fillWidth: true
               text: root.t("models.llmnone")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.1)
             }
             Repeater {
@@ -482,16 +448,13 @@ Item {
               RowLayout {
                 readonly property var l: modelData
                 spacing: Style.space(8)
-                Text {
+                OmText {
                   text: l.engine + (l.model ? "  " + String(l.model).replace("llm:", "") : "")
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.body
+                  size: "body"
                   color: Color.foreground
                 }
-                Text {
+                OmText {
                   text: root.hostport(l.url) + "  pid " + l.pid
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.caption
                   color: Qt.darker(Color.muted, 1.1)
                 }
               }
@@ -585,18 +548,14 @@ Item {
           RowLayout {
             Layout.topMargin: Style.space(10)
             Layout.fillWidth: true
-            Text {
+            OmText {
               text: root.t("models.list") + "gguf"
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.muted
             }
             Item { Layout.fillWidth: true }
-            Text {
+            OmText {
               text: root.t("models.llmcathint")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
@@ -618,22 +577,18 @@ Item {
           // cannot work, and nothing else on the row says why.
           Repeater {
             model: (root.payload.llm || []).filter(function (l) { return !!l.live_problem })
-            Text {
+            OmText {
               Layout.fillWidth: true
               wrapMode: Text.Wrap
               text: modelData.name + ": " + modelData.live_problem
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.urgent
             }
           }
 
-          Text {
+          OmText {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.t("models.endpointnote")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)
           }
 
@@ -670,11 +625,9 @@ Item {
         Layout.fillWidth: true
         spacing: Style.space(5)
 
-        Text {
+        OmText {
           text: root.t(root.unifiedMem ? "models.shared" : "models.vram")
                 + ((root.payload.vram || {}).name || "")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           font.letterSpacing: 1
           color: Color.muted
         }
@@ -742,17 +695,13 @@ Item {
                 color: root.segColor(seg.kind)
                 opacity: seg.kind === "other" ? 1.0 : 0.8
               }
-              Text {
+              OmText {
                 text: root.segLabel(seg.kind) + "  "
                       + (seg.used_mb / 1024).toFixed(1) + " GB"
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: Color.foreground
               }
-              Text {
+              OmText {
                 text: seg.label
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: Qt.darker(Color.muted, 1.1)
               }
             }
@@ -760,27 +709,22 @@ Item {
         }
         RowLayout {
           Layout.fillWidth: true
-          Text {
+          OmText {
             text: root.t("models.vramsub")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Color.muted
           }
           Item { Layout.fillWidth: true }
-          Text {
+          OmText {
             text: (((root.payload.vram || {}).used_mb || 0) / 1024).toFixed(1) + " / "
                   + (((root.payload.vram || {}).total_mb || 0) / 1024).toFixed(1) + " GB"
-            font.family: Style.font.family
-            font.pixelSize: Style.font.body
+            size: "body"
             color: Color.foreground
           }
         }
-        Text {
+        OmText {
           Layout.fillWidth: true
           wrapMode: Text.Wrap
           text: root.t(root.unifiedMem ? "models.sharednote" : "models.vramnote")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: Qt.darker(Color.muted, 1.1)
         }
       }

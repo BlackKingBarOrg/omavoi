@@ -157,18 +157,15 @@ Flickable {
     width: root.width - root.pad * 2
     spacing: Style.space(16)
 
-    Text {
+    OmText {
       text: root.t("first.title")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.title
+      size: "title"
       color: Color.foreground
     }
-    Text {
+    OmText {
       Layout.fillWidth: true
       wrapMode: Text.Wrap
       text: root.t("first.blurb")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.muted
     }
 
@@ -178,10 +175,8 @@ Flickable {
       Layout.topMargin: Style.space(6)
       spacing: Style.space(6)
       visible: !root.running && !root.done
-      Text {
+      OmText {
         text: "1  " + root.t("first.pick.language")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: root.lang === "" ? Color.accent : Color.muted
       }
@@ -205,10 +200,8 @@ Flickable {
       Layout.fillWidth: true
       spacing: Style.space(6)
       visible: !root.running && !root.done
-      Text {
+      OmText {
         text: "2  " + root.t("first.pick.model")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: (root.lang !== "" && root.model === "") ? Color.accent : Color.muted
       }
@@ -223,19 +216,15 @@ Flickable {
             on: root.model === choice.key
             onClicked: root.model = choice.key
           }
-          Text {
+          OmText {
             visible: choice.size !== ""
             text: choice.size
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Color.muted
           }
-          Text {
+          OmText {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: choice.note
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)
           }
         }
@@ -247,10 +236,8 @@ Flickable {
       Layout.fillWidth: true
       spacing: Style.space(6)
       visible: !root.running && !root.done
-      Text {
+      OmText {
         text: "3  " + root.t("first.pick.hotkey")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: (root.lang !== "" && root.model !== "" && root.hotkey === "")
                ? Color.accent : Color.muted
@@ -279,23 +266,19 @@ Flickable {
             root.hotkey = text.trim().toUpperCase()
         }
       }
-      Text {
+      OmText {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("first.hotkey.note")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.1)
       }
       // Not a failure, but it decides whether the key works today or after a
       // relogin, so it cannot be left for the user to discover.
-      Text {
+      OmText {
         visible: !root.inInputGroup
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("first.group.needed")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: "#e0af68"
       }
     }
@@ -307,10 +290,8 @@ Flickable {
       spacing: Style.space(3)
       visible: !root.done && root.lang !== "" && root.model !== ""
                && root.hotkey !== ""
-      Text {
+      OmText {
         text: "4  " + root.t("first.willrun")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: Color.muted
       }
@@ -330,33 +311,25 @@ Flickable {
           readonly property int idx: index
           Layout.fillWidth: true
           spacing: Style.space(8)
-          Text {
+          OmText {
             Layout.preferredWidth: Style.space(16)
             text: root.at > idx ? "✓" : (root.at === idx ? "▶" : "")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: root.at > idx ? "#9ece6a" : Color.accent
           }
-          Text {
+          OmText {
             Layout.preferredWidth: Style.space(150)
             text: step.label
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: root.at >= idx ? Color.foreground : Color.muted
           }
-          Text {
+          OmText {
             Layout.fillWidth: true
             elide: Text.ElideRight
             text: "$ " + step.argv.join(" ")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.15)
           }
-          Text {
+          OmText {
             visible: step.root === true
             text: root.t("first.needspassword")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: "#e0af68"
           }
         }
@@ -385,12 +358,10 @@ Flickable {
         anchors.top: parent.top
         anchors.margins: Style.space(11)
         spacing: Style.space(6)
-        Text {
+        OmText {
           Layout.fillWidth: true
           wrapMode: Text.Wrap
           text: root.tf("first.dbstale", Math.round(root.dbAgeDays))
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: "#e0af68"
         }
         Button {
@@ -424,29 +395,25 @@ Flickable {
         text: root.failure === "" ? root.t("first.install") : root.t("first.retry")
         onClicked: root.begin()
       }
-      Text {
+      OmText {
         visible: root.running
         text: root.running && root.at < root.steps.length
               ? root.tf("first.working", root.steps[root.at].label)
               : ""
-        font.family: Style.font.family
-        font.pixelSize: Style.font.body
+        size: "body"
         color: Color.accent
       }
-      Text {
+      OmText {
         visible: root.failure !== ""
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.failure
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Color.urgent
       }
-      Text {
+      OmText {
         visible: root.done
         text: root.t("first.done")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.body
+        size: "body"
         color: "#9ece6a"
       }
       Item { Layout.fillWidth: true }

@@ -107,11 +107,9 @@ ColumnLayout {
       readonly property string now: f.key === "url" ? fields.baseUrl : fields.model
       Layout.fillWidth: true
       spacing: Style.space(9)
-      Text {
+      OmText {
         Layout.preferredWidth: Style.space(52)
         text: f.label
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Color.muted
       }
       TextField {
@@ -136,11 +134,9 @@ ColumnLayout {
   RowLayout {
     Layout.fillWidth: true
     spacing: Style.space(9)
-    Text {
+    OmText {
       Layout.preferredWidth: Style.space(52)
       text: fields.t("models.f.key")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.muted
     }
     TextField {
@@ -158,13 +154,11 @@ ColumnLayout {
       text: fields.t("models.f.key.save")
       onClicked: keyWriter.send(keyField.text)
     }
-    Text {
+    OmText {
       Layout.fillWidth: true
       elide: Text.ElideRight
       text: fields.keyNote !== "" ? fields.keyNote
             : (fields.hasKey ? fields.t("models.f.key.have") : "")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: fields.keyNote === "" ? Color.muted : Color.accent
     }
   }
@@ -179,12 +173,10 @@ ColumnLayout {
       text: fields.t("models.f.test")
       onClicked: { fields.checkNote = fields.t("models.f.testing"); checker.running = true }
     }
-    Text {
+    OmText {
       Layout.fillWidth: true
       wrapMode: Text.Wrap
       text: fields.checkNote
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: fields.checkOk ? "#9ece6a" : Color.urgent
     }
   }

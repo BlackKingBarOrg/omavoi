@@ -225,6 +225,14 @@ PACK = {
  "models.seg.speech": 'Sprachmodell',
  "models.seg.other": 'andere Programme',
  "models.vramsub": "im gesamten Rechner belegt",
+ "models.vramnote": "Beide dauerhaft im Speicher zu halten ist der Punkt: eine Kette, "
+                    "die Gewichte pro Aufnahme lädt, kostet Sekunden statt "
+                    "Millisekunden. Bei Überbuchung wird das Sprachmodell verdrängt "
+                    "— das Diktat wird zehnmal langsamer, ohne dass etwas sagt warum.",
+
+ "models.vram": "VRAM · ",
+ "models.sharednote": 'Diese GPU hat keinen eigenen Speicher — die Gewichte sind gewöhnliche Systemseiten, und der Balken oben ist der ganze Rechner. Beide dauerhaft im Speicher zu halten bleibt der Punkt, aber Überbuchung kostet hier Swap statt einer Verdrängung: das Diktat bleibt stehen, statt nur langsamer zu werden, und alles andere auf dem Rechner bleibt mit stehen.',
+ "models.shared": 'Gemeinsamer Speicher · ',
  "models.needs": "braucht",
  "dict.rules": "Regeln",
  "dict.names": "Namen",

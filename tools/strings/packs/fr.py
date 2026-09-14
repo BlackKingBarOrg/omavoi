@@ -221,6 +221,14 @@ PACK = {
  "models.seg.speech": 'modèle de parole',
  "models.seg.other": 'autres programmes',
  "models.vramsub": "utilisée sur toute la machine",
+ "models.vramnote": "Garder les deux en mémoire est tout l'intérêt : une chaîne qui charge "
+                    "les poids à chaque prise coûte des secondes, pas des millisecondes. "
+                    "En surengagement, c'est le modèle de parole qui est évincé — la dictée "
+                    "devient dix fois plus lente sans que rien n'en dise la raison.",
+
+ "models.vram": "VRAM · ",
+ "models.sharednote": "Ce GPU n'a pas de mémoire propre — les poids sont des pages système ordinaires, et la barre ci-dessus représente toute la machine. Garder les deux en mémoire reste tout l'intérêt, mais ici le surengagement coûte du swap plutôt qu'une éviction : la dictée se bloque au lieu de seulement ralentir, et tout le reste de la machine se bloque avec elle.",
+ "models.shared": 'Mémoire partagée · ',
  "models.needs": "requiert",
  "dict.rules": "règles",
  "dict.names": "noms",

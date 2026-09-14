@@ -84,12 +84,10 @@ Rectangle {
       border.width: 1
       border.color: card.selected ? Color.accent : Color.muted
     }
-    Text {
+    OmText {
       Layout.alignment: Qt.AlignVCenter
       Layout.preferredWidth: Style.space(12)
       text: card.running ? "▶" : ""
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.accent
     }
 
@@ -99,53 +97,44 @@ Rectangle {
       RowLayout {
         Layout.fillWidth: true
         spacing: Style.space(8)
-        Text {
+        OmText {
           text: card.name
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.foreground
         }
-        Text {
+        OmText {
           Layout.fillWidth: true
           elide: Text.ElideRight
           text: card.secondary
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: Color.muted
         }
       }
-      Text {
+      OmText {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: card.detail
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
       }
     }
 
-    Text {
+    OmText {
       Layout.alignment: Qt.AlignVCenter
       Layout.preferredWidth: Style.space(84)
       horizontalAlignment: Text.AlignRight
       elide: Text.ElideRight
       text: card.status
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: card.statusColor
     }
     // Wide enough for the longest note either column has — "约 2.2 GB 的
     // wheel 包" — because it was eliding to "约 2.2 GB 的 wh…". Fixed rather
     // than content-sized so the status column beside it lands in the same
     // place on every card.
-    Text {
+    OmText {
       Layout.alignment: Qt.AlignVCenter
       Layout.preferredWidth: Style.space(132)
       horizontalAlignment: Text.AlignRight
       elide: Text.ElideRight
       text: card.note
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: card.noteColor
     }
     OmChip {

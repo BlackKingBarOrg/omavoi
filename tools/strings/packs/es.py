@@ -221,6 +221,14 @@ PACK = {
  "models.seg.speech": 'modelo de voz',
  "models.seg.other": 'otros programas',
  "models.vramsub": "en uso en toda la máquina",
+ "models.vramnote": "Mantener los dos residentes es justamente el punto: una cadena que "
+                    "carga pesos en cada toma cuesta segundos, no milisegundos. Si te pasas, "
+                    "lo que se desaloja es el modelo de voz — el dictado va diez veces más "
+                    "lento sin que nada diga por qué.",
+
+ "models.vram": "VRAM · ",
+ "models.sharednote": 'Esta GPU no tiene memoria propia — los pesos son páginas del sistema como cualquier otra, y la barra de arriba es toda la máquina. Mantener los dos residentes sigue siendo el punto, pero aquí pasarse cuesta swap en lugar de un desalojo: el dictado se queda colgado en vez de solo ir más lento, y todo lo demás en la máquina se cuelga con él.',
+ "models.shared": 'Memoria compartida · ',
  "models.needs": "necesita",
  "dict.rules": "reglas",
  "dict.names": "nombres",

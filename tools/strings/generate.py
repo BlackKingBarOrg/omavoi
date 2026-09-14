@@ -466,6 +466,17 @@ section("models", {
  "models.seg.other":  ("other programs", "其他程序", "โปรแกรมอื่น"),
  "models.vramsub":   ("in use across the whole machine", "全机范围的占用",
                       "ที่ใช้อยู่ทั้งเครื่อง"),
+ "models.vramnote":  ("Keeping both resident is the point: a chain that loads weights per take "
+                      "costs seconds, not milliseconds. Overcommit and the speech model is what "
+                      "gets evicted — dictation goes ten times slower with nothing to say why.",
+                      "让两个模型都常驻是关键：每次录音都重新加载权重要花几秒，而不是几毫秒。一旦超配，"
+                      "被换出去的就是语音模型 —— 听写会慢十倍，而且不会有任何提示告诉你为什么。",
+                      "การให้ทั้งสองตัวค้างในหน่วยความจำคือหัวใจ: สายที่โหลดน้ำหนักใหม่ทุกครั้งเสียเวลาเป็นวินาที "
+                      "ไม่ใช่มิลลิวินาที ถ้าจัดเกินโควตา ตัวที่ถูกไล่ออกคือโมเดลเสียงพูด — "
+                      "การพิมพ์ด้วยเสียงจะช้าลงสิบเท่าโดยไม่มีอะไรบอกสาเหตุ"),
+ "models.vram":      ("VRAM · ", "显存 · ", "VRAM · "),
+ "models.sharednote": ("This GPU has no memory of its own — the weights are ordinary system pages, and the bar above is the whole machine. Keeping both resident is still the point, but overcommit here costs swap rather than an eviction: dictation stalls instead of merely slowing down, and everything else on the machine stalls with it.", "这块 GPU 没有独立显存 —— 权重就是普通的系统内存页，上面那条是全机内存。让两个模型都常驻依然是关键，但在这里超配的代价是 swap，不是被换出：听写会直接卡住，而不只是变慢，整台机器也会跟着卡。", "GPU ตัวนี้ไม่มีหน่วยความจำของตัวเอง — น้ำหนักอยู่ในหน่วยความจำระบบธรรมดา และแถบด้านบนคือทั้งเครื่อง การให้ทั้งสองตัวค้างไว้ยังคงเป็นหัวใจ แต่การจัดเกินโควตาที่นี่ต้องจ่ายด้วย swap ไม่ใช่การถูกไล่ออก: การพิมพ์ด้วยเสียงจะค้างไปเลย ไม่ใช่แค่ช้าลง และทั้งเครื่องจะค้างตามไปด้วย"),
+ "models.shared": ("Shared memory · ", "共享内存 · ", "หน่วยความจำร่วม · "),
  "models.needs":     ("needs", "需要", "ต้องใช้"),
 })
 
@@ -654,13 +665,21 @@ for code, pack in EXTRA.items():
 _ROOT = os.path.join(_HERE, "..", "..")
 DYNAMIC = {f"modes.inject.{v}" for v in ("auto", "clipboard", "xdotool")} | {
     f"state.{v}" for v in ("idle", "recording", "transcribing", "stopped")}
-asked, dead = set(), set()
+# Conservative on purpose. An earlier version of this check looked only for
+# a literal immediately after `t(`, which misses
+#     root.t(root.unifiedMem ? "models.shared" : "models.vram")
+# — and on that evidence four live keys were deleted and the VRAM footer
+# rendered its own identifiers. A key counts as used if it appears anywhere in
+# any of these files, in any form.
+source = ""
 for name in sorted(os.listdir(_ROOT)):
-    if not name.endswith(".qml") or name == "Strings.qml":
-        continue
-    text = open(os.path.join(_ROOT, name), encoding="utf-8").read()
-    asked |= set(re.findall(r'\bt[f]?\("([^"]+)"', text))
-absent = sorted(a for a in asked if a not in keys and not a.endswith("."))
+    if name.endswith(".qml") and name != "Strings.qml":
+        source += open(os.path.join(_ROOT, name), encoding="utf-8").read()
+asked = {k for k in keys if '"%s"' % k in source}
+# Only a literal immediately after t( can be checked in the other direction:
+# anything else may be a key this table is not responsible for.
+requested = set(re.findall(r'\bt[f]?\("([^"]+)"', source))
+absent = sorted(a for a in requested if a not in keys and not a.endswith("."))
 if absent:
     problems.append(f"used in QML and not in the table: {absent}")
 unused = sorted(keys - asked - DYNAMIC)

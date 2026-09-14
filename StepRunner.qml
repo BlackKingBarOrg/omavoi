@@ -97,11 +97,9 @@ ColumnLayout {
     }
   }
 
-  Text {
+  OmText {
     visible: root.showPlan && !root.done && root.steps.length > 0
     text: root.t("first.willrun")
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     font.letterSpacing: 1
     color: Color.muted
   }
@@ -113,33 +111,25 @@ ColumnLayout {
       readonly property int idx: index
       Layout.fillWidth: true
       spacing: Style.space(8)
-      Text {
+      OmText {
         Layout.preferredWidth: Style.space(16)
         text: root.at > idx ? "✓" : (root.at === idx ? "▶" : "")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: root.at > idx ? "#9ece6a" : Color.accent
       }
-      Text {
+      OmText {
         Layout.preferredWidth: Style.space(150)
         text: step.label
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: root.at >= idx ? Color.foreground : Color.muted
       }
-      Text {
+      OmText {
         Layout.fillWidth: true
         elide: Text.ElideRight
         text: "$ " + step.argv.join(" ")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
       }
-      Text {
+      OmText {
         visible: step.root === true
         text: root.t("first.needspassword")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: "#e0af68"
       }
     }
@@ -148,13 +138,11 @@ ColumnLayout {
   // Whatever the failing step said, verbatim — it is usually the answer.
   Repeater {
     model: Object.keys(root.log)
-    Text {
+    OmText {
       Layout.fillWidth: true
       Layout.topMargin: Style.space(4)
       wrapMode: Text.Wrap
       text: root.log[modelData]
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Qt.darker(Color.muted, 1.1)
     }
   }

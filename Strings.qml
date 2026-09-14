@@ -277,6 +277,10 @@ Item {
       "models.seg.speech": "speech model",
       "models.seg.other": "other programs",
       "models.vramsub": "in use across the whole machine",
+      "models.vramnote": "Keeping both resident is the point: a chain that loads weights per take costs seconds, not milliseconds. Overcommit and the speech model is what gets evicted — dictation goes ten times slower with nothing to say why.",
+      "models.vram": "VRAM · ",
+      "models.sharednote": "This GPU has no memory of its own — the weights are ordinary system pages, and the bar above is the whole machine. Keeping both resident is still the point, but overcommit here costs swap rather than an eviction: dictation stalls instead of merely slowing down, and everything else on the machine stalls with it.",
+      "models.shared": "Shared memory · ",
       "models.needs": "needs",
 
       // ---- dictionary
@@ -556,6 +560,10 @@ Item {
       "models.seg.speech": "语音模型",
       "models.seg.other": "其他程序",
       "models.vramsub": "全机范围的占用",
+      "models.vramnote": "让两个模型都常驻是关键：每次录音都重新加载权重要花几秒，而不是几毫秒。一旦超配，被换出去的就是语音模型 —— 听写会慢十倍，而且不会有任何提示告诉你为什么。",
+      "models.vram": "显存 · ",
+      "models.sharednote": "这块 GPU 没有独立显存 —— 权重就是普通的系统内存页，上面那条是全机内存。让两个模型都常驻依然是关键，但在这里超配的代价是 swap，不是被换出：听写会直接卡住，而不只是变慢，整台机器也会跟着卡。",
+      "models.shared": "共享内存 · ",
       "models.needs": "需要",
 
       // ---- dictionary
@@ -835,6 +843,10 @@ Item {
       "models.seg.speech": "โมเดลเสียงพูด",
       "models.seg.other": "โปรแกรมอื่น",
       "models.vramsub": "ที่ใช้อยู่ทั้งเครื่อง",
+      "models.vramnote": "การให้ทั้งสองตัวค้างในหน่วยความจำคือหัวใจ: สายที่โหลดน้ำหนักใหม่ทุกครั้งเสียเวลาเป็นวินาที ไม่ใช่มิลลิวินาที ถ้าจัดเกินโควตา ตัวที่ถูกไล่ออกคือโมเดลเสียงพูด — การพิมพ์ด้วยเสียงจะช้าลงสิบเท่าโดยไม่มีอะไรบอกสาเหตุ",
+      "models.vram": "VRAM · ",
+      "models.sharednote": "GPU ตัวนี้ไม่มีหน่วยความจำของตัวเอง — น้ำหนักอยู่ในหน่วยความจำระบบธรรมดา และแถบด้านบนคือทั้งเครื่อง การให้ทั้งสองตัวค้างไว้ยังคงเป็นหัวใจ แต่การจัดเกินโควตาที่นี่ต้องจ่ายด้วย swap ไม่ใช่การถูกไล่ออก: การพิมพ์ด้วยเสียงจะค้างไปเลย ไม่ใช่แค่ช้าลง และทั้งเครื่องจะค้างตามไปด้วย",
+      "models.shared": "หน่วยความจำร่วม · ",
       "models.needs": "ต้องใช้",
 
       // ---- dictionary
@@ -1114,6 +1126,10 @@ Item {
       "models.seg.speech": "Sprachmodell",
       "models.seg.other": "andere Programme",
       "models.vramsub": "im gesamten Rechner belegt",
+      "models.vramnote": "Beide dauerhaft im Speicher zu halten ist der Punkt: eine Kette, die Gewichte pro Aufnahme lädt, kostet Sekunden statt Millisekunden. Bei Überbuchung wird das Sprachmodell verdrängt — das Diktat wird zehnmal langsamer, ohne dass etwas sagt warum.",
+      "models.vram": "VRAM · ",
+      "models.sharednote": "Diese GPU hat keinen eigenen Speicher — die Gewichte sind gewöhnliche Systemseiten, und der Balken oben ist der ganze Rechner. Beide dauerhaft im Speicher zu halten bleibt der Punkt, aber Überbuchung kostet hier Swap statt einer Verdrängung: das Diktat bleibt stehen, statt nur langsamer zu werden, und alles andere auf dem Rechner bleibt mit stehen.",
+      "models.shared": "Gemeinsamer Speicher · ",
       "models.needs": "braucht",
 
       // ---- dictionary
@@ -1393,6 +1409,10 @@ Item {
       "models.seg.speech": "modèle de parole",
       "models.seg.other": "autres programmes",
       "models.vramsub": "utilisée sur toute la machine",
+      "models.vramnote": "Garder les deux en mémoire est tout l'intérêt : une chaîne qui charge les poids à chaque prise coûte des secondes, pas des millisecondes. En surengagement, c'est le modèle de parole qui est évincé — la dictée devient dix fois plus lente sans que rien n'en dise la raison.",
+      "models.vram": "VRAM · ",
+      "models.sharednote": "Ce GPU n'a pas de mémoire propre — les poids sont des pages système ordinaires, et la barre ci-dessus représente toute la machine. Garder les deux en mémoire reste tout l'intérêt, mais ici le surengagement coûte du swap plutôt qu'une éviction : la dictée se bloque au lieu de seulement ralentir, et tout le reste de la machine se bloque avec elle.",
+      "models.shared": "Mémoire partagée · ",
       "models.needs": "requiert",
 
       // ---- dictionary
@@ -1672,6 +1692,10 @@ Item {
       "models.seg.speech": "modelo de voz",
       "models.seg.other": "otros programas",
       "models.vramsub": "en uso en toda la máquina",
+      "models.vramnote": "Mantener los dos residentes es justamente el punto: una cadena que carga pesos en cada toma cuesta segundos, no milisegundos. Si te pasas, lo que se desaloja es el modelo de voz — el dictado va diez veces más lento sin que nada diga por qué.",
+      "models.vram": "VRAM · ",
+      "models.sharednote": "Esta GPU no tiene memoria propia — los pesos son páginas del sistema como cualquier otra, y la barra de arriba es toda la máquina. Mantener los dos residentes sigue siendo el punto, pero aquí pasarse cuesta swap en lugar de un desalojo: el dictado se queda colgado en vez de solo ir más lento, y todo lo demás en la máquina se cuelga con él.",
+      "models.shared": "Memoria compartida · ",
       "models.needs": "necesita",
 
       // ---- dictionary
@@ -1951,6 +1975,10 @@ Item {
       "models.seg.speech": "音声モデル",
       "models.seg.other": "他のプログラム",
       "models.vramsub": "端末全体での使用量",
+      "models.vramnote": "両方を常駐させることが肝心です。録音ごとに重みを読み込む構成ではミリ秒ではなく秒単位のコストがかかります。詰め込みすぎると追い出されるのは音声モデルの側で —— 理由を告げるものが何もないまま、入力が十倍遅くなります。",
+      "models.vram": "VRAM · ",
+      "models.sharednote": "この GPU に専用メモリはありません —— 重みは通常のシステムメモリ上にあり、上のバーは端末全体を表しています。両方を常駐させることが肝心なのは変わりませんが、ここで詰め込みすぎた代償は追い出しではなく swap です。入力は遅くなるのではなく止まり、端末の他のすべても一緒に止まります。",
+      "models.shared": "共有メモリ · ",
       "models.needs": "必要",
 
       // ---- dictionary
@@ -2230,6 +2258,10 @@ Item {
       "models.seg.speech": "mô hình giọng nói",
       "models.seg.other": "chương trình khác",
       "models.vramsub": "đang dùng trên toàn máy",
+      "models.vramnote": "Giữ cả hai thường trú mới là điểm chính: một chuỗi phải nạp trọng số mỗi lần ghi sẽ tốn hàng giây, không phải hàng mili giây. Nếu vượt quá dung lượng, thứ bị đẩy ra là mô hình giọng nói — việc nhập bằng giọng chậm đi mười lần mà không có gì nói cho bạn biết vì sao.",
+      "models.vram": "VRAM · ",
+      "models.sharednote": "GPU này không có bộ nhớ riêng — trọng số nằm trong bộ nhớ hệ thống thông thường, và thanh phía trên là toàn bộ máy. Giữ cả hai thường trú vẫn là điểm chính, nhưng vượt quá ở đây phải trả bằng swap chứ không phải bị đẩy ra: việc nhập bằng giọng sẽ treo hẳn thay vì chỉ chậm đi, và mọi thứ khác trên máy treo theo.",
+      "models.shared": "Bộ nhớ dùng chung · ",
       "models.needs": "cần",
 
       // ---- dictionary

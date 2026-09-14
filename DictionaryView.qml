@@ -42,13 +42,11 @@ Flickable {
     }
 
     // ---- rules -----------------------------------------------------
-    Text {
+    OmText {
       visible: root.sub === "rules"
       Layout.fillWidth: true
       wrapMode: Text.Wrap
       text: root.t("dict.blurb")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.muted
     }
     Repeater {
@@ -57,32 +55,26 @@ Flickable {
         readonly property var r: modelData
         Layout.fillWidth: true
         spacing: Style.space(10)
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(180)
           text: r.heard
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.foreground
         }
-        Text {
+        OmText {
           text: "→"
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: Color.muted
         }
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(180)
           text: r.meant
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.foreground
         }
-        Text {
+        OmText {
           Layout.fillWidth: true
           visible: r.shadowed_by !== ""
           text: root.t("dict.shadowed") + "\"" + r.shadowed_by + "\""
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: "#e0af68"
         }
         Item { Layout.fillWidth: r.shadowed_by === "" }
@@ -94,13 +86,11 @@ Flickable {
     }
 
     // ---- names -----------------------------------------------------
-    Text {
+    OmText {
       visible: root.sub === "names"
       Layout.fillWidth: true
       wrapMode: Text.Wrap
       text: root.t("dict.namesblurb")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.muted
     }
     Repeater {
@@ -109,32 +99,25 @@ Flickable {
         readonly property var n: modelData
         Layout.fillWidth: true
         spacing: Style.space(10)
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(150)
           text: n.name
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.foreground
         }
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(170)
           text: n.key
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: Color.muted
         }
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(80)
           text: n.match
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: Color.muted
         }
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(110)
           text: n.enabled ? root.t("dict.matching") : root.t("dict.seedonly")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: n.enabled ? "#9ece6a" : Color.muted
         }
         Item { Layout.fillWidth: true }
@@ -153,23 +136,19 @@ Flickable {
         text: root.t("dict.enable")
         onClicked: root.command("omavoi names enable")
       }
-      Text {
+      OmText {
         Layout.fillWidth: true
         elide: Text.ElideRight
         text: root.t("dict.prompt") + (root.seed || root.t("dict.none"))
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Color.muted
       }
     }
 
-    Text {
+    OmText {
       Layout.topMargin: Style.space(12)
       Layout.fillWidth: true
       wrapMode: Text.Wrap
       text: root.sub === "rules" ? root.t("dict.addrule") : root.t("dict.addnames")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.muted
     }
   }

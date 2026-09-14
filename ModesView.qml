@@ -152,46 +152,37 @@ Item {
 
               RowLayout {
                 Layout.fillWidth: true
-                Text {
+                OmText {
                   text: m.name
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.body
+                  size: "body"
                   color: Color.foreground
                 }
                 Item { Layout.fillWidth: true }
-                Text {
+                OmText {
                   visible: m.active === true
                   text: root.t("modes.here")
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.caption
                   color: Color.accent
                 }
               }
-              Text {
+              OmText {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
                 text: root.chainOf(m)
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: (m.steps || []).length ? Color.accent : Color.muted
               }
-              Text {
+              OmText {
                 visible: root.showWindowMatch
                 Layout.fillWidth: true
                 elide: Text.ElideRight
                 text: (m.match || []).join(", ") || root.t("modes.fallback")
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: Qt.darker(Color.muted, 1.1)
               }
               // A mode that cannot load its model is not a mode you can be in.
-              Text {
+              OmText {
                 visible: m.vram_known === true && m.fits === false
                 Layout.fillWidth: true
                 elide: Text.ElideRight
                 text: root.tf("modes.wontfit", (m.needs_mb / 1024).toFixed(1) + "G")
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: Color.urgent
               }
             }
@@ -278,13 +269,11 @@ Item {
         // handler below still refuses to change modes while it is on. That
         // refusal used to be explained by the banner underneath; with the
         // banner gone it would be silence, so it is said here instead.
-        Text {
+        OmText {
           visible: !root.showWindowMatch && root.byWindow
           Layout.fillWidth: true
           wrapMode: Text.Wrap
           text: root.t("modes.hiddenauto")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: "#e0af68"
         }
 
@@ -313,21 +302,18 @@ Item {
             ColumnLayout {
               Layout.fillWidth: true
               spacing: 2
-              Text {
+              OmText {
                 text: root.byWindow
                       ? root.t("modes.followwin")
                       : root.t("modes.everytake") + (root.switching.mode || "default")
-                font.family: Style.font.family
-                font.pixelSize: Style.font.body
+                size: "body"
                 color: Color.foreground
               }
-              Text {
+              OmText {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
                 text: root.byWindow ? root.t("modes.longestwins")
                                     : root.t("modes.matchoff")
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: Color.muted
               }
             }
@@ -346,26 +332,21 @@ Item {
         RowLayout {
           Layout.fillWidth: true
           spacing: Style.space(10)
-          Text {
+          OmText {
             text: root.current
-            font.family: Style.font.family
-            font.pixelSize: Style.font.heading
+            size: "heading"
             color: Color.foreground
           }
-          Text {
+          OmText {
             visible: root.blocked !== "" && root.blocked === root.current
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.t("modes.blocked")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Color.urgent
           }
-          Text {
+          OmText {
             visible: root.mode && root.mode.active === true
             text: root.t("modes.activehere")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Color.accent
           }
           Item { Layout.fillWidth: true }
@@ -384,18 +365,14 @@ Item {
           opacity: root.byWindow ? 1 : 0.5
           RowLayout {
             spacing: Style.space(8)
-            Text {
+            OmText {
               text: root.t("modes.opens")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.muted
             }
-            Text {
+            OmText {
               visible: !root.byWindow
               text: root.t("modes.notinuse")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.1)
             }
           }
@@ -411,11 +388,9 @@ Item {
                 onClicked: root.commandArgs(["omavoi", "mode", "unmatch", root.current, token])
               }
             }
-            Text {
+            OmText {
               visible: !((root.mode && root.mode.match) || []).length
               text: root.t("modes.nothing")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
@@ -441,12 +416,10 @@ Item {
               }
               onClicked: click()
             }
-            Text {
+            OmText {
               Layout.fillWidth: true
               wrapMode: Text.Wrap
               text: root.t("modes.matchhint")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.1)
             }
           }
@@ -466,28 +439,22 @@ Item {
           spacing: Style.space(7)
           RowLayout {
             spacing: Style.space(9)
-            Text {
+            OmText {
               text: root.t("modes.s1")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.accent
             }
-            Text {
+            OmText {
               text: root.t("modes.speechsub")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.space(9)
-            Text {
+            OmText {
               Layout.preferredWidth: Style.space(96)
               text: root.t("modes.language")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
             TextField {
@@ -499,11 +466,9 @@ Item {
               onEditingFinished: if (root.mode && text !== (root.mode.language || ""))
                 root.commandArgs(["omavoi", "mode", "set", root.current, "language", text])
             }
-            Text {
+            OmText {
               Layout.fillWidth: true
               text: root.t("modes.langhint")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Qt.darker(Color.muted, 1.1)
             }
           }
@@ -513,11 +478,9 @@ Item {
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.space(9)
-            Text {
+            OmText {
               Layout.preferredWidth: Style.space(96)
               text: root.t("modes.speechmodel")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
             Flow {
@@ -541,20 +504,16 @@ Item {
               }
             }
           }
-          Text {
+          OmText {
             visible: root.speechChoices.length <= 1
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.t("modes.speechonly1")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)
           }
 
-          Text {
+          OmText {
             text: root.t("modes.decoderhint")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Color.muted
           }
           OmTextArea {
@@ -575,17 +534,13 @@ Item {
           spacing: Style.space(7)
           RowLayout {
             spacing: Style.space(9)
-            Text {
+            OmText {
               text: root.t("modes.s2")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.foreground
             }
-            Text {
+            OmText {
               text: root.t("modes.rulessub")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
@@ -630,17 +585,13 @@ Item {
           spacing: Style.space(7)
           RowLayout {
             spacing: Style.space(9)
-            Text {
+            OmText {
               text: root.t("modes.s3")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: ((root.mode && root.mode.steps) || []).length ? Color.accent : Color.muted
             }
-            Text {
+            OmText {
               text: root.t("modes.llmsub")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
           }
@@ -668,11 +619,9 @@ Item {
                 RowLayout {
                   Layout.fillWidth: true
                   spacing: Style.space(7)
-                  Text {
+                  OmText {
                     text: root.t("modes.step") + (idx + 1)
                           + root.t("modes.stepsuffix")
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     color: Color.muted
                   }
                   Repeater {
@@ -704,10 +653,8 @@ Item {
                            && root.weightChoices.length > 0
                   Layout.fillWidth: true
                   spacing: Style.space(7)
-                  Text {
+                  OmText {
                     text: root.t("modes.weights")
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     color: Color.muted
                   }
                   // Inherit is the absence of an override, and it says what
@@ -749,23 +696,19 @@ Item {
             }
           }
 
-          Text {
+          OmText {
             visible: !((root.mode && root.mode.steps) || []).length
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.t("modes.nostep")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)
           }
 
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.space(7)
-            Text {
+            OmText {
               text: root.t("modes.addstep")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
             Repeater {
@@ -780,11 +723,9 @@ Item {
                   ["omavoi", "mode", "step", root.current, "add", llmName])
               }
             }
-            Text {
+            OmText {
               visible: !root.llms.length
               text: root.t("modes.nollm")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               color: Color.muted
             }
             Item { Layout.fillWidth: true }
@@ -797,10 +738,8 @@ Item {
           spacing: Style.space(7)
           RowLayout {
             spacing: Style.space(9)
-            Text {
+            OmText {
               text: root.t("modes.s4")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
               font.letterSpacing: 1
               color: Color.foreground
             }
@@ -817,12 +756,10 @@ Item {
             }
             Item { Layout.fillWidth: true }
           }
-          Text {
+          OmText {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.t("modes.injecthint")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.1)
           }
         }

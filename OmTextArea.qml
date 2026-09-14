@@ -74,11 +74,9 @@ Rectangle {
     anchors.margins: Style.space(5)
     spacing: Style.space(6)
 
-    Text {
+    OmText {
       anchors.verticalCenter: parent.verticalCenter
       text: "unsaved"
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.urgent
     }
     OmChip {

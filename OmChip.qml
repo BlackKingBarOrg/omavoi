@@ -24,12 +24,10 @@ Rectangle {
   radius: Style.cornerRadius
   opacity: root.enabled ? 1 : 0.45
 
-  Text {
+  OmText {
     id: text
     anchors.centerIn: parent
     text: root.label
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     color: root.on ? Color.foreground : Color.muted
   }
 

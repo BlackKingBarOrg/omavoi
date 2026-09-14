@@ -142,27 +142,23 @@ Flickable {
     ColumnLayout {
       Layout.fillWidth: true
       spacing: Style.space(8)
-      Text {
+      OmText {
         text: root.t("set.hotkey")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: Color.muted
       }
       RowLayout {
         Layout.fillWidth: true
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(160)
           text: root.t("set.key")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.muted
         }
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(96)
           text: root.get("hotkey.key", "?")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.foreground
         }
         // Pressed rather than picked from a list. Quickshell cannot read an
@@ -192,7 +188,7 @@ Flickable {
 
       // One line, and it is either the reason it does not work or the
       // devices it is working on. Never both, and never neither.
-      Text {
+      OmText {
         Layout.fillWidth: true
         Layout.maximumWidth: Style.space(760)
         wrapMode: Text.Wrap
@@ -206,18 +202,15 @@ Flickable {
                               .replace(/\/dev\/input\/\S+ /g, "")
                           : "—")
                 : ""
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: root.captured !== "" ? Color.urgent
                : root.ill !== "" ? Color.urgent : "#9ece6a"
       }
       RowLayout {
         Layout.fillWidth: true
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(160)
           text: root.t("set.behaviour")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.muted
         }
         ButtonGroup {
@@ -227,13 +220,11 @@ Flickable {
           onChanged: function (v) { root.command("omavoi config set hotkey.mode " + v) }
         }
       }
-      Text {
+      OmText {
         Layout.maximumWidth: Style.space(760)
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("set.hotkeynote")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
       }
     }
@@ -242,10 +233,8 @@ Flickable {
     ColumnLayout {
       Layout.fillWidth: true
       spacing: Style.space(8)
-      Text {
+      OmText {
         text: root.t("set.audio")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: Color.muted
       }
@@ -263,28 +252,24 @@ Flickable {
           spacing: Style.space(2)
           RowLayout {
             Layout.fillWidth: true
-            Text {
+            OmText {
               Layout.preferredWidth: Style.space(160)
               text: row.label
-              font.family: Style.font.family
-              font.pixelSize: Style.font.body
+              size: "body"
               color: Color.muted
             }
-            Text {
+            OmText {
               text: root.get(row.k, "?") + row.unit
-              font.family: Style.font.family
-              font.pixelSize: Style.font.body
+              size: "body"
               color: Color.foreground
             }
           }
-          Text {
+          OmText {
             visible: row.why !== ""
             Layout.maximumWidth: Style.space(760)
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: row.why
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Qt.darker(Color.muted, 1.15)
           }
         }
@@ -295,20 +280,17 @@ Flickable {
     ColumnLayout {
       Layout.fillWidth: true
       spacing: Style.space(8)
-      Text {
+      OmText {
         text: root.t("set.hud")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: Color.muted
       }
       RowLayout {
         Layout.fillWidth: true
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(160)
           text: root.t("set.keepup")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.muted
         }
         ButtonGroup {
@@ -319,22 +301,19 @@ Flickable {
           onChanged: function (v) { root.command("omavoi config set ui.hud_dwell " + v) }
         }
       }
-      Text {
+      OmText {
         Layout.maximumWidth: Style.space(760)
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("set.hudnote")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
       }
       RowLayout {
         Layout.fillWidth: true
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(160)
           text: root.t("set.notifications")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.muted
         }
         OmChip {
@@ -351,36 +330,30 @@ Flickable {
     ColumnLayout {
       Layout.fillWidth: true
       spacing: Style.space(8)
-      Text {
+      OmText {
         text: root.t("set.history")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         font.letterSpacing: 1
         color: Color.muted
       }
       RowLayout {
         Layout.fillWidth: true
-        Text {
+        OmText {
           Layout.preferredWidth: Style.space(160)
           text: root.t("set.keepaudio")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.muted
         }
-        Text {
+        OmText {
           text: root.get("history.keep_audio", 0) + root.t("set.takes")
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.foreground
         }
       }
-      Text {
+      OmText {
         Layout.maximumWidth: Style.space(760)
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("set.historynote")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Qt.darker(Color.muted, 1.15)
       }
 
@@ -399,18 +372,15 @@ Flickable {
           anchors.top: parent.top
           anchors.margins: Style.space(10)
           spacing: Style.space(4)
-          Text {
+          OmText {
             text: root.t("set.neverleaves")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.body
+            size: "body"
             color: "#9ece6a"
           }
-          Text {
+          OmText {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.t("set.privacynote")
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
             color: Color.muted
           }
         }
@@ -441,11 +411,9 @@ Flickable {
         text: root.t("set.restart")
         onClicked: root.command("systemctl --user restart omavoid")
       }
-      Text {
+      OmText {
         Layout.fillWidth: true
         text: root.t("set.configpath")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
         color: Color.muted
       }
     }

@@ -377,10 +377,9 @@ Item {
               anchors.rightMargin: Style.space(18)
               spacing: Style.space(20)
 
-              Text {
+              OmText {
                 text: "OMAVOI"
-                font.family: Style.font.family
-                font.pixelSize: Style.font.subtitle
+                size: "subtitle"
                 font.letterSpacing: 3
                 color: Color.foreground
               }
@@ -394,12 +393,11 @@ Item {
                   Item {
                     Layout.fillHeight: true
                     implicitWidth: tabLabel.implicitWidth + Style.space(30)
-                    Text {
+                    OmText {
                       id: tabLabel
                       anchors.centerIn: parent
                       text: modelData.label
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.body
+                      size: "body"
                       color: root.tab === modelData.key ? Color.foreground : Color.muted
                     }
                     Rectangle {
@@ -441,15 +439,13 @@ Item {
                 }
               }
 
-              Text {
+              OmText {
                 visible: root.daemonPresent
                 text: root.ready
                       ? (link.state === "stopped" ? strings.t("state.stopped")
                                                   : strings.t("state." + link.state))
                       : (strings.t("setup.prefix") + root.setupReport.done
                          + "/" + root.setupReport.total)
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: root.ready && link.state !== "stopped" ? "#9ece6a" : "#e0af68"
               }
             }
@@ -488,18 +484,15 @@ Item {
               width: card.width - root.pad * 2
               spacing: Style.space(6)
 
-              Text {
+              OmText {
                 text: strings.t("setup.title")
-                font.family: Style.font.family
-                font.pixelSize: Style.font.heading
+                size: "heading"
                 color: Color.foreground
               }
-              Text {
+              OmText {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
                 text: strings.t("setup.blurb")
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
                 color: Color.muted
               }
 
@@ -512,35 +505,29 @@ Item {
 
                   RowLayout {
                     spacing: Style.space(10)
-                    Text {
+                    OmText {
                       text: modelData.done ? "󰄬" : (modelData.optional ? "󰅖" : "󰄰")
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.body
+                      size: "body"
                       color: modelData.done ? "#9ece6a"
                            : (modelData.optional ? Color.muted : Color.accent)
                     }
-                    Text {
+                    OmText {
                       text: modelData.title
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.body
+                      size: "body"
                       color: Color.foreground
                     }
-                    Text {
+                    OmText {
                       visible: modelData.optional && !modelData.done
                       text: "optional"
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.caption
                       color: Color.muted
                     }
                   }
 
-                  Text {
+                  OmText {
                     Layout.leftMargin: Style.space(26)
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     text: modelData.detail
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     color: Color.muted
                   }
 
@@ -556,14 +543,12 @@ Item {
                       color: Qt.darker(Color.popups.background, 1.35)
                       border.width: 1
                       border.color: Color.muted
-                      Text {
+                      OmText {
                         id: cmdText
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
                         anchors.leftMargin: Style.space(10)
                         text: "$ " + modelData.command
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: Color.accent
                       }
                     }
@@ -583,14 +568,12 @@ Item {
                     }
                   }
 
-                  Text {
+                  OmText {
                     visible: !modelData.done && modelData.note
                     Layout.leftMargin: Style.space(26)
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     text: modelData.note
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     color: Qt.darker(Color.muted, 1.15)
                   }
                 }
@@ -604,12 +587,10 @@ Item {
                 Layout.fillWidth: true
                 spacing: Style.space(6)
 
-                Text {
+                OmText {
                   Layout.fillWidth: true
                   wrapMode: Text.Wrap
                   text: strings.t("setup.rootblurb")
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.caption
                   color: Color.muted
                 }
 
@@ -630,23 +611,20 @@ Item {
                                                    : strings.t("setup.rootrun")
                     onClicked: { setupRoot.reset(); setupRoot.begin() }
                   }
-                  Text {
+                  OmText {
                     visible: setupRoot.running
                     // `at` is -1 while idle, and steps[-1] is undefined.
                     text: setupRoot.at >= 0 && setupRoot.at < root.rootPlan.length
                           ? strings.tf("first.working", root.rootPlan[setupRoot.at].label)
                           : ""
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.body
+                    size: "body"
                     color: Color.accent
                   }
-                  Text {
+                  OmText {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     visible: setupRoot.failure !== ""
                     text: setupRoot.failure
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     color: Color.urgent
                   }
                 }
@@ -656,10 +634,8 @@ Item {
                 Layout.topMargin: Style.space(18)
                 spacing: Style.space(10)
                 Button { text: strings.t("setup.recheck"); onClicked: root.refresh() }
-                Text {
+                OmText {
                   text: strings.t("setup.hint")
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.caption
                   color: Color.muted
                 }
               }
@@ -702,29 +678,24 @@ Item {
                     spacing: Style.space(3)
                     RowLayout {
                       Layout.fillWidth: true
-                      Text {
+                      OmText {
                         text: (modelData.mode && modelData.mode.name) || "?"
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: Color.muted
                       }
                       Item { Layout.fillWidth: true }
-                      Text {
+                      OmText {
                         text: ((modelData.audio && modelData.audio.seconds) || 0).toFixed(1) + "s"
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: (modelData.warnings && modelData.warnings.length)
                                ? "#e0af68" : Color.muted
                       }
                     }
-                    Text {
+                    OmText {
                       Layout.fillWidth: true
                       elide: Text.ElideRight
                       text: modelData.text ? modelData.text
                                            : (strings.t("hist.dropped")
                                               + (modelData.rejected || ""))
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.body
+                      size: "body"
                       color: modelData.text ? Color.foreground : Color.muted
                     }
                   }
@@ -733,12 +704,11 @@ Item {
                     onClicked: root.selected = index
                   }
                 }
-                Text {
+                OmText {
                   anchors.centerIn: parent
                   visible: root.takes.length === 0
                   text: strings.tf("hist.none", link.hotkey || strings.t("hist.yourkey"))
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.body
+                  size: "body"
                   color: Color.muted
                 }
               }
@@ -760,12 +730,11 @@ Item {
                 width: parent.width - root.pad * 2
                 spacing: Style.space(14)
 
-                Text {
+                OmText {
                   Layout.fillWidth: true
                   wrapMode: Text.Wrap
                   text: root.take ? (root.take.text || root.take.rejected || "") : ""
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.title
+                  size: "title"
                   color: root.take && root.take.text ? Color.foreground : Color.muted
                 }
 
@@ -793,16 +762,13 @@ Item {
                     }
                     ColumnLayout {
                       spacing: 1
-                      Text {
+                      OmText {
                         text: modelData.k
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: Color.muted
                       }
-                      Text {
+                      OmText {
                         text: modelData.v
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.body
+                        size: "body"
                         color: Color.foreground
                       }
                     }
@@ -819,21 +785,18 @@ Item {
                   Layout.fillWidth: true
                   spacing: Style.space(4)
                   visible: !!(root.take && (root.take.warnings || []).length)
-                  Text {
+                  OmText {
                     text: strings.t("hist.problems")
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     font.letterSpacing: 1
                     color: Color.urgent
                   }
                   Repeater {
                     model: (root.take && root.take.warnings) ? root.take.warnings : []
-                    Text {
+                    OmText {
                       Layout.fillWidth: true
                       wrapMode: Text.Wrap
                       text: "· " + modelData
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.body
+                      size: "body"
                       color: "#e0af68"
                     }
                   }
@@ -844,10 +807,8 @@ Item {
                   Layout.fillWidth: true
                   spacing: Style.space(4)
                   visible: !!(root.take && (root.take.steps || []).length)
-                  Text {
+                  OmText {
                     text: strings.t("hist.steps")
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     font.letterSpacing: 1
                     color: Color.muted
                   }
@@ -858,21 +819,18 @@ Item {
                       readonly property bool fell: st.kept === true
                       Layout.fillWidth: true
                       spacing: Style.space(10)
-                      Text {
+                      OmText {
                         Layout.preferredWidth: Style.space(14)
                         text: fell ? "✕" : "✓"
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: fell ? Color.urgent : "#9ece6a"
                       }
-                      Text {
+                      OmText {
                         Layout.preferredWidth: Style.space(90)
                         text: st.llm || "?"
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.body
+                        size: "body"
                         color: Color.foreground
                       }
-                      Text {
+                      OmText {
                         Layout.fillWidth: true
                         wrapMode: Text.Wrap
                         text: fell
@@ -881,22 +839,19 @@ Item {
                               : ((st.seconds !== undefined
                                   ? st.seconds.toFixed(2) + "s  " : "")
                                  + (st.model || ""))
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: fell ? "#e0af68" : Color.muted
                       }
                     }
                   }
                 }
 
-                Text {
+                OmText {
                   visible: !!(root.take && root.take.raw_text
                               && root.take.raw_text !== root.take.text)
                   Layout.fillWidth: true
                   wrapMode: Text.Wrap
                   text: strings.t("hist.said") + (root.take ? root.take.raw_text : "")
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.body
+                  size: "body"
                   color: Color.muted
                 }
 
@@ -905,21 +860,18 @@ Item {
                   spacing: Style.space(4)
                   visible: !!(root.take && root.take.post
                               && (root.take.post.changes || []).length)
-                  Text {
+                  OmText {
                     text: strings.t("hist.post")
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     font.letterSpacing: 1
                     color: Color.muted
                   }
                   Repeater {
                     model: (root.take && root.take.post) ? root.take.post.changes : []
-                    Text {
+                    OmText {
                       Layout.fillWidth: true
                       wrapMode: Text.Wrap
                       text: "· " + modelData
-                      font.family: Style.font.family
-                      font.pixelSize: Style.font.body
+                      size: "body"
                       color: Color.foreground
                     }
                   }
@@ -930,10 +882,8 @@ Item {
                   spacing: Style.space(4)
                   visible: !!(root.take && root.take.asr
                               && (root.take.asr.segments || []).length)
-                  Text {
+                  OmText {
                     text: strings.t("hist.segments")
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     font.letterSpacing: 1
                     color: Color.muted
                   }
@@ -942,11 +892,9 @@ Item {
                     RowLayout {
                       Layout.fillWidth: true
                       spacing: Style.space(12)
-                      Text {
+                      OmText {
                         Layout.preferredWidth: Style.space(96)
                         text: (modelData.start || 0).toFixed(2) + "–" + (modelData.end || 0).toFixed(2)
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: Color.muted
                       }
                       Rectangle {
@@ -960,19 +908,16 @@ Item {
                           color: (modelData.avg_logprob || 0) < -1.0 ? "#e0af68" : "#9ece6a"
                         }
                       }
-                      Text {
+                      OmText {
                         Layout.preferredWidth: Style.space(52)
                         text: (modelData.avg_logprob || 0).toFixed(2)
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.caption
                         color: Color.muted
                       }
-                      Text {
+                      OmText {
                         Layout.fillWidth: true
                         elide: Text.ElideRight
                         text: modelData.text || ""
-                        font.family: Style.font.family
-                        font.pixelSize: Style.font.body
+                        size: "body"
                         color: Color.foreground
                       }
                     }
@@ -981,12 +926,10 @@ Item {
 
                 Repeater {
                   model: root.take ? (root.take.warnings || []) : []
-                  Text {
+                  OmText {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     text: "! " + modelData
-                    font.family: Style.font.family
-                    font.pixelSize: Style.font.caption
                     color: "#e0af68"
                   }
                 }

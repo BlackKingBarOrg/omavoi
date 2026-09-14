@@ -104,22 +104,19 @@ ColumnLayout {
 
   spacing: Style.space(8)
 
-  Text {
+  OmText {
     text: root.t("up.title")
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     font.letterSpacing: 1
     color: Color.muted
   }
 
-  Text {
+  OmText {
     Layout.fillWidth: true
     wrapMode: Text.Wrap
     text: root.behind > 0 ? root.tf("up.behind", root.behind)
           : root.behind === 0 ? root.t("up.current")
           : root.t("up.unknown")
-    font.family: Style.font.family
-    font.pixelSize: Style.font.body
+    size: "body"
     color: root.behind > 0 ? "#e0af68" : Color.foreground
   }
 
@@ -129,19 +126,17 @@ ColumnLayout {
   // static, so nothing here can compare them — and reporting "up to date"
   // for a question it never asked is the same fault as reporting the config
   // file instead of the running binding.
-  Text {
+  OmText {
     Layout.fillWidth: true
     Layout.maximumWidth: Style.space(760)
     wrapMode: Text.Wrap
     text: root.t("up.daemon.blind")
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     color: Qt.darker(Color.muted, 1.15)
   }
 
   // Said before the button, because the button cannot fix it and the message
   // pacman gives for it explains nothing.
-  Text {
+  OmText {
     visible: root.pluginDirty
     Layout.fillWidth: true
     wrapMode: Text.Wrap
@@ -150,8 +145,6 @@ ColumnLayout {
     // which still blocks the fast-forward.
     text: root.tf("up.dirty",
                   "https://github.com/BlackKingBarOrg/omavoi-shell-plugin")
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     color: Color.urgent
   }
 
@@ -177,29 +170,25 @@ ColumnLayout {
             : root.t("up.run")
       onClicked: { plan.reset(); plan.begin() }
     }
-    Text {
+    OmText {
       visible: plan.running
       // `at` is -1 while idle, and steps[-1] is undefined.
       text: plan.at >= 0 && plan.at < root.steps.length
             ? root.tf("first.working", root.steps[plan.at].label) : ""
-      font.family: Style.font.family
-      font.pixelSize: Style.font.body
+      size: "body"
       color: Color.accent
     }
-    Text {
+    OmText {
       visible: plan.done
       text: root.t("up.done")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.body
+      size: "body"
       color: "#9ece6a"
     }
-    Text {
+    OmText {
       visible: plan.failure !== ""
       Layout.fillWidth: true
       wrapMode: Text.Wrap
       text: plan.failure
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.urgent
     }
     Item { Layout.fillWidth: true }

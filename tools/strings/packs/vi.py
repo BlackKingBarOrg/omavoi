@@ -217,6 +217,14 @@ PACK = {
  "models.seg.speech": 'mô hình giọng nói',
  "models.seg.other": 'chương trình khác',
  "models.vramsub": "đang dùng trên toàn máy",
+ "models.vramnote": "Giữ cả hai thường trú mới là điểm chính: một chuỗi phải nạp trọng số "
+                    "mỗi lần ghi sẽ tốn hàng giây, không phải hàng mili giây. Nếu vượt quá "
+                    "dung lượng, thứ bị đẩy ra là mô hình giọng nói — việc nhập bằng giọng "
+                    "chậm đi mười lần mà không có gì nói cho bạn biết vì sao.",
+
+ "models.vram": "VRAM · ",
+ "models.sharednote": 'GPU này không có bộ nhớ riêng — trọng số nằm trong bộ nhớ hệ thống thông thường, và thanh phía trên là toàn bộ máy. Giữ cả hai thường trú vẫn là điểm chính, nhưng vượt quá ở đây phải trả bằng swap chứ không phải bị đẩy ra: việc nhập bằng giọng sẽ treo hẳn thay vì chỉ chậm đi, và mọi thứ khác trên máy treo theo.',
+ "models.shared": 'Bộ nhớ dùng chung · ',
  "models.needs": "cần",
  "dict.rules": "quy tắc",
  "dict.names": "tên riêng",

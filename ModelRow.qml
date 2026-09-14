@@ -33,7 +33,7 @@ RowLayout {
   Layout.fillWidth: true
   spacing: Style.space(10)
 
-  Text {
+  OmText {
     Layout.preferredWidth: Style.space(12)
     // ▶ is loaded right now, ● is chosen but not loaded, ○ is merely on
     // disk. The glyph carries that distinction, so the colour does not have
@@ -41,42 +41,33 @@ RowLayout {
     // right for a speech model that was asked for and did not load and wrong
     // for LLM weights, which are cold until a take reaches them.
     text: m.running ? "▶" : (m.active ? "●" : (m.downloaded ? "○" : ""))
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     color: (m.running || m.active) ? Color.accent : Color.muted
   }
-  Text {
+  OmText {
     Layout.preferredWidth: Style.space(178)
     text: m.key
-    font.family: Style.font.family
-    font.pixelSize: Style.font.body
+    size: "body"
     color: Color.foreground
   }
-  Text {
+  OmText {
     Layout.preferredWidth: Style.space(46)
     horizontalAlignment: Text.AlignRight
     text: (m.size_mb / 1024).toFixed(1) + "G"
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     color: Color.muted
   }
   // Won't-fit is worth saying before the download, not after — and never
   // about the model that is loaded right now, whose own weights are most of
   // what the free-VRAM figure is missing.
-  Text {
+  OmText {
     visible: m.fits === false && m.running !== true
     text: row.t("models.needs") + " " + (m.needed_mb / 1024).toFixed(1) + "G"
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     color: Color.urgent
   }
-  Text {
+  OmText {
     Layout.fillWidth: true
     Layout.minimumWidth: Style.space(40)
     elide: Text.ElideRight
     text: m.note
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
     color: (m.tags || []).indexOf("recommended") >= 0 ? Color.foreground
                                                       : Color.muted
   }
@@ -84,27 +75,21 @@ RowLayout {
     Layout.preferredWidth: Style.space(180)
     spacing: Style.space(7)
     Item { Layout.fillWidth: true }
-    Text {
+    OmText {
       visible: m.running === true
       text: row.t("models.running")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.accent
     }
     // Found where another tool put it, and used where it lies rather than
     // downloaded again. True of either family.
-    Text {
+    OmText {
       visible: m.downloaded && !m.ours && m.running !== true
       text: row.t("models.ondisk")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.muted
     }
-    Text {
+    OmText {
       visible: !m.downloaded && row.pulling[m.key] === true
       text: row.t("models.downloading")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
       color: Color.accent
     }
     Button {

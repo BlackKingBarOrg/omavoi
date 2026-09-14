@@ -115,10 +115,9 @@ Item {
         spacing: Style.space(8)
 
         // Status dot, or a tick / cross once the take is over.
-        Text {
+        OmText {
           anchors.verticalCenter: parent.verticalCenter
-          font.family: Style.font.family
-          font.pixelSize: Style.font.bodySmall
+          size: "bodySmall"
           color: root.edge
           text: {
             if (root.phase === "recording") return "󰑊"
@@ -157,11 +156,10 @@ Item {
         }
 
         // The text that was actually typed, so you get to see it before it goes.
-        Text {
+        OmText {
           visible: root.phase === "done" || root.phase === "rejected"
           anchors.verticalCenter: parent.verticalCenter
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: root.phase === "done" ? Color.foreground : Color.muted
           elide: Text.ElideRight
           width: Math.min(implicitWidth, Style.space(420))
@@ -170,31 +168,26 @@ Item {
 
         // How many rules touched the text. Which ones is a console question;
         // here it only has to register that something changed.
-        Text {
+        OmText {
           visible: root.phase === "done" && root.doneChanges > 0
           anchors.verticalCenter: parent.verticalCenter
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: Color.accent
           text: "·" + root.doneChanges
         }
 
-        Text {
+        OmText {
           visible: root.phase === "rejected"
           anchors.verticalCenter: parent.verticalCenter
-          font.family: Style.font.family
-          font.pixelSize: Style.font.caption
           color: Color.muted
           elide: Text.ElideRight
           width: Math.min(implicitWidth, Style.space(260))
           text: root.rejectedWhy
         }
 
-        Text {
+        OmText {
           visible: root.phase === "recording"
           anchors.verticalCenter: parent.verticalCenter
-          font.family: Style.font.family
-          font.pixelSize: Style.font.body
+          size: "body"
           color: Color.foreground
           text: {
             var t = Math.floor(link.seconds)
