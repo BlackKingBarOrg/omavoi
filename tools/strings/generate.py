@@ -425,12 +425,17 @@ section("models", {
                           "下面的列表是本地引擎的权重，选中远程引擎时不会用到。",
                           "รายการด้านล่างคือน้ำหนักของเอนจินในเครื่อง และไม่ถูกใช้เมื่อเลือกเอนจินระยะไกล"),
  "models.k.agent":     ("System agent", "系统 agent", "เอเจนต์ของระบบ"),
- "models.k.agent.sub": ("whichever coding agent Omarchy is set to — already logged in, "
-                        "no key, seconds of startup per take",
-                        "Omarchy 设定的那个 coding agent —— 已经登录过,不需要密钥,"
-                        "每次录音要花几秒启动",
+ # "already logged in, no key" implied a cloud without saying the text
+ # reaches it. The process is local; the inference is not, which is what
+ # state() has always reported and this line did not.
+ "models.k.agent.sub": ("whichever coding agent Omarchy is set to — already logged "
+                        "in, no key, seconds of startup per take. Your words go "
+                        "wherever that agent is signed in.",
+                        "Omarchy 设定的那个 coding agent —— 已经登录过，不需要密钥，"
+                        "每次录音要花几秒启动。你的话会发到那个 agent 登录的服务上。",
                         "เอเจนต์ที่ Omarchy ตั้งไว้ — ล็อกอินอยู่แล้ว ไม่ต้องมีคีย์ "
-                        "แต่เสียเวลาเริ่มไม่กี่วินาทีต่อครั้ง"),
+                        "แต่เสียเวลาเริ่มไม่กี่วินาทีต่อครั้ง "
+                        "คำของคุณจะไปถึงบริการที่เอเจนต์นั้นล็อกอินอยู่"),
  # An agent whose non-interactive mode has nowhere but argv to take a
  # prompt gets the transcript on a command line. Said here because this
  # program reads API keys from stdin for exactly that reason.
@@ -447,12 +452,14 @@ section("models", {
                         "llama.cpp ที่โปรแกรมนี้เริ่มและดูแลเอง; แต่ละขั้นเลือกน้ำหนักของตัวเอง "
                         "จากรายการด้านล่างได้"),
  "models.k.api":       ("Remote API", "远程 API", "API ระยะไกล"),
- "models.k.api.sub":   ("OpenAI-compatible, and the only one that sends your words off "
-                        "the machine — set base_url and a key",
-                        "兼容 OpenAI 协议,也是唯一会把你的话发出本机的一个 —— "
-                        "需要设 base_url 和密钥",
-                        "รองรับรูปแบบ OpenAI และเป็นตัวเดียวที่ส่งคำของคุณออกจากเครื่อง — "
-                        "ต้องตั้ง base_url และคีย์"),
+ # It was "the only one that sends your words off the machine", which the
+ # agent route also does — it runs a CLI that is logged into someone's
+ # cloud. Two of these three send the text out; one of them said so.
+ "models.k.api.sub":   ("OpenAI-compatible — set base_url and a key. Your words go "
+                        "to that endpoint.",
+                        "兼容 OpenAI 协议 —— 需要设 base_url 和密钥。你的话会发到那个端点。",
+                        "รองรับรูปแบบ OpenAI — ต้องตั้ง base_url และคีย์ "
+                        "คำของคุณจะถูกส่งไปที่ปลายทางนั้น"),
  "models.k.unset":     ("not configured", "未配置", "ยังไม่ได้ตั้งค่า"),
  "models.stale":     ("The daemon is still running what it started with",
                       "守护进程仍在跑启动时加载的那一个",
