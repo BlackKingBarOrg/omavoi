@@ -23,6 +23,13 @@ Item {
   property string backend: ""
   property string hotkey: ""
 
+  // The overlay's settings, as the daemon has them. Defaulted to the shipped
+  // values so the HUD behaves correctly before the first snapshot arrives and
+  // when it is talking to an older daemon that does not send them.
+  property bool hudEnabled: true
+  property string hudDwell: "changed"
+  property string hudSize: "s"
+
   property string lastText: ""
   property string lastRejected: ""
   property int lastChanges: 0
@@ -80,6 +87,18 @@ Item {
     }
   }
 
+  // Each field guarded separately: an older daemon sends neither, and a
+  // daemon mid-upgrade may send one. Absent must leave the default standing,
+  // not read as false.
+  function _digestUi(ui) {
+    if (!ui) return
+    if (ui.hud !== undefined) link.hudEnabled = ui.hud === true
+    if (ui.hud_dwell !== undefined && ui.hud_dwell !== "")
+      link.hudDwell = String(ui.hud_dwell)
+    if (ui.hud_size !== undefined && ui.hud_size !== "")
+      link.hudSize = String(ui.hud_size)
+  }
+
   function _digest(line) {
     if (!line) return
     var msg
@@ -105,11 +124,18 @@ Item {
                         link.lastChanges, link.lastWarnings)
       return
     }
+    // Pushed on reload, so a setting changed in the console reaches the
+    // overlay now rather than at the next shell restart.
+    if (msg.event === "ui") {
+      link._digestUi(msg.ui)
+      return
+    }
     // The first line after subscribing is a full status snapshot.
     if (msg.state !== undefined) {
       link.state = msg.state
       link.backend = msg.backend || ""
       if (msg.hotkey) link.hotkey = msg.hotkey.key || ""
+      if (msg.ui) link._digestUi(msg.ui)
     }
   }
 }
