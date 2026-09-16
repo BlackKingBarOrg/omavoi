@@ -55,12 +55,6 @@ Item {
     return String(t(key)).replace("%1", a === undefined ? "" : String(a))
   }
 
-  function nameOf(code) {
-    for (var i = 0; i < languages.length; i++)
-      if (languages[i].code === code) return languages[i].name
-    return code
-  }
-
   readonly property var _table: ({
     en: {
       // ---- firstrun
@@ -102,6 +96,8 @@ Item {
       "up.current": "Up to date",
       "up.daemon.blind": "The daemon is installed separately and does not record which commit it came from, so this screen cannot tell you whether it is current. Running the update reinstalls it either way.",
       "up.unknown": "Cannot tell — the plugin was not installed from git",
+      "up.nofetch": "Could not reach the remote, so this may not be the latest: %1",
+      "up.noupstream": "The plugin's branch has no upstream, so there is nothing to compare against",
       "up.dirty": "The installed plugin has local changes, so it cannot fast-forward. Reinstall it: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "Update",
       "up.again": "Check again",
@@ -305,6 +301,7 @@ Item {
       "dict.enable": "Enable matching",
       "dict.prompt": "prompt: ",
       "dict.none": "(none)",
+      "dict.overbudget": "%1 more did not fit the prompt budget",
       "set.ptt": "push to talk",
       "set.toggle": "toggle",
       "set.dwell.always": "always",
@@ -395,6 +392,8 @@ Item {
       "up.current": "已是最新",
       "up.daemon.blind": "守护进程是单独安装的，而且不记录自己来自哪个提交，所以这个页面无法告诉你它是不是最新的。无论如何，执行更新都会重装它。",
       "up.unknown": "无法判断 —— 这个插件不是从 git 安装的",
+      "up.nofetch": "无法连接远端，所以这可能不是最新版本：%1",
+      "up.noupstream": "插件所在分支没有设置 upstream，没有可比较的对象",
       "up.dirty": "已安装的插件里有本地改动,所以无法 fast-forward。重新安装它:omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "开始更新",
       "up.again": "再检查一次",
@@ -598,6 +597,7 @@ Item {
       "dict.enable": "开启匹配",
       "dict.prompt": "提示词： ",
       "dict.none": "（无）",
+      "dict.overbudget": "另有 %1 个超出提示词预算，未被加入",
       "set.ptt": "按住说话",
       "set.toggle": "按一下切换",
       "set.dwell.always": "总是",
@@ -688,6 +688,8 @@ Item {
       "up.current": "เป็นรุ่นล่าสุดแล้ว",
       "up.daemon.blind": "เดมอนถูกติดตั้งแยกและไม่บันทึกว่ามาจากคอมมิตใด หน้านี้จึงบอกไม่ได้ว่าเป็นเวอร์ชันล่าสุดหรือไม่ การอัปเดตจะติดตั้งใหม่อยู่ดี",
       "up.unknown": "บอกไม่ได้ — ปลั๊กอินนี้ไม่ได้ติดตั้งจาก git",
+      "up.nofetch": "ติดต่อรีโมตไม่ได้ จึงอาจไม่ใช่รุ่นล่าสุด: %1",
+      "up.noupstream": "เบรนช์ของปลั๊กอินไม่มี upstream จึงไม่มีอะไรให้เทียบ",
       "up.dirty": "ปลั๊กอินที่ติดตั้งมีการเปลี่ยนแปลงในเครื่อง จึง fast-forward ไม่ได้ ติดตั้งใหม่: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "อัปเดต",
       "up.again": "ตรวจอีกครั้ง",
@@ -891,6 +893,7 @@ Item {
       "dict.enable": "เปิดการจับคู่",
       "dict.prompt": "พรอมป์ต: ",
       "dict.none": "(ไม่มี)",
+      "dict.overbudget": "อีก %1 รายการไม่พอโควตาพรอมป์ต",
       "set.ptt": "กดค้างเพื่อพูด",
       "set.toggle": "สลับเปิด/ปิด",
       "set.dwell.always": "เสมอ",
@@ -981,6 +984,8 @@ Item {
       "up.current": "Aktuell",
       "up.daemon.blind": "Der Dienst wird separat installiert und merkt sich nicht, aus welchem Commit er stammt — diese Seite kann also nicht sagen, ob er aktuell ist. Die Aktualisierung installiert ihn ohnehin neu.",
       "up.unknown": "Nicht feststellbar — das Plugin wurde nicht aus git installiert",
+      "up.nofetch": "Das Remote war nicht erreichbar, dies ist also vielleicht nicht der neueste Stand: %1",
+      "up.noupstream": "Der Branch des Plugins hat kein Upstream, es gibt also nichts zu vergleichen",
       "up.dirty": "Das installierte Plugin hat lokale Änderungen und kann nicht vorspulen. Installiere es neu: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "Aktualisieren",
       "up.again": "Erneut prüfen",
@@ -1184,6 +1189,7 @@ Item {
       "dict.enable": "Abgleich aktivieren",
       "dict.prompt": "Prompt: ",
       "dict.none": "(keiner)",
+      "dict.overbudget": "%1 weitere passten nicht ins Prompt-Budget",
       "set.ptt": "Halten zum Sprechen",
       "set.toggle": "Umschalten",
       "set.dwell.always": "immer",
@@ -1274,6 +1280,8 @@ Item {
       "up.current": "À jour",
       "up.daemon.blind": "Le service est installé séparément et ne retient pas de quel commit il vient : cet écran ne peut donc pas dire s'il est à jour. La mise à jour le réinstalle dans tous les cas.",
       "up.unknown": "Impossible de savoir — le plugin n'a pas été installé depuis git",
+      "up.nofetch": "Le dépôt distant est injoignable, ceci n'est donc peut-être pas la dernière version : %1",
+      "up.noupstream": "La branche du plugin n'a pas d'upstream, il n'y a donc rien à comparer",
       "up.dirty": "Le plugin installé a des modifications locales, il ne peut pas avancer. Réinstalle-le : omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "Mettre à jour",
       "up.again": "Revérifier",
@@ -1477,6 +1485,7 @@ Item {
       "dict.enable": "Activer l'appariement",
       "dict.prompt": "prompt : ",
       "dict.none": "(aucun)",
+      "dict.overbudget": "%1 de plus n'ont pas tenu dans le budget du prompt",
       "set.ptt": "maintenir pour parler",
       "set.toggle": "bascule",
       "set.dwell.always": "toujours",
@@ -1567,6 +1576,8 @@ Item {
       "up.current": "Al día",
       "up.daemon.blind": "El servicio se instala por separado y no registra de qué commit viene, así que esta pantalla no puede decirte si está al día. La actualización lo reinstala de todos modos.",
       "up.unknown": "No se puede saber — el plugin no se instaló desde git",
+      "up.nofetch": "No se pudo contactar con el remoto, así que puede que esta no sea la última versión: %1",
+      "up.noupstream": "La rama del plugin no tiene upstream, así que no hay nada con que comparar",
       "up.dirty": "El plugin instalado tiene cambios locales, así que no puede avanzar. Reinstálalo: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "Actualizar",
       "up.again": "Volver a comprobar",
@@ -1770,6 +1781,7 @@ Item {
       "dict.enable": "Activar emparejamiento",
       "dict.prompt": "prompt: ",
       "dict.none": "(ninguno)",
+      "dict.overbudget": "%1 más no cupieron en el presupuesto del prompt",
       "set.ptt": "mantener para hablar",
       "set.toggle": "alternar",
       "set.dwell.always": "siempre",
@@ -1860,6 +1872,8 @@ Item {
       "up.current": "最新です",
       "up.daemon.blind": "デーモンは別途インストールされ、どのコミット由来かを記録しません。そのためこの画面では最新かどうか判断できません。更新を実行すればいずれにせよ再インストールされます。",
       "up.unknown": "判定できません —— このプラグインは git から入れたものではありません",
+      "up.nofetch": "リモートに接続できなかったため、これが最新とは限りません: %1",
+      "up.noupstream": "プラグインのブランチに upstream が設定されていないため、比較する対象がありません",
       "up.dirty": "インストール済みのプラグインにローカルの変更があるため早送りできません。入れ直してください: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "更新する",
       "up.again": "もう一度確認",
@@ -2063,6 +2077,7 @@ Item {
       "dict.enable": "照合を有効化",
       "dict.prompt": "プロンプト： ",
       "dict.none": "（なし）",
+      "dict.overbudget": "さらに %1 件はプロンプトの上限に収まりませんでした",
       "set.ptt": "押している間だけ話す",
       "set.toggle": "押して切り替え",
       "set.dwell.always": "常に",
@@ -2153,6 +2168,8 @@ Item {
       "up.current": "Đã mới nhất",
       "up.daemon.blind": "Dịch vụ nền được cài riêng và không ghi lại nó đến từ commit nào, nên trang này không thể cho bạn biết nó có mới nhất hay không. Chạy cập nhật sẽ cài lại nó trong mọi trường hợp.",
       "up.unknown": "Không xác định được — plugin này không cài từ git",
+      "up.nofetch": "Không kết nối được tới remote, nên đây có thể không phải bản mới nhất: %1",
+      "up.noupstream": "Nhánh của plugin không có upstream, nên không có gì để so sánh",
       "up.dirty": "Plugin đã cài có thay đổi cục bộ nên không fast-forward được. Hãy cài lại: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes",
       "up.run": "Cập nhật",
       "up.again": "Kiểm tra lại",
@@ -2356,6 +2373,7 @@ Item {
       "dict.enable": "Bật việc khớp",
       "dict.prompt": "prompt: ",
       "dict.none": "(không có)",
+      "dict.overbudget": "%1 tên nữa không vừa hạn mức prompt",
       "set.ptt": "giữ để nói",
       "set.toggle": "bấm để bật/tắt",
       "set.dwell.always": "luôn luôn",

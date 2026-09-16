@@ -38,6 +38,8 @@ PACK = {
                      'そのためこの画面では最新かどうか判断できません。更新を実行すれば'
                      'いずれにせよ再インストールされます。',
  "up.unknown": '判定できません —— このプラグインは git から入れたものではありません',
+ "up.nofetch": "リモートに接続できなかったため、これが最新とは限りません: %1",
+ "up.noupstream": "プラグインのブランチに upstream が設定されていないため、比較する対象がありません",
  "up.dirty": 'インストール済みのプラグインにローカルの変更があるため早送りできません。入れ直してください: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes',
  "up.run": '更新する',
  "up.again": 'もう一度確認',
@@ -250,6 +252,7 @@ PACK = {
  "dict.enable": "照合を有効化",
  "dict.prompt": "プロンプト： ",
  "dict.none": "（なし）",
+ "dict.overbudget": "さらに %1 件はプロンプトの上限に収まりませんでした",
  "set.ptt": "押している間だけ話す",
  "set.toggle": "押して切り替え",
  "set.dwell.always": "常に",

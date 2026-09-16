@@ -23,7 +23,6 @@ Item {
   property var setupReport: ({ ready: false, done: 0, total: 5, steps: [] })
   property var takes: []
   property int selected: 0
-  property bool busy: false
   property var modesData: ({ modes: [], llm: [] })
   property var modelsData: ({ models: [] })
   property var dictData: ({ rules: [] })
@@ -527,6 +526,9 @@ Item {
             names: root.namesData.names || []
             onCommandArgs: function (a) { root.applyArgs(a) }
             seed: root.namesData.seed || ""
+            budget: Number(root.namesData.budget || 224)
+            seedChars: Number(root.namesData.seed_chars || 0)
+            dropped: root.namesData.dropped || []
             onCommand: function (c) { root.apply(c) }
           }
 

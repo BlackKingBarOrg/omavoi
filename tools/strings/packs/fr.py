@@ -38,6 +38,8 @@ PACK = {
                      "commit il vient : cet écran ne peut donc pas dire s'il est à jour. "
                      "La mise à jour le réinstalle dans tous les cas.",
  "up.unknown": "Impossible de savoir — le plugin n'a pas été installé depuis git",
+ "up.nofetch": "Le dépôt distant est injoignable, ceci n'est donc peut-être pas la dernière version : %1",
+ "up.noupstream": "La branche du plugin n'a pas d'upstream, il n'y a donc rien à comparer",
  "up.dirty": 'Le plugin installé a des modifications locales, il ne peut pas avancer. Réinstalle-le : omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes',
  "up.run": 'Mettre à jour',
  "up.again": 'Revérifier',
@@ -259,6 +261,7 @@ PACK = {
  "dict.enable": "Activer l'appariement",
  "dict.prompt": "prompt : ",
  "dict.none": "(aucun)",
+ "dict.overbudget": "%1 de plus n'ont pas tenu dans le budget du prompt",
  "set.ptt": "maintenir pour parler",
  "set.toggle": "bascule",
  "set.dwell.always": "toujours",

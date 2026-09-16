@@ -14,6 +14,11 @@ Flickable {
   property var names: []
   property string seed: ""
   property int budget: 224
+  // `budget` was here from the start with nothing passing a value in and
+  // nothing reading it. The cap is real — seed_text stops at it — so names
+  // past it were listed on this page as seeded and handed to nothing.
+  property int seedChars: 0
+  property var dropped: []
   property int pad: Style.space(22)
   property string sub: "rules"
   property var strings: null
@@ -144,6 +149,11 @@ Flickable {
         elide: Text.ElideRight
         text: root.t("dict.prompt") + (root.seed || root.t("dict.none"))
         color: Color.muted
+      }
+      OmText {
+        visible: (root.dropped || []).length > 0
+        text: root.tf("dict.overbudget", (root.dropped || []).length)
+        color: "#e0af68"
       }
     }
 

@@ -38,6 +38,8 @@ PACK = {
                      'viene, así que esta pantalla no puede decirte si está al día. '
                      'La actualización lo reinstala de todos modos.',
  "up.unknown": 'No se puede saber — el plugin no se instaló desde git',
+ "up.nofetch": "No se pudo contactar con el remoto, así que puede que esta no sea la última versión: %1",
+ "up.noupstream": "La rama del plugin no tiene upstream, así que no hay nada con que comparar",
  "up.dirty": 'El plugin instalado tiene cambios locales, así que no puede avanzar. Reinstálalo: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes',
  "up.run": 'Actualizar',
  "up.again": 'Volver a comprobar',
@@ -258,6 +260,7 @@ PACK = {
  "dict.enable": "Activar emparejamiento",
  "dict.prompt": "prompt: ",
  "dict.none": "(ninguno)",
+ "dict.overbudget": "%1 más no cupieron en el presupuesto del prompt",
  "set.ptt": "mantener para hablar",
  "set.toggle": "alternar",
  "set.dwell.always": "siempre",

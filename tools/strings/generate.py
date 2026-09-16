@@ -58,12 +58,6 @@ Item {
     return String(t(key)).replace("%1", a === undefined ? "" : String(a))
   }
 
-  function nameOf(code) {
-    for (var i = 0; i < languages.length; i++)
-      if (languages[i].code === code) return languages[i].name
-    return code
-  }
-
 '''
 
 # key: (en, zh, th)
@@ -161,6 +155,15 @@ section("update", {
  "up.unknown":   ("Cannot tell — the plugin was not installed from git",
                   "无法判断 —— 这个插件不是从 git 安装的",
                   "บอกไม่ได้ — ปลั๊กอินนี้ไม่ได้ติดตั้งจาก git"),
+ # Said "not installed from git" for a failed fetch, which is the same
+ # message for an offline laptop as for a hand-copied directory — and it
+ # sends the first one to reinstall something that is perfectly fine.
+ "up.nofetch":   ("Could not reach the remote, so this may not be the latest: %1",
+                  "无法连接远端，所以这可能不是最新版本：%1",
+                  "ติดต่อรีโมตไม่ได้ จึงอาจไม่ใช่รุ่นล่าสุด: %1"),
+ "up.noupstream":("The plugin's branch has no upstream, so there is nothing to compare against",
+                  "插件所在分支没有设置 upstream，没有可比较的对象",
+                  "เบรนช์ของปลั๊กอินไม่มี upstream จึงไม่มีอะไรให้เทียบ"),
  "up.dirty":     ("The installed plugin has local changes, so it cannot fast-forward. "
                   "Reinstall it: omarchy plugin remove ai.bkblab.omavoi --yes && "
                   "omarchy plugin add %1 --enable --yes",
@@ -527,6 +530,9 @@ section("dictionary", {
  "dict.enable":    ("Enable matching", "开启匹配", "เปิดการจับคู่"),
  "dict.prompt":    ("prompt: ", "提示词： ", "พรอมป์ต: "),
  "dict.none":      ("(none)", "（无）", "(ไม่มี)"),
+ "dict.overbudget":("%1 more did not fit the prompt budget",
+                    "另有 %1 个超出提示词预算，未被加入",
+                    "อีก %1 รายการไม่พอโควตาพรอมป์ต"),
  "set.ptt":        ("push to talk", "按住说话", "กดค้างเพื่อพูด"),
  "set.toggle":     ("toggle", "按一下切换", "สลับเปิด/ปิด"),
  "set.dwell.always":  ("always", "总是", "เสมอ"),

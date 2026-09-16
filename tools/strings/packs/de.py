@@ -38,6 +38,8 @@ PACK = {
                      'welchem Commit er stammt — diese Seite kann also nicht sagen, ob er '
                      'aktuell ist. Die Aktualisierung installiert ihn ohnehin neu.',
  "up.unknown": 'Nicht feststellbar — das Plugin wurde nicht aus git installiert',
+ "up.nofetch": "Das Remote war nicht erreichbar, dies ist also vielleicht nicht der neueste Stand: %1",
+ "up.noupstream": "Der Branch des Plugins hat kein Upstream, es gibt also nichts zu vergleichen",
  "up.dirty": 'Das installierte Plugin hat lokale Änderungen und kann nicht vorspulen. Installiere es neu: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes',
  "up.run": 'Aktualisieren',
  "up.again": 'Erneut prüfen',
@@ -263,6 +265,7 @@ PACK = {
  "dict.enable": "Abgleich aktivieren",
  "dict.prompt": "Prompt: ",
  "dict.none": "(keiner)",
+ "dict.overbudget": "%1 weitere passten nicht ins Prompt-Budget",
  "set.ptt": "Halten zum Sprechen",
  "set.toggle": "Umschalten",
  "set.dwell.always": "immer",

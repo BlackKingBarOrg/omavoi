@@ -34,15 +34,54 @@ ColumnLayout {
   // Asked of the clone rather than of a version file: the plugin is a git
   // checkout, so the question is whether origin has moved past it.
   property int behind: -1
+  // Why the count is unknown, when it is. `pluginError` was declared here
+  // from the start and nothing ever set it: the probe sent git's stderr to
+  // /dev/null and printed -1, so a laptop with no network and a directory
+  // that was hand-copied instead of cloned produced the same -1 and the same
+  // sentence — "the plugin was not installed from git" — which sends the
+  // first one to reinstall something that is perfectly fine.
+  //
+  // "" means the count is good. Anything else is the reason it is not.
   property string pluginError: ""
   Process {
     id: probeBehind
     command: ["sh", "-c",
               "d=\"$HOME/.config/omarchy/plugins/ai.bkblab.omavoi\"; " +
-              "git -C \"$d\" fetch --quiet origin 2>/dev/null; " +
-              "git -C \"$d\" rev-list --count HEAD..@{upstream} 2>/dev/null || echo -1"]
+              "git -C \"$d\" rev-parse --git-dir >/dev/null 2>&1 || " +
+              "{ echo nogit; exit 0; }; " +
+              "e=$(git -C \"$d\" fetch --quiet origin 2>&1) || " +
+              "{ echo \"nofetch $e\"; exit 0; }; " +
+              "git -C \"$d\" rev-list --count HEAD..@{upstream} 2>/dev/null || " +
+              "echo noupstream"]
     stdout: StdioCollector {
-      onStreamFinished: root.behind = parseInt(text.trim(), 10)
+      onStreamFinished: {
+        var out = String(text).trim()
+        if (out.indexOf("nofetch") === 0) {
+          // Still shows the count it can compute locally when there is one;
+          // it is simply not known to be current.
+          root.behind = -1
+          // git says its piece over four or five lines, of which the first
+          // is the one that identifies the cause — "'origin' does not
+          // appear to be a git repository", "Could not resolve host" — and
+          // the rest is advice about access rights that is wrong whenever
+          // the real answer is that the laptop is on a train.
+          var why = out.slice(7).split("\n")
+                       .map(function (l) { return l.trim() })
+                       .filter(function (l) { return l !== "" })[0] || ""
+          why = why.replace(/^fatal:\s*/, "").slice(0, 120)
+          root.pluginError = root.tf("up.nofetch", why || "git fetch failed")
+        } else if (out === "noupstream") {
+          root.behind = -1
+          root.pluginError = root.t("up.noupstream")
+        } else if (out === "nogit" || out === "") {
+          root.behind = -1
+          root.pluginError = ""          // up.unknown, which is now accurate
+        } else {
+          root.behind = parseInt(out, 10)
+          root.pluginError = isNaN(root.behind) ? root.t("up.noupstream") : ""
+          if (isNaN(root.behind)) root.behind = -1
+        }
+      }
     }
   }
   // Local edits stop a fast-forward, and hand-copied files are exactly how a
@@ -115,9 +154,11 @@ ColumnLayout {
     wrapMode: Text.Wrap
     text: root.behind > 0 ? root.tf("up.behind", root.behind)
           : root.behind === 0 ? root.t("up.current")
+          : root.pluginError !== "" ? root.pluginError
           : root.t("up.unknown")
     size: "body"
-    color: root.behind > 0 ? "#e0af68" : Color.foreground
+    color: root.behind > 0 || root.pluginError !== "" ? "#e0af68"
+                                                      : Color.foreground
   }
 
   // The line above answers "is the plugin behind?", which is the only half

@@ -38,6 +38,8 @@ PACK = {
                      'nên trang này không thể cho bạn biết nó có mới nhất hay không. '
                      'Chạy cập nhật sẽ cài lại nó trong mọi trường hợp.',
  "up.unknown": 'Không xác định được — plugin này không cài từ git',
+ "up.nofetch": "Không kết nối được tới remote, nên đây có thể không phải bản mới nhất: %1",
+ "up.noupstream": "Nhánh của plugin không có upstream, nên không có gì để so sánh",
  "up.dirty": 'Plugin đã cài có thay đổi cục bộ nên không fast-forward được. Hãy cài lại: omarchy plugin remove ai.bkblab.omavoi --yes && omarchy plugin add %1 --enable --yes',
  "up.run": 'Cập nhật',
  "up.again": 'Kiểm tra lại',
@@ -253,6 +255,7 @@ PACK = {
  "dict.enable": "Bật việc khớp",
  "dict.prompt": "prompt: ",
  "dict.none": "(không có)",
+ "dict.overbudget": "%1 tên nữa không vừa hạn mức prompt",
  "set.ptt": "giữ để nói",
  "set.toggle": "bấm để bật/tắt",
  "set.dwell.always": "luôn luôn",
