@@ -194,6 +194,7 @@ PACK = {
                          'リモートエンジンを選んでいる間は使われません。',
  "models.k.agent": 'システムのエージェント',
  "models.k.agent.sub": 'Omarchy が設定しているコーディングエージェント —— すでにログイン済み、キー不要、録音ごとに数秒の起動',
+ "models.k.agent.argv": "· この agent の呼び出しは書き起こしをコマンドラインに載せます。同じユーザーのどのプロセスからも /proc で見えます",
  "models.k.local": 'ローカルモデル',
  "models.k.local.sub": 'llama.cpp。ここで起動し管理します。ステップは下の一覧から自分の重みを指定できます',
  "models.k.api": 'リモート API',

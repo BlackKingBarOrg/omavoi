@@ -431,6 +431,15 @@ section("models", {
                         "每次录音要花几秒启动",
                         "เอเจนต์ที่ Omarchy ตั้งไว้ — ล็อกอินอยู่แล้ว ไม่ต้องมีคีย์ "
                         "แต่เสียเวลาเริ่มไม่กี่วินาทีต่อครั้ง"),
+ # An agent whose non-interactive mode has nowhere but argv to take a
+ # prompt gets the transcript on a command line. Said here because this
+ # program reads API keys from stdin for exactly that reason.
+ "models.k.agent.argv": ("· the transcript goes in this agent's command line, "
+                         "which /proc shows to anything running as you",
+                         "· 这个 agent 的调用会把转写文本放进命令行,"
+                         "同一用户下的任何进程都能从 /proc 看到",
+                         "· การเรียกเอเจนต์นี้จะใส่ข้อความถอดเสียงไว้ในบรรทัดคำสั่ง "
+                         "ซึ่งโปรเซสใด ๆ ของผู้ใช้คนนี้อ่านได้จาก /proc"),
  "models.k.local":     ("Local model", "本地模型", "โมเดลในเครื่อง"),
  "models.k.local.sub": ("llama.cpp, started and owned here; a step can name its own "
                         "weights from the catalogue below",

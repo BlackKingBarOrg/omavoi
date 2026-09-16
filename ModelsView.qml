@@ -495,7 +495,11 @@ Item {
             secondary: l ? (l.model ? String(l.model).replace("llm:", "")
                                     : String(l.live_engine || l.backend || ""))
                          : ""
-            detail: kind.detail
+            // The argv note belongs on the line that says what this route
+            // is, and it is only ever true of an agent whose own
+            // non-interactive mode has nowhere else to take a prompt.
+            detail: kind.detail + (l && l.transcript_in_argv === true
+                                   ? "  " + root.t("models.k.agent.argv") : "")
             status: !l ? root.t("models.k.unset")
                     : l.live_problem ? root.t("models.nokey")
                     : l.live_running === true ? root.t("models.running")

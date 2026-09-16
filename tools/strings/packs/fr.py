@@ -200,6 +200,7 @@ PACK = {
                          "elle ne sert pas quand le moteur distant est sélectionné.",
  "models.k.agent": 'Agent système',
  "models.k.agent.sub": "l'agent de code auquel Omarchy est réglé — déjà connecté, sans clé, quelques secondes de démarrage par prise",
+ "models.k.agent.argv": "· l'appel de cet agent place la transcription dans la ligne de commande, que /proc montre à tout processus de cet utilisateur",
  "models.k.local": 'Modèle local',
  "models.k.local.sub": 'llama.cpp, lancé et géré ici ; une étape peut nommer ses propres poids dans le catalogue ci-dessous',
  "models.k.api": 'API distante',

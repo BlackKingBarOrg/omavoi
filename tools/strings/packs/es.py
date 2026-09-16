@@ -199,6 +199,7 @@ PACK = {
                          'mientras esté seleccionado el motor remoto.',
  "models.k.agent": 'Agente del sistema',
  "models.k.agent.sub": 'el agente de código al que está configurado Omarchy — ya con sesión, sin clave, segundos de arranque por toma',
+ "models.k.agent.argv": "· la llamada a este agente pone la transcripción en la línea de comandos, que /proc muestra a cualquier proceso de este usuario",
  "models.k.local": 'Modelo local',
  "models.k.local.sub": 'llama.cpp, arrancado y gestionado aquí; un paso puede nombrar sus propios pesos del catálogo de abajo',
  "models.k.api": 'API remota',

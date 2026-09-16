@@ -196,6 +196,7 @@ PACK = {
                          'dùng khi engine từ xa đang được chọn.',
  "models.k.agent": 'Agent hệ thống',
  "models.k.agent.sub": 'agent lập trình mà Omarchy đang đặt — đã đăng nhập, không cần khóa, mất vài giây khởi động mỗi lần',
+ "models.k.agent.argv": "· lệnh gọi agent này đặt bản chép lời vào dòng lệnh, mà /proc cho mọi tiến trình của người dùng này đọc được",
  "models.k.local": 'Mô hình cục bộ',
  "models.k.local.sub": 'llama.cpp, do chương trình này khởi động và quản lý; mỗi bước có thể chọn trọng số riêng từ danh mục bên dưới',
  "models.k.api": 'API từ xa',

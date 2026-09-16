@@ -204,6 +204,7 @@ PACK = {
                          'nicht benutzt, solange die entfernte Engine gewählt ist.',
  "models.k.agent": 'System-Agent',
  "models.k.agent.sub": 'der Coding-Agent, auf den Omarchy gesetzt ist — bereits angemeldet, kein Key, Sekunden Startzeit pro Aufnahme',
+ "models.k.agent.argv": "· der Aufruf dieses Agents legt das Transkript in die Kommandozeile, die /proc jedem Prozess dieses Benutzers zeigt",
  "models.k.local": 'Lokales Modell',
  "models.k.local.sub": 'llama.cpp, hier gestartet und verwaltet; ein Schritt kann eigene Gewichte aus dem Katalog unten nennen',
  "models.k.api": 'Remote-API',
