@@ -286,6 +286,11 @@ PACK = {
  "set.warnbelow": "この値未満で警告",
  "set.maxtake": "一回の上限",
  "set.hud": "HUD",
+ "set.hud.show": "オーバーレイを表示",
+ "set.hud.size": "サイズ",
+ "set.size.xs": "極小",
+ "set.size.s": "小",
+ "set.size.m": "大",
  "set.keepup": "結果を表示したままにする",
  "set.hudnote": "既定は「changed」です。毎回必ず表示を待つ設定は、二文続けて話した瞬間に"
                 "邪魔になります。とはいえ、見ないまま静かに書き換えられるほうが厄介です。",

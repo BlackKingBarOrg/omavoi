@@ -294,6 +294,11 @@ PACK = {
  "set.warnbelow": "avisar por debajo de",
  "set.maxtake": "toma máxima",
  "set.hud": "HUD",
+ "set.hud.show": "mostrar la superposición",
+ "set.hud.size": "tamaño",
+ "set.size.xs": "diminuto",
+ "set.size.s": "pequeño",
+ "set.size.m": "grande",
  "set.keepup": "mantener el resultado visible",
  "set.hudnote": "«changed» es el valor por defecto: una espera que pagas siempre se "
                 "convierte en ruido en cuanto dictas dos frases seguidas, pero una "

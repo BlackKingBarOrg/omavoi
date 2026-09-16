@@ -587,6 +587,11 @@ section("dictionary", {
  "set.warnbelow":  ("warn below", "低于则警告", "เตือนเมื่อต่ำกว่า"),
  "set.maxtake":    ("max take", "单次上限", "ความยาวสูงสุด"),
  "set.hud":        ("HUD", "HUD", "HUD"),
+ "set.hud.show":   ("show the overlay", "显示浮层", "แสดงหน้าต่างซ้อน"),
+ "set.hud.size":   ("size", "大小", "ขนาด"),
+ "set.size.xs":    ("tiny", "极小", "จิ๋ว"),
+ "set.size.s":     ("small", "小", "เล็ก"),
+ "set.size.m":     ("large", "大", "ใหญ่"),
  "set.keepup":     ("keep the result up", "结果保持显示", "คงผลลัพธ์ไว้บนจอ"),
  "set.hudnote":    ("\"changed\" is the default: a dwell you always pay for turns into noise "
                     "the moment you dictate two sentences in a row, but a silent correction you "

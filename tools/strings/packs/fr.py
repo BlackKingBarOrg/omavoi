@@ -296,6 +296,11 @@ PACK = {
  "set.warnbelow": "alerter en dessous de",
  "set.maxtake": "prise max",
  "set.hud": "HUD",
+ "set.hud.show": "afficher l'incrustation",
+ "set.hud.size": "taille",
+ "set.size.xs": "minuscule",
+ "set.size.s": "petite",
+ "set.size.m": "grande",
  "set.keepup": "laisser le résultat affiché",
  "set.hudnote": "« changed » est la valeur par défaut : une temporisation que tu paies "
                 "toujours devient du bruit dès que tu dictes deux phrases de suite, mais "

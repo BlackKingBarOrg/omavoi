@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Are the brackets balanced in every .qml file?
+"""Does every .qml file still parse?
 
-Not a substitute for qmllint, which is not installed here. It answers one
-question, and it is the question that has actually gone wrong: an edit that
-rewrites one line of a multi-line expression leaves the continuation lines
-orphaned, and QML then fails to load with an error naming a line some
-distance from the damage. That has happened twice, both times from a
-mechanical edit of mine.
+qmllint answers this properly, and it is installed — just not on PATH:
+qt6-declarative puts it in /usr/lib/qt6/bin, which is why an earlier version
+of this file said it was unavailable and reimplemented a fraction of it. So
+this runs qmllint when it can find it and falls back to the bracket scan
+below when it cannot, and says which of the two it did.
+
+The fallback answers one question, and it is the question that has actually
+gone wrong: an edit that rewrites one line of a multi-line expression leaves
+the continuation lines orphaned, and QML then fails to load with an error
+naming a line some distance from the damage. That has happened twice, both
+times from a mechanical edit of mine.
 
 A naive version of this check reported two false positives, because
 stripping `//` comments first also eats the inside of
@@ -19,12 +24,17 @@ where they start, not by pattern order. A regex literal is distinguished
 from division by what precedes it — division follows a value, a regex
 follows an operator or an opening bracket.
 
-Usage: tools/qmlbalance.py [files...]   (default: every *.qml beside it)
-Exit 1 if anything is unbalanced, so it can gate a commit.
+Usage: tools/qmlcheck.py [files...]   (default: every *.qml beside it)
+Exit 1 on a syntax error, so it can gate a commit. Warnings are not failures:
+qmllint has a great deal to say about a Quickshell plugin's imports that is
+true of every file here and actionable in none of them.
 """
 
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -116,9 +126,37 @@ def imbalances(text: str) -> list[str]:
     return problems
 
 
+# Where qt6-declarative puts it, plus PATH in case a future version is there.
+QMLLINT = ("/usr/lib/qt6/bin/qmllint", "/usr/lib64/qt6/bin/qmllint", "qmllint")
+
+
+def _qmllint() -> str | None:
+    for candidate in QMLLINT:
+        found = candidate if os.path.isabs(candidate) else shutil.which(candidate)
+        if found and os.access(found, os.X_OK):
+            return found
+    return None
+
+
 def main(argv: list[str]) -> int:
     here = Path(__file__).resolve().parent.parent
     files = [Path(a) for a in argv] or sorted(here.glob("*.qml"))
+
+    linter = _qmllint()
+    if linter is not None:
+        proc = subprocess.run([linter, *[str(f) for f in files]],
+                              capture_output=True, text=True, check=False)
+        # Only syntax: qmllint cannot resolve qs.Commons or Quickshell.Io from
+        # outside a shell, so its import and type warnings are noise here.
+        errors = [ln for ln in (proc.stdout + proc.stderr).splitlines()
+                  if "[syntax]" in ln or ln.lstrip().startswith("error:")]
+        if errors:
+            print("\n".join(errors))
+            print(f"\n{len(errors)} syntax error(s) in {len(files)} file(s)")
+            return 1
+        print(f"qmllint: {len(files)} file(s) parse")
+        return 0
+
     bad = 0
     for f in files:
         for problem in imbalances(f.read_text()):
@@ -127,7 +165,7 @@ def main(argv: list[str]) -> int:
     if bad:
         print(f"\n{bad} problem(s) in {len(files)} file(s)")
         return 1
-    print(f"brackets balanced in {len(files)} file(s)")
+    print(f"no qmllint found; brackets balanced in {len(files)} file(s)")
     return 0
 
 

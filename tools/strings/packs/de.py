@@ -300,6 +300,11 @@ PACK = {
  "set.warnbelow": "warnen unter",
  "set.maxtake": "max. Aufnahme",
  "set.hud": "HUD",
+ "set.hud.show": "Overlay anzeigen",
+ "set.hud.size": "Größe",
+ "set.size.xs": "winzig",
+ "set.size.s": "klein",
+ "set.size.m": "groß",
  "set.keepup": "Ergebnis stehen lassen",
  "set.hudnote": "„changed“ ist die Vorgabe: eine Standzeit, die du immer bezahlst, wird "
                 "zum Rauschen, sobald du zwei Sätze hintereinander diktierst — aber eine "

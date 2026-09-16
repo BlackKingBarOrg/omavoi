@@ -289,6 +289,11 @@ PACK = {
  "set.warnbelow": "cảnh báo khi dưới",
  "set.maxtake": "dài nhất mỗi lần",
  "set.hud": "HUD",
+ "set.hud.show": "hiện lớp phủ",
+ "set.hud.size": "kích thước",
+ "set.size.xs": "rất nhỏ",
+ "set.size.s": "nhỏ",
+ "set.size.m": "lớn",
  "set.keepup": "giữ kết quả trên màn hình",
  "set.hudnote": "Mặc định là „changed“: một khoảng chờ mà bạn luôn phải trả sẽ thành thứ gây "
                 "nhiễu ngay khi bạn đọc hai câu liền nhau, nhưng một lần sửa âm thầm mà bạn "

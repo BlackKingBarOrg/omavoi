@@ -317,8 +317,27 @@ Flickable {
         font.letterSpacing: 1
         color: Color.muted
       }
+      // Off, and the rest of the section goes with it: a size and a dwell for
+      // an overlay that does not appear are two controls for nothing.
       RowLayout {
         Layout.fillWidth: true
+        OmText {
+          Layout.preferredWidth: Style.space(160)
+          text: root.t("set.hud.show")
+          size: "body"
+          color: Color.muted
+        }
+        OmChip {
+          label: root.get("ui.hud", true) === true ? root.t("set.on")
+                                                   : root.t("set.off")
+          on: root.get("ui.hud", true) === true
+          onClicked: root.command(
+            "omavoi config set ui.hud " + (on ? "false" : "true"))
+        }
+      }
+      RowLayout {
+        Layout.fillWidth: true
+        visible: root.get("ui.hud", true) === true
         OmText {
           Layout.preferredWidth: Style.space(160)
           text: root.t("set.keepup")
@@ -333,9 +352,27 @@ Flickable {
           onChanged: function (v) { root.command("omavoi config set ui.hud_dwell " + v) }
         }
       }
+      RowLayout {
+        Layout.fillWidth: true
+        visible: root.get("ui.hud", true) === true
+        OmText {
+          Layout.preferredWidth: Style.space(160)
+          text: root.t("set.hud.size")
+          size: "body"
+          color: Color.muted
+        }
+        ButtonGroup {
+          options: [{ value: "xs", label: root.t("set.size.xs") },
+                    { value: "s", label: root.t("set.size.s") },
+                    { value: "m", label: root.t("set.size.m") }]
+          value: root.get("ui.hud_size", "s")
+          onChanged: function (v) { root.command("omavoi config set ui.hud_size " + v) }
+        }
+      }
       OmText {
         Layout.maximumWidth: Style.space(760)
         Layout.fillWidth: true
+        visible: root.get("ui.hud", true) === true
         wrapMode: Text.Wrap
         text: root.t("set.hudnote")
         color: Qt.darker(Color.muted, 1.15)
