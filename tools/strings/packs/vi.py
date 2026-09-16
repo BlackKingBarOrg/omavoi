@@ -311,6 +311,8 @@ PACK = {
  "set.historynote": "Âm thanh đã lưu là thứ cho phép chạy lại một bản ghi trên mô hình khác, "
                     "và chạy thử phần tên riêng. Đặt về 0 thì cả hai mất theo.",
  "set.neverleaves": "Âm thanh không bao giờ rời khỏi máy này",
+ "set.audioleaves": "Âm thanh được tải lên %1",
+ "set.privacynote.api": "Bộ máy nhận dạng là một API từ xa, nên âm thanh của mỗi lần đọc đều rời khỏi máy này. Địa chỉ nằm ở tab Mô hình, và hai bộ máy cục bộ ở đó giữ âm thanh trên GPU.",
  "set.privacynote": "Việc nhận dạng giọng nói chạy trên GPU cục bộ ở mọi chế độ. Nhưng chế "
                     "độ nào có bước LLM dùng mô hình từ xa thì đúng là gửi văn bản đã chuyển "
                     "ra ngoài — thẻ Chế độ cho thấy chế độ nào có bước đó.",

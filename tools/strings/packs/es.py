@@ -317,6 +317,8 @@ PACK = {
                     "modelo, y la prueba en seco de los nombres. Ponlo a 0 y ambas cosas se "
                     "van con él.",
  "set.neverleaves": "El audio nunca sale de esta máquina",
+ "set.audioleaves": "El audio se sube a %1",
+ "set.privacynote.api": "El motor de voz es una API remota, así que el audio de cada toma sale de esta máquina. El endpoint está en la pestaña Modelos, y los dos motores locales de ahí mantienen el audio en la GPU.",
  "set.privacynote": "El reconocimiento de voz corre en la GPU local en todos los modos. Un "
                     "modo cuyo paso de LLM sea un modelo remoto sí envía fuera el texto "
                     "transcrito — la pestaña Modos muestra cuáles tienen algún paso.",

@@ -323,6 +323,8 @@ PACK = {
                     "anderen Modell zu wiederholen und den Namens-Probelauf zu fahren. "
                     "Auf 0 gesetzt, verschwindet beides mit.",
  "set.neverleaves": "Audio verlässt diesen Rechner nie",
+ "set.audioleaves": "Audio wird zu %1 hochgeladen",
+ "set.privacynote.api": "Die Spracherkennung ist eine entfernte API, also verlässt das Audio jeder Aufnahme diesen Rechner. Der Endpunkt steht im Tab Modelle, und die beiden lokalen Engines dort behalten das Audio auf der GPU.",
  "set.privacynote": "Die Spracherkennung läuft in jedem Modus auf der lokalen GPU. Ein "
                     "Modus, dessen LLM-Schritt ein Remote-Modell ist, schickt den "
                     "transkribierten Text hinaus — der Tab Modi zeigt, welche überhaupt "

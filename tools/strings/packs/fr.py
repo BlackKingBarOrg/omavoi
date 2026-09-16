@@ -319,6 +319,8 @@ PACK = {
                     "autre modèle, et l'essai à blanc des noms. Mets-le à 0 et les deux "
                     "disparaissent avec.",
  "set.neverleaves": "L'audio ne quitte jamais cette machine",
+ "set.audioleaves": "L'audio est envoyé à %1",
+ "set.privacynote.api": "Le moteur de reconnaissance est une API distante : l'audio de chaque prise quitte donc cette machine. L'adresse est dans l'onglet Modèles, et les deux moteurs locaux qui s'y trouvent gardent l'audio sur le GPU.",
  "set.privacynote": "La reconnaissance vocale tourne sur le GPU local dans tous les modes. "
                     "Un mode dont l'étape LLM est un modèle distant, lui, envoie le texte "
                     "transcrit dehors — l'onglet Modes montre lesquels ont une étape.",

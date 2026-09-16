@@ -447,15 +447,38 @@ Flickable {
           anchors.top: parent.top
           anchors.margins: Style.space(10)
           spacing: Style.space(4)
+          // This banner was unconditional, and the console offers a remote
+          // speech engine — so choosing it left a green "audio never leaves
+          // this machine" standing over an engine that uploads every take.
+          // A privacy claim is the worst thing here to be wrong about, and
+          // the answer is one config key away.
+          readonly property bool speechIsRemote:
+            String(root.get("speech.backend", "")) === "api"
+          // What it is uploaded to, as specifically as the config knows: the
+          // explicit URL, else the provider name, else neither.
+          readonly property string speechTarget: {
+            var u = String(root.get("speech.api.base_url", "") || "")
+            if (u !== "") return u
+            var p = String(root.get("speech.api.provider", "") || "")
+            // "api" only if both are empty, which ApiWhisperBackend refuses
+            // to start on anyway — better than naming a field label.
+            return p !== "" ? p : "api"
+          }
           OmText {
-            text: root.t("set.neverleaves")
+            // `privacy.`, not `parent.`: inside a Layout the children's
+            // parent is the layout, which happens to be the same object
+            // here and would stop being it the moment anything is wrapped.
+            text: privacy.speechIsRemote
+                  ? root.tf("set.audioleaves", privacy.speechTarget)
+                  : root.t("set.neverleaves")
             size: "body"
-            color: "#9ece6a"
+            color: privacy.speechIsRemote ? "#e0af68" : "#9ece6a"
           }
           OmText {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
-            text: root.t("set.privacynote")
+            text: privacy.speechIsRemote ? root.t("set.privacynote.api")
+                                         : root.t("set.privacynote")
             color: Color.muted
           }
         }

@@ -628,6 +628,20 @@ section("dictionary", {
                     "ตั้งเป็น 0 แล้วสองอย่างนั้นก็หายไปด้วย"),
  "set.neverleaves":("Audio never leaves this machine", "音频永不离开本机",
                     "เสียงไม่เคยออกจากเครื่องนี้"),
+ # The banner above was unconditional, and the console offers a remote
+ # speech engine — so selecting it left a green "audio never leaves this
+ # machine" over an engine that uploads every take. A privacy claim is the
+ # worst thing in the program to be wrong about.
+ "set.audioleaves":("Audio is uploaded to %1",
+                    "音频会被上传到 %1",
+                    "เสียงถูกอัปโหลดไปที่ %1"),
+ "set.privacynote.api":("The speech engine is a remote API, so every take's audio "
+                        "leaves this machine. The Models tab has the endpoint, and "
+                        "the two local engines there keep audio on the GPU.",
+                        "语音引擎用的是远程 API，所以每次录音的音频都会离开本机。"
+                        "端点在「模型」标签页里，那里的两个本地引擎会把音频留在 GPU 上。",
+                        "เครื่องยนต์เสียงเป็น API ระยะไกล ดังนั้นเสียงของทุกครั้งที่อัดจะออกจากเครื่องนี้ "
+                        "ปลายทางอยู่ในแท็บโมเดล และเครื่องยนต์ในเครื่องสองตัวที่นั่นเก็บเสียงไว้บน GPU"),
  "set.privacynote":("Speech runs on the local GPU in every mode. A mode whose LLM step is a "
                     "remote model does send the transcribed text out — the Modes tab shows "
                     "which ones have a step at all.",
