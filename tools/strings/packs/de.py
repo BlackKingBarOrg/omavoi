@@ -191,6 +191,10 @@ PACK = {
  "models.f.testing": 'frage den Endpunkt nach seinen Modellen …',
  "models.f.testok": 'geantwortet, %1 Modelle — wähle unten eines',
  "models.f.key.have": 'ein Schlüssel ist gespeichert',
+ "models.f.key.fromenv": 'in Benutzung aus %1 in der Umgebung — sie gewinnt gegen '
+                          'die Datei, ein veralteter Wert schlägt also den gerade '
+                          'gespeicherten Schlüssel',
+ "models.f.key.fromfile": 'in secrets.toml gespeichert',
  "models.f.testfail": 'keine Antwort',
  "models.speechapi": 'ENTFERNTER SPRACH-ENDPUNKT',
  "models.speechapi.sub": 'Audio verlässt diesen Rechner. Oben unter „Entfernte API" auswählen.',

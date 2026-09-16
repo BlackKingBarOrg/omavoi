@@ -182,6 +182,9 @@ PACK = {
  "models.f.testing": 'エンドポイントにモデル一覧を問い合わせています…',
  "models.f.testok": '応答あり、%1 個のモデル —— 下から選んでください',
  "models.f.key.have": 'キーは保存済み',
+ "models.f.key.fromenv": '環境変数 %1 を使用中 —— ファイルより優先されるため、'
+                          '古い値が今保存したキーに勝ちます',
+ "models.f.key.fromfile": 'secrets.toml に保存済み',
  "models.f.testfail": '応答がありません',
  "models.speechapi": 'リモート音声エンドポイント',
  "models.speechapi.sub": '音声はこのマシンから出ます。上の「リモート API」で選択してください。',

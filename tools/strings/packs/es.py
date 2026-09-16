@@ -187,6 +187,9 @@ PACK = {
  "models.f.testing": 'pidiendo sus modelos al endpoint…',
  "models.f.testok": 'respondió, %1 modelos — elige uno abajo',
  "models.f.key.have": 'hay una clave guardada',
+ "models.f.key.fromenv": 'en uso desde %1 en el entorno — gana al archivo, así que '
+                          'una obsoleta vence a la clave que acabas de guardar',
+ "models.f.key.fromfile": 'guardada en secrets.toml',
  "models.f.testfail": 'no respondió',
  "models.speechapi": 'ENDPOINT DE VOZ REMOTO',
  "models.speechapi.sub": 'El audio sale de esta máquina. Selecciónalo arriba en «API remota».',

@@ -184,6 +184,9 @@ PACK = {
  "models.f.testing": 'đang hỏi danh sách mô hình từ điểm cuối…',
  "models.f.testok": 'đã trả lời, %1 mô hình — chọn một bên dưới',
  "models.f.key.have": 'đã lưu một khoá',
+ "models.f.key.fromenv": 'đang dùng từ %1 trong môi trường — nó thắng tệp, nên một '
+                          'giá trị cũ sẽ đè khoá bạn vừa lưu',
+ "models.f.key.fromfile": 'đã lưu trong secrets.toml',
  "models.f.testfail": 'không có phản hồi',
  "models.speechapi": 'ĐIỂM CUỐI GIỌNG NÓI TỪ XA',
  "models.speechapi.sub": 'Âm thanh sẽ ra khỏi máy này. Chọn nó ở trên trong "API từ xa".',

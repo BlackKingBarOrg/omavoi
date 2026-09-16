@@ -404,6 +404,14 @@ section("models", {
                         "有响应,%1 个模型 —— 在下面选一个",
                         "ตอบกลับแล้ว %1 โมเดล — เลือกด้านล่าง"),
  "models.f.key.have": ("a key is stored", "已存有密钥", "มีคีย์เก็บไว้แล้ว"),
+ "models.f.key.fromenv": ("in use from %1 in the environment — it wins over "
+                          "the file, so a stale one beats the key you just saved",
+                          "正在使用环境变量 %1 —— 它会赢过文件，"
+                          "所以一个过时的环境变量会压掉你刚保存的密钥",
+                          "ใช้จาก %1 ในสภาพแวดล้อม — ชนะไฟล์ "
+                          "คีย์เก่าจะทับคีย์ที่เพิ่งบันทึก"),
+ "models.f.key.fromfile": ("stored in secrets.toml", "已存在 secrets.toml 里",
+                           "เก็บไว้ใน secrets.toml"),
  "models.f.testfail": ("it did not answer", "它没有回应", "ไม่มีการตอบกลับ"),
  "models.speechapi": ("REMOTE SPEECH ENDPOINT", "远程语音接入点", "ปลายทางเสียงระยะไกล"),
  "models.speechapi.sub": ("Audio leaves this machine. Selected above under 远程 API.",

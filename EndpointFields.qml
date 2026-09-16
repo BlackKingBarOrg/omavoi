@@ -37,6 +37,9 @@ ColumnLayout {
   property string baseUrl: ""
   property string model: ""
   property bool hasKey: false
+  // "env", "file" or "" — which of the two the daemon will actually read.
+  property string keySource: ""
+  property string keyEnv: ""
   // The value that applies when the field is left empty, shown as the
   // placeholder so a preset is visible rather than magic.
   property string defaultBaseUrl: ""
@@ -45,6 +48,7 @@ ColumnLayout {
   signal command(string cmd)
 
   function t(k) { return fields.strings ? fields.strings.t(k) : k }
+  function tf(k, a) { return fields.strings ? fields.strings.tf(k, a) : k }
 
   spacing: Style.space(5)
 
@@ -157,9 +161,18 @@ ColumnLayout {
     OmText {
       Layout.fillWidth: true
       elide: Text.ElideRight
+      // Which one is in use, not merely that one exists. The environment
+      // wins over the file, so a variable left over from a shell profile
+      // silently beats the key just saved here — and "a key is stored" was
+      // true in both cases.
       text: fields.keyNote !== "" ? fields.keyNote
+            : fields.keySource === "env"
+              ? fields.tf("models.f.key.fromenv", fields.keyEnv)
+            : fields.keySource === "file" ? fields.t("models.f.key.fromfile")
             : (fields.hasKey ? fields.t("models.f.key.have") : "")
-      color: fields.keyNote === "" ? Color.muted : Color.accent
+      wrapMode: Text.Wrap
+      color: fields.keyNote !== "" ? Color.accent
+             : fields.keySource === "env" ? "#e0af68" : Color.muted
     }
   }
 

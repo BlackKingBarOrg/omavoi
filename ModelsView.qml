@@ -328,6 +328,8 @@ Item {
             baseUrl: String(root.speechApi.base_url || "")
             model: String(root.speechApi.model || "")
             hasKey: root.speechApi.has_key === true
+            keySource: String(root.speechApi.key_source || "")
+            keyEnv: String(root.speechApi.key_env || "")
             // The preset's values as placeholders: what applies when the field is
             // left empty, rather than something that happens invisibly.
             defaultBaseUrl: String(root.speechApi.default_base_url || "")
@@ -532,6 +534,12 @@ Item {
           }
           hasKey: {
             var e = root.entryNamed("api"); return !!(e && e.has_key)
+          }
+          keySource: {
+            var e = root.entryNamed("api"); return e ? String(e.key_source || "") : ""
+          }
+          keyEnv: {
+            var e = root.entryNamed("api"); return e ? String(e.key_env || "") : ""
           }
           defaultBaseUrl: "https://api.openai.com/v1"
           defaultModel: "gpt-4o-mini"

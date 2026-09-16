@@ -187,6 +187,10 @@ PACK = {
  "models.f.testing": "on demande ses modèles au point d'accès…",
  "models.f.testok": 'a répondu, %1 modèles — choisis-en un ci-dessous',
  "models.f.key.have": 'une clé est enregistrée',
+ "models.f.key.fromenv": "utilisée depuis %1 dans l'environnement — elle l'emporte "
+                          "sur le fichier, donc une valeur périmée bat la clé que "
+                          "tu viens d'enregistrer",
+ "models.f.key.fromfile": 'enregistrée dans secrets.toml',
  "models.f.testfail": "pas de réponse",
  "models.speechapi": 'POINT DE TERMINAISON VOCAL DISTANT',
  "models.speechapi.sub": "L'audio quitte cette machine. À sélectionner ci-dessus sous « API distante ».",
