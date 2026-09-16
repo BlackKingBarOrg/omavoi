@@ -91,9 +91,11 @@ Item {
     var a = root.speechApi
     if (a.provider === undefined) return false
     // A provider preset supplies the URL, so blank means neither is there.
+    // `ready`, not `has_key`: an endpoint that wants no key at all is
+    // configured, and asking about the key said it was not.
     return (String(a.base_url || "") === ""
             && String(a.default_base_url || "") === "")
-           || a.has_key !== true
+           || a.ready !== true
   }
   property var speechApiOpen: null
   readonly property bool editingSpeechApi: root.speechApiOpen !== null
@@ -110,7 +112,7 @@ Item {
   property var apiOpen: null
   readonly property bool apiBlank: {
     var a = root.entryNamed("api")
-    return a ? (String(a.base_url || "") === "" || a.has_key !== true) : false
+    return a ? (String(a.base_url || "") === "" || a.ready !== true) : false
   }
   readonly property bool editingApi: root.apiOpen !== null ? root.apiOpen === true
                                                           : root.apiBlank
