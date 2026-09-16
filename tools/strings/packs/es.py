@@ -238,6 +238,12 @@ PACK = {
                "así que una más corta contenida en ella nunca se dispara.",
  "dict.shadowed": "nunca se dispara — la tapa ",
  "dict.remove": "Quitar",
+ "dict.heard": 'se oyó como',
+ "dict.meant": 'debería ser',
+ "dict.add": 'Añadir',
+ "dict.heardph": 'hyper land',
+ "dict.meantph": 'Hyprland',
+ "dict.nameph": 'Hyprland  Postgres  Wayland — varios a la vez vale',
  "dict.namesblurb": "Escribe solo la forma correcta. Los nombres se meten en el prompt del "
                     "decodificador para que el modelo los produzca, y luego se emparejan "
                     "por sonido para que los homófonos vuelvan al sitio. El emparejamiento "
@@ -249,9 +255,6 @@ PACK = {
  "dict.enable": "Activar emparejamiento",
  "dict.prompt": "prompt: ",
  "dict.none": "(ninguno)",
- "dict.addrule": "Añade una con  omavoi dict add <oído> <querido>",
- "dict.addnames": "Añade varios de golpe con  omavoi names add <nombre> <nombre> …",
-
  "set.ptt": "mantener para hablar",
  "set.toggle": "alternar",
  "set.dwell.always": "siempre",

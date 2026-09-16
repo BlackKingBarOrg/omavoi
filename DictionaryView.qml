@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
 import qs.Ui
@@ -18,6 +19,8 @@ Flickable {
   property var strings: null
 
   signal command(string cmd)
+  // Anything carrying user text, which a dictionary key always does.
+  signal commandArgs(var argv)
 
   // `strings` is null for the instant between creation and the Loader setting
   // it, so the key stands in until then rather than a blank.
@@ -144,12 +147,82 @@ Flickable {
       }
     }
 
-    OmText {
+    // This page could list, remove, dry-run and enable — and not add. The
+    // line that used to sit here told you to open a terminal and run
+    // `omavoi dict add`, which is a page documenting its own hole.
+    //
+    // argv, not a command line: a dictionary key is user text with spaces in
+    // it — "hyper land" is the whole point of the feature — and the rule in
+    // Console.qml is that user text never goes through a shell.
+    RowLayout {
+      visible: root.sub === "rules"
       Layout.topMargin: Style.space(12)
       Layout.fillWidth: true
-      wrapMode: Text.Wrap
-      text: root.sub === "rules" ? root.t("dict.addrule") : root.t("dict.addnames")
-      color: Color.muted
+      spacing: Style.space(8)
+      OmText { text: root.t("dict.heard"); color: Color.muted }
+      TextField {
+        id: heardField
+        Layout.preferredWidth: Style.space(180)
+        placeholderText: root.t("dict.heardph")
+        font.family: Style.font.family
+        font.pixelSize: Style.font.caption
+        onAccepted: addRule.go()
+      }
+      OmText { text: root.t("dict.meant"); color: Color.muted }
+      TextField {
+        id: meantField
+        Layout.preferredWidth: Style.space(180)
+        placeholderText: root.t("dict.meantph")
+        font.family: Style.font.family
+        font.pixelSize: Style.font.caption
+        onAccepted: addRule.go()
+      }
+      Button {
+        id: addRule
+        enabled: heardField.text.trim() !== "" && meantField.text.trim() !== ""
+        text: root.t("dict.add")
+        function go() {
+          if (!enabled) return
+          root.commandArgs(["omavoi", "dict", "add",
+                            heardField.text.trim(), meantField.text.trim()])
+          heardField.text = ""
+          meantField.text = ""
+        }
+        onClicked: go()
+      }
+      Item { Layout.fillWidth: true }
+    }
+
+    RowLayout {
+      visible: root.sub === "names"
+      Layout.topMargin: Style.space(12)
+      Layout.fillWidth: true
+      spacing: Style.space(8)
+      TextField {
+        id: nameField
+        Layout.fillWidth: true
+        Layout.maximumWidth: Style.space(430)
+        placeholderText: root.t("dict.nameph")
+        font.family: Style.font.family
+        font.pixelSize: Style.font.caption
+        onAccepted: addNames.go()
+      }
+      Button {
+        id: addNames
+        enabled: nameField.text.trim() !== ""
+        text: root.t("dict.add")
+        function go() {
+          if (!enabled) return
+          // `names add` takes several and the placeholder says so, so the
+          // field is split rather than sent as one improbable name.
+          var parts = nameField.text.trim().split(/\s+/)
+          if (!parts.length) return
+          root.commandArgs(["omavoi", "names", "add"].concat(parts))
+          nameField.text = ""
+        }
+        onClicked: go()
+      }
+      Item { Layout.fillWidth: true }
     }
   }
 }

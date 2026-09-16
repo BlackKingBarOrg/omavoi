@@ -90,12 +90,21 @@ Flickable {
     if (!h || h.configured === undefined) return ""
     if (h.enabled === false) return root.t("set.key.off")
     if (h.name_ok === false) return root.tf("set.key.badname", h.configured)
-    if (h.group_listed && !h.group_held) return root.t("set.key.relogin")
+    // The daemon first. It is the process that reads the key, and this
+    // session's own device access says nothing about it — they differ
+    // whenever the daemon was started after the `input` group was granted,
+    // or through newgrp. Asking the group first put a red "log out and back
+    // in" over a hotkey that was working, which is the fifth place in this
+    // program to have made that mistake.
+    if (h.listener) return h.matches ? "" : root.tf("set.key.stale", h.bound)
+    // Not in the group at all comes before "the daemon is not running":
+    // starting it would not help, and a message about the daemon over a
+    // button that adds you to a group does not read as one thought.
     if (!h.group_listed) return root.t("set.key.nogroup")
+    if (h.daemon !== "running") return root.t("set.key.stopped")
+    if (!h.group_held) return root.t("set.key.relogin")
     if (h.devices_problem) return root.tf("set.key.nodevice", h.configured)
-    if (h.daemon !== "running" || !h.listener) return root.t("set.key.stopped")
-    if (!h.matches) return root.tf("set.key.stale", h.bound)
-    return ""
+    return root.t("set.key.stopped")
   }
   // What the button next to the message does, or "" for the two that no
   // button can do: pressing a key, and logging out.
@@ -103,8 +112,11 @@ Flickable {
     var h = root.health
     if (root.ill === "" || !h) return ""
     if (h.enabled === false || h.name_ok === false) return ""
-    if (h.group_listed && !h.group_held) return ""
+    // A working daemon needs no remedy, and the two the user cannot click —
+    // press a key, log out — offer none.
+    if (h.listener) return h.matches ? "" : "restart"
     if (!h.group_listed) return "group"
+    if (!h.group_held) return ""
     if (h.devices_problem) return ""
     return "restart"
   }
@@ -238,13 +250,24 @@ Flickable {
         font.letterSpacing: 1
         color: Color.muted
       }
+      // Editable, at last. These four were plain text for as long as the page
+      // existed — including audio.preroll_seconds, which is the knob the
+      // clipped-onset warning tells you to reach for.
+      //
+      // NumberField is integer-only, so the two fractional ones are shown in
+      // milliseconds and divided on the way out. 600 ms is also a plainer thing
+      // to read than 0.6 s.
       Repeater {
         model: [
-          { k: "audio.preroll_seconds", label: root.t("set.preroll"), unit: "s",
+          { k: "audio.preroll_seconds", label: root.t("set.preroll"), unit: "ms",
+            scale: 1000, from: 0, to: 5000, step: 100,
             why: root.t("set.prerollwhy") },
-          { k: "audio.tail_seconds", label: root.t("set.tail"), unit: "s", why: "" },
-          { k: "audio.warn_rms_dbfs", label: root.t("set.warnbelow"), unit: " dBFS", why: "" },
-          { k: "audio.max_seconds", label: root.t("set.maxtake"), unit: "s", why: "" }
+          { k: "audio.tail_seconds", label: root.t("set.tail"), unit: "ms",
+            scale: 1000, from: 0, to: 2000, step: 50, why: "" },
+          { k: "audio.warn_rms_dbfs", label: root.t("set.warnbelow"), unit: "dBFS",
+            scale: 1, from: -90, to: 0, step: 1, why: "" },
+          { k: "audio.max_seconds", label: root.t("set.maxtake"), unit: "s",
+            scale: 1, from: 5, to: 3600, step: 30, why: "" }
         ]
         ColumnLayout {
           readonly property var row: modelData
@@ -252,17 +275,26 @@ Flickable {
           spacing: Style.space(2)
           RowLayout {
             Layout.fillWidth: true
+            spacing: Style.space(8)
             OmText {
               Layout.preferredWidth: Style.space(160)
               text: row.label
               size: "body"
               color: Color.muted
             }
-            OmText {
-              text: root.get(row.k, "?") + row.unit
-              size: "body"
-              color: Color.foreground
+            NumberField {
+              value: Math.round(Number(root.get(row.k, 0)) * row.scale)
+              from: row.from
+              to: row.to
+              stepSize: row.step
+              onModified: function (v) {
+                var out = row.scale === 1 ? String(v)
+                                          : String(v / row.scale)
+                root.command("omavoi config set " + row.k + " " + out)
+              }
             }
+            OmText { text: row.unit; color: Color.muted }
+            Item { Layout.fillWidth: true }
           }
           OmText {
             visible: row.why !== ""
@@ -343,11 +375,17 @@ Flickable {
           size: "body"
           color: Color.muted
         }
-        OmText {
-          text: root.get("history.keep_audio", 0) + root.t("set.takes")
-          size: "body"
-          color: Color.foreground
+        NumberField {
+          value: Number(root.get("history.keep_audio", 0))
+          from: 0
+          to: 500
+          stepSize: 5
+          onModified: function (v) {
+            root.command("omavoi config set history.keep_audio " + v)
+          }
         }
+        OmText { text: root.t("set.takes"); color: Color.muted }
+        Item { Layout.fillWidth: true }
       }
       OmText {
         Layout.maximumWidth: Style.space(760)

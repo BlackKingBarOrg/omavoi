@@ -495,6 +495,14 @@ section("dictionary", {
  "dict.shadowed":  ("never fires — shadowed by ", "永不触发 —— 被遮蔽于 ",
                     "ไม่เคยทำงาน — ถูกกลบโดย "),
  "dict.remove":    ("Remove", "移除", "เอาออก"),
+ "dict.heard":   ("heard as", "听成了", "ได้ยินเป็น"),
+ "dict.meant":   ("should be", "应该是", "ควรเป็น"),
+ "dict.add":     ("Add", "添加", "เพิ่ม"),
+ "dict.heardph": ("hyper land", "hyper land", "hyper land"),
+ "dict.meantph": ("Hyprland", "Hyprland", "Hyprland"),
+ "dict.nameph":  ("Hyprland  Postgres  Wayland — several at once is fine",
+                  "Hyprland  Postgres  Wayland —— 可以一次加好几个",
+                  "Hyprland  Postgres  Wayland — ใส่หลายคำพร้อมกันได้"),
  "dict.namesblurb":("Write only the correct form. Names are seeded into the decoder prompt so "
                     "the model produces them, and matched by sound afterwards so homophones "
                     "collapse back. Matching stays off until a dry run has been looked at — it "
@@ -511,15 +519,6 @@ section("dictionary", {
  "dict.enable":    ("Enable matching", "开启匹配", "เปิดการจับคู่"),
  "dict.prompt":    ("prompt: ", "提示词： ", "พรอมป์ต: "),
  "dict.none":      ("(none)", "（无）", "(ไม่มี)"),
- "dict.addrule":   ("Add one with  omavoi dict add <heard> <meant>",
-                    "用  omavoi dict add <听到> <想要>  添加一条",
-                    "เพิ่มด้วย  omavoi dict add <ที่ได้ยิน> <ที่ต้องการ>"),
- "dict.addnames":  ("Add several at once with  omavoi names add <name> <name> …",
-                    "用  omavoi names add <名字> <名字> …  一次加多个",
-                    "เพิ่มหลายรายการพร้อมกันด้วย  omavoi names add <ชื่อ> <ชื่อ> …"),
-})
-
-section("settings", {
  "set.ptt":        ("push to talk", "按住说话", "กดค้างเพื่อพูด"),
  "set.toggle":     ("toggle", "按一下切换", "สลับเปิด/ปิด"),
  "set.dwell.always":  ("always", "总是", "เสมอ"),

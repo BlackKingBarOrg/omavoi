@@ -87,9 +87,21 @@ RowLayout {
       text: row.t("models.ondisk")
       color: Color.muted
     }
+    // A three-gigabyte download used to say "downloading" and nothing else
+    // until it finished, so a slow mirror and a stalled one looked alike.
+    // The percentage is capped below 100 because size_mb is the catalogue's
+    // stated size, not the byte count, and arriving at 100% while still
+    // going is worse than arriving at 99.
     OmText {
       visible: !m.downloaded && row.pulling[m.key] === true
-      text: row.t("models.downloading")
+      text: {
+        var done = Number(m.bytes_now || 0)
+        var total = Number(m.size_mb || 0) * 1048576
+        if (done <= 0 || total <= 0) return row.t("models.downloading")
+        return row.t("models.downloading") + "  "
+               + (done / 1048576).toFixed(0) + " / " + Math.round(m.size_mb)
+               + " MB  " + Math.min(99, Math.floor(100 * done / total)) + "%"
+      }
       color: Color.accent
     }
     Button {

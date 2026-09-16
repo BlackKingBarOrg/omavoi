@@ -242,6 +242,12 @@ PACK = {
                "zuerst probiert, ein darin enthaltener kürzerer greift also nie.",
  "dict.shadowed": "greift nie — verdeckt von ",
  "dict.remove": "Entfernen",
+ "dict.heard": 'gehört als',
+ "dict.meant": 'soll sein',
+ "dict.add": 'Hinzufügen',
+ "dict.heardph": 'hyper land',
+ "dict.meantph": 'Hyprland',
+ "dict.nameph": 'Hyprland  Postgres  Wayland — mehrere auf einmal sind in Ordnung',
  "dict.namesblurb": "Schreibe nur die richtige Form. Namen gehen in den Decoder-Prompt, "
                     "damit das Modell sie erzeugt, und werden danach klanglich "
                     "abgeglichen, damit Homophone zurückfallen. Der Abgleich bleibt aus, "
@@ -253,9 +259,6 @@ PACK = {
  "dict.enable": "Abgleich aktivieren",
  "dict.prompt": "Prompt: ",
  "dict.none": "(keiner)",
- "dict.addrule": "Eine anlegen mit  omavoi dict add <gehört> <gemeint>",
- "dict.addnames": "Mehrere auf einmal mit  omavoi names add <Name> <Name> …",
-
  "set.ptt": "Halten zum Sprechen",
  "set.toggle": "Umschalten",
  "set.dwell.always": "immer",

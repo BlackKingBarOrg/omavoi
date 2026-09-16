@@ -238,6 +238,12 @@ PACK = {
                "d'abord, donc une plus courte qu'elle contient ne se déclenche jamais.",
  "dict.shadowed": "ne se déclenche jamais — masquée par ",
  "dict.remove": "Retirer",
+ "dict.heard": 'entendu comme',
+ "dict.meant": 'devrait être',
+ "dict.add": 'Ajouter',
+ "dict.heardph": 'hyper land',
+ "dict.meantph": 'Hyprland',
+ "dict.nameph": "Hyprland  Postgres  Wayland — plusieurs à la fois, c'est bon",
  "dict.namesblurb": "N'écris que la forme correcte. Les noms sont injectés dans le prompt "
                     "du décodeur pour que le modèle les produise, puis appariés par le son "
                     "pour que les homophones se rabattent dessus. L'appariement reste "
@@ -249,9 +255,6 @@ PACK = {
  "dict.enable": "Activer l'appariement",
  "dict.prompt": "prompt : ",
  "dict.none": "(aucun)",
- "dict.addrule": "Ajoutes-en une avec  omavoi dict add <entendu> <voulu>",
- "dict.addnames": "Ajoutes-en plusieurs d'un coup avec  omavoi names add <nom> <nom> …",
-
  "set.ptt": "maintenir pour parler",
  "set.toggle": "bascule",
  "set.dwell.always": "toujours",

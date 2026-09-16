@@ -525,6 +525,7 @@ Item {
             Layout.fillHeight: true
             rules: root.dictData.rules || []
             names: root.namesData.names || []
+            onCommandArgs: function (a) { root.applyArgs(a) }
             seed: root.namesData.seed || ""
             onCommand: function (c) { root.apply(c) }
           }

@@ -231,6 +231,12 @@ PACK = {
                "決して発火しません。",
  "dict.shadowed": "決して発火しません —— 次のキーに隠れています： ",
  "dict.remove": "削除",
+ "dict.heard": '聞こえ方',
+ "dict.meant": '正しくは',
+ "dict.add": '追加',
+ "dict.heardph": 'hyper land',
+ "dict.meantph": 'Hyprland',
+ "dict.nameph": 'Hyprland  Postgres  Wayland — まとめて追加できます',
  "dict.namesblurb": "正しい表記だけを書いてください。固有名詞はデコーダーのプロンプトに入れて"
                     "モデルがその形を出すようにし、その後で音の近さで照合して同音の表記を"
                     "引き戻します。照合はドライランを確認するまで無効のままです —— "
@@ -241,9 +247,6 @@ PACK = {
  "dict.enable": "照合を有効化",
  "dict.prompt": "プロンプト： ",
  "dict.none": "（なし）",
- "dict.addrule": "追加するには  omavoi dict add <聞こえた語> <本来の語>",
- "dict.addnames": "まとめて追加するには  omavoi names add <名前> <名前> …",
-
  "set.ptt": "押している間だけ話す",
  "set.toggle": "押して切り替え",
  "set.dwell.always": "常に",

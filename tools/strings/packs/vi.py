@@ -234,6 +234,12 @@ PACK = {
                "khóa ngắn hơn nằm bên trong nó sẽ không bao giờ chạy.",
  "dict.shadowed": "không bao giờ chạy — bị che bởi ",
  "dict.remove": "Bỏ",
+ "dict.heard": 'nghe thành',
+ "dict.meant": 'đúng ra là',
+ "dict.add": 'Thêm',
+ "dict.heardph": 'hyper land',
+ "dict.meantph": 'Hyprland',
+ "dict.nameph": 'Hyprland  Postgres  Wayland — thêm nhiều cái một lúc cũng được',
  "dict.namesblurb": "Chỉ viết dạng đúng. Tên riêng được đưa vào prompt của bộ giải mã để mô "
                     "hình tạo ra chúng, rồi sau đó khớp theo âm để các từ đồng âm quay về "
                     "đúng dạng. Việc khớp vẫn tắt cho đến khi bạn xem một lần chạy thử — "
@@ -244,9 +250,6 @@ PACK = {
  "dict.enable": "Bật việc khớp",
  "dict.prompt": "prompt: ",
  "dict.none": "(không có)",
- "dict.addrule": "Thêm một mục với  omavoi dict add <nghe thành> <thật ra là>",
- "dict.addnames": "Thêm nhiều mục một lượt với  omavoi names add <tên> <tên> …",
-
  "set.ptt": "giữ để nói",
  "set.toggle": "bấm để bật/tắt",
  "set.dwell.always": "luôn luôn",
