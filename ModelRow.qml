@@ -89,9 +89,14 @@ RowLayout {
     }
     // A three-gigabyte download used to say "downloading" and nothing else
     // until it finished, so a slow mirror and a stalled one looked alike.
-    // The percentage is capped below 100 because size_mb is the catalogue's
-    // stated size, not the byte count, and arriving at 100% while still
-    // going is worse than arriving at 99.
+    //
+    // The percentage is capped below 100 for the last rounded mebibyte —
+    // arriving at 100% while still going is worse than arriving at 99. It
+    // used to be capped for a bigger reason that nobody had found: the
+    // catalogue's ggml and ct2 sizes were quoted in decimal megabytes into a
+    // field read as mebibytes, so every one of them was 5% high and this bar
+    // could only ever reach about 95. tools/check_catalogue.py measures them
+    // now.
     OmText {
       visible: !m.downloaded && row.pulling[m.key] === true
       text: {
