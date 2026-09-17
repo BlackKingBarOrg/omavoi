@@ -22,7 +22,7 @@ PACK = {
  "first.pacman404": 'La base de datos de paquetes está desactualizada, así que los mirrors ya no tienen las versiones que lista. Actualiza el sistema arriba y vuelve a intentarlo.',
  "first.pick.hotkey": 'Tecla para hablar',
  "first.hotkey.other": 'otra tecla, p. ej. F9',
- "first.hotkey.note": 'Se lee por debajo de tu distribución de teclado y nunca se apropia de ella, así que la tecla sigue haciendo lo que hace siempre — estas cuatro normalmente no hacen nada por sí solas.',
+ "first.hotkey.note": "Se lee por debajo de tu distribución de teclado y nunca se apropia de la tecla, así que sigue haciendo lo de siempre. En muchas distribuciones no estadounidenses Alt derecha es AltGr y sirve para escribir caracteres: elige Ctrl derecha o Bloq Despl si es tu caso.",
  "first.group.needed": 'Todavía no estás en el grupo input, así que no se puede leer ninguna tecla. El paso de abajo te añade, y surte efecto en tu próximo inicio de sesión — hasta entonces, dicta desde el módulo de la barra.',
  "first.step.hotkey": 'atajo',
  "first.step.packages": 'paquetes del sistema',

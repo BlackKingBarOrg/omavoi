@@ -22,7 +22,7 @@ PACK = {
  "first.pacman404": "La base de paquets est périmée, les miroirs n'ont plus les versions qu'elle indique. Mets le système à jour ci-dessus, puis réessaie.",
  "first.pick.hotkey": 'Touche pour parler',
  "first.hotkey.other": 'une autre touche, p. ex. F9',
- "first.hotkey.note": "Lue sous ta disposition de clavier et jamais accaparée : la touche continue de faire ce qu'elle fait d'habitude — ces quatre-là ne font normalement rien seules.",
+ "first.hotkey.note": "Lue sous votre disposition de clavier et jamais accaparée : la touche continue de faire ce qu'elle fait d'habitude. Sur beaucoup de dispositions hors États-Unis, Alt droite est AltGr et sert à taper des caractères — choisissez Ctrl droite ou Arrêt défil si c'est votre cas.",
  "first.group.needed": "Tu n'es pas encore dans le groupe input, donc aucune touche ne peut être lue. L'étape ci-dessous s'en charge, et cela prend effet à ta prochaine connexion — d'ici là, dicte depuis le module de la barre.",
  "first.step.hotkey": 'raccourci',
  "first.step.packages": 'paquets système',

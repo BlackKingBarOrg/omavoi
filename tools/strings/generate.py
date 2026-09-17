@@ -121,13 +121,23 @@ section("firstrun", {
                      "อัปเดตระบบด้านบนแล้วลองอีกครั้ง"),
  "first.pick.hotkey": ("Push-to-talk key", "按住说话的键", "ปุ่มกดค้างเพื่อพูด"),
  "first.hotkey.other": ("another key, e.g. F9", "其他键,例如 F9", "ปุ่มอื่น เช่น F9"),
+ # "these four normally do nothing on their own" was written on a US
+ # layout, where Right Alt is exactly that. On German, French, Spanish,
+ # Polish, Nordic and many other layouts it is AltGr and types characters
+ # — @ is AltGr+Q on a German keyboard — so holding it to dictate means
+ # you cannot type those characters without starting a take. The key is
+ # read below the layout and never grabbed, which is what makes that true
+ # rather than a conflict the program could resolve.
  "first.hotkey.note": ("Read below your keyboard layout and never taken over, so the key "
-                       "keeps doing whatever it normally does — these four normally do "
-                       "nothing on their own.",
-                       "在键盘布局之下读取,而且从不接管,所以这个键仍然保留它原本的功能 —— "
-                       "上面这四个键单独按下时本来什么都不做。",
-                       "อ่านต่ำกว่าเลย์เอาต์คีย์บอร์ดและไม่ยึดปุ่มไป ปุ่มจึงยังทำงานเดิมของมันต่อไป — "
-                       "สี่ปุ่มข้างต้นปกติกดเดี่ยว ๆ แล้วไม่ทำอะไร"),
+                       "keeps doing whatever it normally does. Right Alt is AltGr on many "
+                       "non-US layouts and types characters there — pick Right Ctrl or "
+                       "Scroll Lock if yours is one of those.",
+                       "在键盘布局之下读取，而且从不接管，所以这个键仍然保留它原本的功能。"
+                       "在很多非美式布局上右 Alt 就是 AltGr，按住它能打出字符 —— "
+                       "如果你用的是那种布局，请选右 Ctrl 或 Scroll Lock。",
+                       "อ่านต่ำกว่าเลย์เอาต์คีย์บอร์ดและไม่ยึดปุ่มไป ปุ่มจึงยังทำงานเดิมของมันต่อไป "
+                       "บนเลย์เอาต์ที่ไม่ใช่ของสหรัฐหลายแบบ Alt ขวาคือ AltGr และใช้พิมพ์อักขระได้ — "
+                       "ถ้าของคุณเป็นแบบนั้น ให้เลือก Ctrl ขวา หรือ Scroll Lock"),
  "first.group.needed": ("You are not in the input group yet, so no key can be read. Adding "
                         "you is part of the step below, and it takes effect at your next "
                         "login — until then, dictation works from the bar module.",

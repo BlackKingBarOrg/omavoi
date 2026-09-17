@@ -64,10 +64,17 @@ Flickable {
   }
   readonly property bool dbStale: root.dbAgeDays >= 1
 
-  // Read below the keyboard layout and never grabbed, so whichever key this is
-  // keeps doing whatever it normally does. These four normally do nothing on
-  // their own, which is the whole reason they are the ones offered.
-  readonly property var hotkeyChoices: ["RIGHTALT", "RIGHTCTRL", "RIGHTMETA", "SCROLLLOCK"]
+  // Read below the keyboard layout and never grabbed, so whichever key this
+  // is keeps doing whatever it normally does — which is the reason these are
+  // the ones offered, and the reason the order matters.
+  //
+  // RIGHTCTRL first, not RIGHTALT. "These four normally do nothing on their
+  // own" was written on a US layout. On German, French, Spanish, Polish,
+  // Nordic and many other layouts Right Alt is AltGr and types characters
+  // (@ is AltGr+Q on a German keyboard), so holding it to dictate means you
+  // cannot type those characters without starting a take. Right Ctrl and
+  // Scroll Lock are plain on every layout this program is likely to meet.
+  readonly property var hotkeyChoices: ["RIGHTCTRL", "RIGHTALT", "RIGHTMETA", "SCROLLLOCK"]
 
   readonly property var modelChoices: {
     var out = []

@@ -22,7 +22,7 @@ PACK = {
  "first.pacman404": 'Die Paketdatenbank ist veraltet, die Spiegel haben die dort genannten Versionen nicht mehr. Aktualisiere oben das System und versuche es erneut.',
  "first.pick.hotkey": 'Taste zum Sprechen',
  "first.hotkey.other": 'andere Taste, z. B. F9',
- "first.hotkey.note": 'Unterhalb deines Tastaturlayouts gelesen und nie übernommen, die Taste tut also weiter, was sie sonst tut — diese vier tun allein normalerweise nichts.',
+ "first.hotkey.note": "Wird unterhalb deines Tastaturlayouts gelesen und nie übernommen, die Taste macht also weiter, was sie sonst macht. Auf vielen Layouts außerhalb der USA ist die rechte Alt-Taste AltGr und tippt dort Zeichen — nimm die rechte Strg-Taste oder Rollen, wenn das bei dir so ist.",
  "first.group.needed": 'Du bist noch nicht in der Gruppe input, also kann keine Taste gelesen werden. Das erledigt der Schritt unten, wirksam beim nächsten Anmelden — bis dahin diktierst du über das Bar-Modul.',
  "first.step.hotkey": 'Tastenkürzel',
  "first.step.packages": 'Systempakete',

@@ -22,7 +22,7 @@ PACK = {
  "first.pacman404": 'Cơ sở dữ liệu gói đã lạc hậu nên mirror không còn các phiên bản nó ghi. Hãy cập nhật hệ thống ở trên rồi thử lại.',
  "first.pick.hotkey": 'Phím giữ để nói',
  "first.hotkey.other": 'phím khác, ví dụ F9',
- "first.hotkey.note": 'Đọc bên dưới bố cục bàn phím và không bao giờ chiếm phím, nên phím vẫn làm đúng việc thường ngày của nó — bốn phím trên khi bấm một mình thường không làm gì.',
+ "first.hotkey.note": "Được đọc bên dưới sơ đồ bàn phím và không bao giờ bị chiếm, nên phím vẫn làm việc của nó. Trên nhiều sơ đồ ngoài Mỹ, Alt phải là AltGr và dùng để gõ ký tự — hãy chọn Ctrl phải hoặc Scroll Lock nếu bàn phím của bạn như vậy.",
  "first.group.needed": 'Bạn chưa thuộc nhóm input, nên không đọc được phím nào. Bước bên dưới sẽ thêm bạn vào, và chỉ có hiệu lực từ lần đăng nhập kế tiếp — trước đó hãy dùng module trên thanh bar.',
  "first.step.hotkey": 'phím tắt',
  "first.step.packages": 'gói hệ thống',
