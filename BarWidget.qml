@@ -51,13 +51,31 @@ BarWidget {
     }
   }
 
+  // Only while there is something left to install. This was the one timer in
+  // the plugin with an unconditional `running: true` -- every sibling is
+  // gated on a condition -- and a bar widget is instantiated once per
+  // monitor, so on a two-monitor machine it spawned `omavoi setup --json`
+  // twice every fifteen seconds for the whole session, forever, to re-ask a
+  // question whose answer had stopped changing. Before the daemon is
+  // installed at all, each of those is a process that cannot start and a
+  // warning in the journal.
+  //
+  // The first probe comes from Component.onCompleted rather than from
+  // triggeredOnStart: `setupReady` starts optimistic so the module does not
+  // flash a badge before the first answer, which would leave this timer off
+  // and the probe that turns it on unreachable.
+  //
+  // Nothing polls once setup is complete. If it later comes apart -- a
+  // package removed by hand -- the Connections below re-probe on the next
+  // take, and opening the console re-probes on its own.
   Timer {
     interval: 15000
     repeat: true
-    running: true
-    triggeredOnStart: true
+    running: !root.setupReady
     onTriggered: if (!root.recording && !root.working) probe.running = true
   }
+
+  Component.onCompleted: probe.running = true
 
   Connections {
     target: link
