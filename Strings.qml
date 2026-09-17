@@ -125,6 +125,12 @@ Item {
       "state.transcribing": "transcribing",
       "state.stopped": "daemon stopped",
 
+      // ---- hud
+      "hud.stage.decoding": "transcribing",
+      "hud.stage.llm": "rewriting",
+      "hud.stage.injecting": "typing",
+      "hud.nospeech": "no speech",
+
       // ---- setup
       "setup.prefix": "setup ",
       "setup.title": "Still to install: %1",
@@ -422,6 +428,12 @@ Item {
       "state.recording": "录音中",
       "state.transcribing": "转写中",
       "state.stopped": "守护进程已停止",
+
+      // ---- hud
+      "hud.stage.decoding": "转写中",
+      "hud.stage.llm": "改写中",
+      "hud.stage.injecting": "输入中",
+      "hud.nospeech": "没有语音",
 
       // ---- setup
       "setup.prefix": "安装 ",
@@ -721,6 +733,12 @@ Item {
       "state.transcribing": "กำลังถอดเสียง",
       "state.stopped": "เดมอนหยุดทำงาน",
 
+      // ---- hud
+      "hud.stage.decoding": "กำลังถอดเสียง",
+      "hud.stage.llm": "กำลังเรียบเรียง",
+      "hud.stage.injecting": "กำลังพิมพ์",
+      "hud.nospeech": "ไม่มีเสียงพูด",
+
       // ---- setup
       "setup.prefix": "ติดตั้ง ",
       "setup.title": "ยังต้องติดตั้ง: %1",
@@ -1018,6 +1036,12 @@ Item {
       "state.recording": "Aufnahme",
       "state.transcribing": "Transkription",
       "state.stopped": "Dienst gestoppt",
+
+      // ---- hud
+      "hud.stage.decoding": "Transkription",
+      "hud.stage.llm": "Umschreiben",
+      "hud.stage.injecting": "Eingabe",
+      "hud.nospeech": "keine Sprache",
 
       // ---- setup
       "setup.prefix": "Einrichtung ",
@@ -1317,6 +1341,12 @@ Item {
       "state.transcribing": "transcription",
       "state.stopped": "démon arrêté",
 
+      // ---- hud
+      "hud.stage.decoding": "transcription",
+      "hud.stage.llm": "réécriture",
+      "hud.stage.injecting": "saisie",
+      "hud.nospeech": "aucune parole",
+
       // ---- setup
       "setup.prefix": "installation ",
       "setup.title": "Reste à installer : %1",
@@ -1614,6 +1644,12 @@ Item {
       "state.recording": "grabando",
       "state.transcribing": "transcribiendo",
       "state.stopped": "demonio detenido",
+
+      // ---- hud
+      "hud.stage.decoding": "transcribiendo",
+      "hud.stage.llm": "reescribiendo",
+      "hud.stage.injecting": "escribiendo",
+      "hud.nospeech": "sin voz",
 
       // ---- setup
       "setup.prefix": "instalación ",
@@ -1913,6 +1949,12 @@ Item {
       "state.transcribing": "文字起こし中",
       "state.stopped": "デーモン停止",
 
+      // ---- hud
+      "hud.stage.decoding": "文字起こし中",
+      "hud.stage.llm": "書き換え中",
+      "hud.stage.injecting": "入力中",
+      "hud.nospeech": "音声なし",
+
       // ---- setup
       "setup.prefix": "セットアップ ",
       "setup.title": "あと %1 個インストールが必要",
@@ -2210,6 +2252,12 @@ Item {
       "state.recording": "đang ghi",
       "state.transcribing": "đang chuyển thành chữ",
       "state.stopped": "dịch vụ đã dừng",
+
+      // ---- hud
+      "hud.stage.decoding": "đang chuyển thành chữ",
+      "hud.stage.llm": "đang viết lại",
+      "hud.stage.injecting": "đang gõ",
+      "hud.nospeech": "không có giọng nói",
 
       // ---- setup
       "setup.prefix": "cài đặt ",

@@ -49,6 +49,21 @@ Item {
 
   IpcLink { id: link }
 
+  // The overlay's own table. Strings.qml is documented as one instance per
+  // root component and had exactly one, in the console — so the surface you
+  // see on every take was the only one never translated, and said "no
+  // speech" in English whatever language the rest of the shell was in.
+  //
+  // The language comes from the daemon rather than from Qt.locale(), which
+  // is the same reason the console reads it from the config: a locale is a
+  // guess and ui.language is an answer. It arrives in the status snapshot
+  // and again on every reload, so switching language in the console moves
+  // this without a shell restart.
+  Strings {
+    id: strings
+    lang: link.uiLang
+  }
+
   Connections {
     target: link
     function onStateChanged() {
@@ -109,6 +124,22 @@ Item {
   }
 
   Timer { id: dwell; onTriggered: root.phase = "idle" }
+
+  // Something to animate against while a take is being processed. During
+  // recording the meter moves because link.level moves; during processing
+  // there is nothing coming in, so the bars sat at their minimum height and
+  // the strip looked frozen — for a quarter of a second with whisper alone,
+  // and for as long as an LLM step takes with one configured.
+  //
+  // A timer rather than a NumberAnimation on a property: it runs only while
+  // the phase needs it, so nothing ticks between takes.
+  property real pulse: 0
+  Timer {
+    interval: 60
+    repeat: true
+    running: root.open && root.phase === "transcribing"
+    onTriggered: root.pulse += 0.06
+  }
 
   IpcHandler {
     target: "omavoi-hud"
@@ -174,7 +205,20 @@ Item {
               width: root.meterBar
               height: {
                 if (index < 3) return root.meterBar * (1.5 + (index % 2) * 1.5)
-                if (root.phase === "transcribing") return root.meterBar
+                if (root.phase === "transcribing") {
+                  // A travelling bump, not a level: nothing is coming in to
+                  // measure, and pretending otherwise would be a meter that
+                  // reads as input when there is none. One narrow peak
+                  // moving left to right says "working" and says nothing
+                  // about how far along it is, which is the truth — no
+                  // stage here knows its own duration.
+                  var at = (index - 3) / 20
+                  var head = (root.pulse % 1.4) / 1.4
+                  var near = Math.abs(at - head)
+                  if (near > 0.18) return root.meterBar
+                  var lift = Math.cos(near / 0.18 * Math.PI / 2)
+                  return Math.round(root.meterBar + lift * root.meterPeak * 0.7)
+                }
                 var reach = Math.max(0, Math.min(1, link.level * 6))
                 var pos = (index - 3) / 20
                 var env = Math.sin(pos * Math.PI * 3.1 + link.seconds * 5) * 0.5 + 0.5
@@ -190,6 +234,21 @@ Item {
           }
         }
 
+        // Which phase, when a take is in one. "transcribing" covers the
+        // speech pass, the rules, every LLM step and the injection, and a
+        // ten-second wait with no word about which of those it is reads as
+        // a program that has stopped.
+        OmText {
+          visible: root.phase === "transcribing" && link.stage !== ""
+          anchors.verticalCenter: parent.verticalCenter
+          text: {
+            var label = strings.t("hud.stage." + link.stage)
+            return link.stageDetail !== "" ? label + " " + link.stageDetail
+                                           : label
+          }
+          color: Color.muted
+        }
+
         // The text that was actually typed, so you get to see it before it goes.
         OmText {
           visible: root.phase === "done" || root.phase === "rejected"
@@ -198,7 +257,8 @@ Item {
           color: root.phase === "done" ? Color.foreground : Color.muted
           elide: Text.ElideRight
           width: Math.min(implicitWidth, Style.space(Math.round(420 * root.sizeScale)))
-          text: root.phase === "done" ? root.doneText : "no speech"
+          text: root.phase === "done" ? root.doneText
+                                      : strings.t("hud.nospeech")
         }
 
         // How many rules touched the text. Which ones is a console question;

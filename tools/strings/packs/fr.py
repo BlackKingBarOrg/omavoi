@@ -60,6 +60,10 @@ PACK = {
  "state.recording": "enregistrement",
  "state.transcribing": "transcription",
  "state.stopped": "démon arrêté",
+ "hud.stage.decoding": 'transcription',
+ "hud.stage.llm": 'réécriture',
+ "hud.stage.injecting": 'saisie',
+ "hud.nospeech": 'aucune parole',
 
  "setup.prefix": "installation ",
  "setup.title": 'Reste à installer : %1',

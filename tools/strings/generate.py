@@ -218,6 +218,20 @@ section("state", {
  "state.stopped":      ("daemon stopped", "守护进程已停止", "เดมอนหยุดทำงาน"),
 })
 
+# The overlay's own four words. It had none: the only text it ever showed
+# besides your own sentence was "no speech", in English, on every language.
+section("hud", {
+ # Which part of a take is running. The daemon holds one `transcribing` state
+ # from the speech pass through to the injection — deliberately, three states
+ # are what the bar module and the state file switch on — so these name the
+ # phase inside it. Short: the strip grows to fit them and sits over whatever
+ # you are typing into.
+ "hud.stage.decoding":  ("transcribing", "转写中", "กำลังถอดเสียง"),
+ "hud.stage.llm":       ("rewriting", "改写中", "กำลังเรียบเรียง"),
+ "hud.stage.injecting": ("typing", "输入中", "กำลังพิมพ์"),
+ "hud.nospeech":        ("no speech", "没有语音", "ไม่มีเสียงพูด"),
+})
+
 section("setup", {
  "setup.prefix":   ("setup ", "安装 ", "ติดตั้ง "),
  "setup.title":  ("Still to install: %1", "还有 %1 个组件要装",
@@ -729,7 +743,8 @@ for code, pack in EXTRA.items():
 # got renders as the identifier itself, silently.
 _ROOT = os.path.join(_HERE, "..", "..")
 DYNAMIC = {f"modes.inject.{v}" for v in ("auto", "clipboard", "xdotool")} | {
-    f"state.{v}" for v in ("idle", "recording", "transcribing", "stopped")}
+    f"state.{v}" for v in ("idle", "recording", "transcribing", "stopped")} | {
+    f"hud.stage.{v}" for v in ("decoding", "llm", "injecting")}
 # Conservative on purpose. An earlier version of this check looked only for
 # a literal immediately after `t(`, which misses
 #     root.t(root.unifiedMem ? "models.shared" : "models.vram")

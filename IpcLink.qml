@@ -30,6 +30,18 @@ Item {
   property string hudDwell: "changed"
   property string hudSize: "s"
 
+  // The interface language, as configured rather than as guessed from the
+  // locale. The overlay carries its own string table and has no config file
+  // to read, so it followed Qt.locale() — which is right until someone picks
+  // a language in the console, and then the HUD is the one surface that did
+  // not change. "" still means follow the locale.
+  property string uiLang: ""
+
+  // Which phase of a take is running, inside the one `transcribing` state.
+  // "" between takes; "decoding", "llm", "injecting" during one.
+  property string stage: ""
+  property string stageDetail: ""
+
   property string lastText: ""
   property string lastRejected: ""
   property int lastChanges: 0
@@ -97,6 +109,10 @@ Item {
       link.hudDwell = String(ui.hud_dwell)
     if (ui.hud_size !== undefined && ui.hud_size !== "")
       link.hudSize = String(ui.hud_size)
+    // Empty is meaningful here — it is "follow the locale" — so this one is
+    // guarded on presence alone, unlike the three above whose empty string
+    // would be a missing value rather than a choice.
+    if (ui.language !== undefined) link.uiLang = String(ui.language)
   }
 
   function _digest(line) {
@@ -108,6 +124,16 @@ Item {
       link.state = msg.state || "idle"
       if (msg.mode) link.mode = msg.mode
       if (link.state !== "recording") link.level = 0
+      // A take is over, so no phase of one is running.
+      if (link.state === "idle" || link.state === "stopped") {
+        link.stage = ""
+        link.stageDetail = ""
+      }
+      return
+    }
+    if (msg.event === "stage") {
+      link.stage = String(msg.stage || "")
+      link.stageDetail = String(msg.detail || "")
       return
     }
     if (msg.event === "level") {

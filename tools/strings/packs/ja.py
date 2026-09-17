@@ -60,6 +60,10 @@ PACK = {
  "state.recording": "録音中",
  "state.transcribing": "文字起こし中",
  "state.stopped": "デーモン停止",
+ "hud.stage.decoding": '文字起こし中',
+ "hud.stage.llm": '書き換え中',
+ "hud.stage.injecting": '入力中',
+ "hud.nospeech": '音声なし',
 
  "setup.prefix": "セットアップ ",
  "setup.title": 'あと %1 個インストールが必要',

@@ -60,6 +60,10 @@ PACK = {
  "state.recording": "đang ghi",
  "state.transcribing": "đang chuyển thành chữ",
  "state.stopped": "dịch vụ đã dừng",
+ "hud.stage.decoding": 'đang chuyển thành chữ',
+ "hud.stage.llm": 'đang viết lại',
+ "hud.stage.injecting": 'đang gõ',
+ "hud.nospeech": 'không có giọng nói',
 
  "setup.prefix": "cài đặt ",
  "setup.title": 'Còn phải cài: %1',
