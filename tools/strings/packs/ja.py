@@ -258,6 +258,7 @@ PACK = {
  "set.dwell.changed": "変化したとき",
  "set.dwell.never": "しない",
  "set.hotkey": "ホットキー",
+ "set.key.type": "または入力します（例: CTRL+SLASH）",
  "set.key.rebind": 'キーを押す',
  "set.key.press": "待機中 — 今押してください。組み合わせを押したままでも構いません",
  "set.key": "キー",

@@ -15,7 +15,15 @@ Flickable {
   property int pad: Style.space(22)
   property var strings: null
 
+  // Why the last command was refused, from the console. Without it a
+  // refused `config set` moved nothing and said nothing.
+  property string lastError: ""
+
   signal command(string cmd)
+  // Typed text goes as argv, never spliced into a shell string: a key name
+  // is `[A-Z0-9_+]` once it has been checked, and what is typed here has
+  // not been checked yet.
+  signal commandArgs(var argv)
 
   property bool capturing: false
   property string captured: ""
@@ -195,6 +203,25 @@ Flickable {
           enabled: !root.checking
           onClicked: checker.running = true
         }
+        // Typing it, as well as pressing it. Capture is the better way for
+        // an ordinary key, and it is the only way the console had — which
+        // leaves nowhere to put a combination you cannot comfortably hold,
+        // or a key on a keyboard that is not plugged in yet. The name goes
+        // through the same `config set`, so the check that refuses one no
+        // keyboard emits applies here too.
+        TextField {
+          id: typedKey
+          Layout.preferredWidth: Style.space(168)
+          placeholderText: root.t("set.key.type")
+          font.family: Style.font.family
+          font.pixelSize: Style.font.caption
+          onAccepted: {
+            var want = text.trim().toUpperCase()
+            if (want === "") return
+            root.commandArgs(["omavoi", "config", "set", "hotkey.key", want])
+            text = ""
+          }
+        }
         Item { Layout.fillWidth: true }
       }
 
@@ -204,7 +231,8 @@ Flickable {
         Layout.fillWidth: true
         Layout.maximumWidth: Style.space(760)
         wrapMode: Text.Wrap
-        text: root.captured !== "" ? root.captured
+        text: root.lastError !== "" ? root.lastError
+              : root.captured !== "" ? root.captured
               : root.checking && root.ill === "" ? root.t("set.key.testing")
               : root.ill !== "" ? root.ill
               : root.health.configured !== undefined
@@ -214,7 +242,7 @@ Flickable {
                               .replace(/\/dev\/input\/\S+ /g, "")
                           : "—")
                 : ""
-        color: root.captured !== "" ? Color.urgent
+        color: (root.lastError !== "" || root.captured !== "") ? Color.urgent
                : root.ill !== "" ? Color.urgent : "#9ece6a"
       }
       RowLayout {

@@ -247,10 +247,19 @@ Item {
     }
   }
 
+  // What the last command said when it refused. Both runners threw stderr
+  // away and returned to the screen, so a `config set` that was refused —
+  // a key no keyboard emits, a model not in the catalogue, a number out of
+  // range — changed nothing and said nothing, and the only sign was a label
+  // that did not move. Every one of those commands prints a reason.
+  property string lastError: ""
+
   Process {
     id: applier
+    stderr: StdioCollector { id: applierErr }
     onExited: function (code, status) {
       root.pulling = ({})
+      root.lastError = code === 0 ? "" : String(applierErr.text || "").trim()
       root.settle()
     }
   }
@@ -260,7 +269,11 @@ Item {
   // that is a quoting bug waiting to happen.
   Process {
     id: argRunner
-    onExited: function (code, status) { root.settle() }
+    stderr: StdioCollector { id: argRunnerErr }
+    onExited: function (code, status) {
+      root.lastError = code === 0 ? "" : String(argRunnerErr.text || "").trim()
+      root.settle()
+    }
   }
 
   // The daemon reads its config once at startup. Without this every edit made
@@ -540,7 +553,9 @@ Item {
             Layout.fillHeight: true
             cfg: root.configData
             setupReport: root.setupReport
+            lastError: root.lastError
             onCommand: function (c) { root.apply(c) }
+            onCommandArgs: function (a) { root.applyArgs(a) }
           }
         }
       }

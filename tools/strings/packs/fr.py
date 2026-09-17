@@ -267,6 +267,7 @@ PACK = {
  "set.dwell.changed": "si modifié",
  "set.dwell.never": "jamais",
  "set.hotkey": "RACCOURCI",
+ "set.key.type": "ou tapez-la, p. ex. CTRL+SLASH",
  "set.key.rebind": 'Appuie sur une touche',
  "set.key.press": "en attente — appuyez maintenant, ou maintenez une combinaison",
  "set.key": "touche",

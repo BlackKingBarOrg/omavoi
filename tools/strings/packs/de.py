@@ -271,6 +271,7 @@ PACK = {
  "set.dwell.changed": "bei Änderung",
  "set.dwell.never": "nie",
  "set.hotkey": "TASTENKÜRZEL",
+ "set.key.type": "oder tippe sie, z. B. CTRL+SLASH",
  "set.key.rebind": 'Taste drücken',
  "set.key.press": "warte — drück sie jetzt, oder halte eine Kombination",
  "set.key": "Taste",

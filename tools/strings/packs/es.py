@@ -266,6 +266,7 @@ PACK = {
  "set.dwell.changed": "si cambió",
  "set.dwell.never": "nunca",
  "set.hotkey": "ATAJO",
+ "set.key.type": "o escríbela, p. ej. CTRL+SLASH",
  "set.key.rebind": 'Pulsa una tecla',
  "set.key.press": "esperando — púlsala ahora, o mantén una combinación",
  "set.key": "tecla",
