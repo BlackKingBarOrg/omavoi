@@ -20,12 +20,11 @@ Item {
   // `omavoi model list --json`: what is on disk, and which llm entries exist.
   property var catalogue: ({ models: [], llm: [] })
 
-  readonly property bool ggml: String((catalogue.backend) || "") === "local-whispercpp"
-  // Only the weights the running engine can read, and only what is downloaded
-  // — a mode changes the model, never the engine.
+  // Only what is downloaded — a mode changes the model, never the engine.
+  // The format test that used to be here chose between ggml and ct2, and
+  // ct2 was the faster-whisper engine's; there is one local format now.
   readonly property var speechChoices: (catalogue.models || []).filter(function (m) {
-    return m.kind === "speech" && m.downloaded
-           && (root.ggml ? m.fmt === "ggml" : m.fmt === "ct2")
+    return m.kind === "speech" && m.downloaded && m.fmt === "ggml"
   })
   // `withModel` is false wherever a weights row sits directly underneath: the
   // model shown here comes from the *configuration*, so a step pinned to

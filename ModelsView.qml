@@ -26,12 +26,11 @@ Item {
   function t(k) { return root.strings ? root.strings.t(k) : k }
   function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
 
-  readonly property bool ggml: payload.backend === "local-whispercpp"
   // A gguf LLM is also fmt=ggml, so the format alone put chat models in the
   // speech table — with a Use button that would have written one into
   // speech.model. The two families split on `kind`.
   readonly property var speechModels: (payload.models || []).filter(function (m) {
-    return m.kind === "speech" && (root.ggml ? m.fmt === "ggml" : m.fmt === "ct2")
+    return m.kind === "speech" && m.fmt === "ggml"
   })
   readonly property var llmModels: (payload.models || []).filter(function (m) {
     return m.kind === "llm"
@@ -221,9 +220,6 @@ Item {
               { id: "local-whispercpp", name: root.t("models.e.vulkan"),
                 detail: root.t("models.e.vulkan.sub"),
                 note: root.t("models.e.vulkan.note") },
-              { id: "local-whisper", name: root.t("models.e.cuda"),
-                detail: root.t("models.e.cuda.sub"),
-                note: root.t("models.e.cuda.note") },
               { id: "api", name: root.t("models.e.api"),
                 detail: root.t("models.e.api.sub"),
                 note: root.t("models.e.api.note") }
@@ -348,7 +344,9 @@ Item {
             Layout.topMargin: Style.space(8)
             Layout.fillWidth: true
             OmText {
-              text: root.t("models.list") + (root.ggml ? "ggml" : "ct2")
+              // Was `ggml : ct2`, and with the remote engine selected it
+              // said "MODELS · ct2" over a table of ggml weights.
+              text: root.t("models.list") + "ggml"
               font.letterSpacing: 1
               color: Color.muted
             }
