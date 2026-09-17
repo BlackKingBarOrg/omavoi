@@ -71,6 +71,19 @@ RowLayout {
     color: (m.tags || []).indexOf("recommended") >= 0 ? Color.foreground
                                                       : Color.muted
   }
+  // Which languages this one is any good at. The field has been on every
+  // catalogue entry since it was written and reached no user — which
+  // mattered most for the thing it would have said, that the default speech
+  // model is a distillation and is not even across languages. Its own
+  // column rather than appended to the note, because the note elides and
+  // this is the half someone comparing two models needs.
+  OmText {
+    Layout.preferredWidth: Style.space(148)
+    visible: String(m.languages || "") !== ""
+    elide: Text.ElideRight
+    text: String(m.languages || "")
+    color: Qt.darker(Color.muted, 1.15)
+  }
   RowLayout {
     Layout.preferredWidth: Style.space(180)
     spacing: Style.space(7)
