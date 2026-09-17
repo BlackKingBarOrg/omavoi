@@ -152,7 +152,8 @@ section("firstrun", {
  "first.step.weights":  ("model weights", "模型权重", "น้ำหนักโมเดล"),
  "first.step.use":      ("select the model", "选用模型", "เลือกโมเดล"),
  "first.step.mode":     ("default mode", "默认模式", "โหมดเริ่มต้น"),
- "first.step.service":  ("unit and keybinding", "服务与快捷键", "ยูนิตและปุ่มลัด"),
+ "first.step.service":  ("unit, keybinding and menu entry", "服务、快捷键与菜单项",
+                        "ยูนิต ปุ่มลัด และรายการในเมนู"),
 })
 
 section("update", {
@@ -194,6 +195,8 @@ section("update", {
  "up.done":      ("Updated", "已更新", "อัปเดตแล้ว"),
  "up.step.plugin":  ("the plugin", "插件", "ปลั๊กอิน"),
  "up.step.daemon":  ("the daemon", "守护进程", "เดมอน"),
+ "up.step.shortcuts": ("unit, keybinding and menu entry", "服务、快捷键与菜单项",
+                       "ยูนิต ปุ่มลัด และรายการในเมนู"),
  "up.step.restart": ("restart", "重启服务", "รีสตาร์ต"),
 })
 

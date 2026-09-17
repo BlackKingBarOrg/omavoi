@@ -15,7 +15,10 @@ omarchy plugin add https://github.com/BlackKingBarOrg/omavoi-shell-plugin --enab
 
 Then open the console — `SUPER + ALT + V`, or click the bar module — and the
 first-run screen takes it from there: it asks which language you want the
-interface in and which speech model to use, then does the rest itself.
+interface in and which speech model to use, then does the rest itself. Its
+last step adds the three things a plugin cannot add for itself — the systemd
+unit, the keybinding, and an Omavoi row in the Omarchy menu under
+`SUPER + SPACE`.
 
 ## Why this is a separate repository
 
@@ -57,8 +60,9 @@ if another tool already put a 3 GB model on this machine, that step is free.
 omarchy plugin remove ai.bkblab.omavoi
 ```
 
-The first line takes out the systemd unit and the keybinding; both files are
-edited between markers, so it removes exactly what was added. The daemon,
+The first line takes out the systemd unit, the keybinding and the menu entry;
+`bindings.lua` is edited between markers, so it removes exactly what was
+added and leaves the rest of the file byte for byte as it was. The daemon,
 your config and any downloaded weights are left alone — see the main
 repository to remove those too.
 

@@ -20,12 +20,45 @@ PLUGIN_ID="ai.bkblab.omavoi"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 BINDINGS="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/bindings.lua"
+APPS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+# The menu indexes */apps/*.svg and */apps/*.png under $HOME/.icons and
+# $HOME/.local/share/icons by basename, at any depth, preferring SVG -- so
+# `Icon=ai.bkblab.omavoi` resolves to exactly this file and nothing else.
+ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
 BEGIN="-- >>> omavoi"
 END="-- <<< omavoi"
 REMOVE=0
 [[ "${1:-}" == "--remove" ]] && REMOVE=1
 
 say() { printf '  %s\n' "$*"; }
+
+# Write over a file in place rather than moving a temp file onto it. `mv`
+# carries the temp file's own mode across, and mktemp makes 0600 -- so this
+# script's own strip_block had been quietly turning the user's bindings.lua
+# from 0644 into 0600 on every run since it was written.
+replace_file() {
+  local file="$1" tmp="$2"
+  cat "$tmp" > "$file"
+  rm -f "$tmp"
+}
+
+# Trailing blank lines, because the block is always appended at the end and
+# the heredoc opens with one to separate itself from whatever came before.
+# strip_block took the block out and left that blank line behind, so every
+# run added one more -- four runs, four blank lines. The header says running
+# this twice changes nothing; this is what makes that true.
+trim_trailing_blanks() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+  local tmp; tmp="$(mktemp)"
+  awk '{ line[NR] = $0 }
+    END {
+      last = 0
+      for (i = 1; i <= NR; i++) if (line[i] ~ /[^[:space:]]/) last = i
+      for (i = 1; i <= last; i++) print line[i]
+    }' "$file" > "$tmp"
+  replace_file "$file" "$tmp"
+}
 
 strip_block() {
   local file="$1"
@@ -39,7 +72,8 @@ strip_block() {
     awk -v b="$BEGIN" -v e="$END" '
       index($0, b) { skip = 1 } !skip { print } index($0, e) { skip = 0 }
     ' "$file" > "$tmp"
-    mv "$tmp" "$file"
+    replace_file "$file" "$tmp"
+    trim_trailing_blanks "$file"
     say "removed the omavoi block from $file"
   fi
 }
@@ -57,6 +91,12 @@ if (( REMOVE )); then
     rm -f "$UNIT_DIR/omavoid.service"
     say "removed the unit file"
   fi
+  for f in "$APPS_DIR/$PLUGIN_ID.desktop" "$ICON_DIR/$PLUGIN_ID.svg"; do
+    if [[ -e "$f" ]]; then
+      rm -f "$f"
+      say "removed $f"
+    fi
+  done
   systemctl --user daemon-reload
   echo "Done. The plugin itself is still installed; remove it with:"
   echo "  omarchy plugin remove $PLUGIN_ID"
@@ -86,6 +126,7 @@ fi
 # below -- a non-modifier key does work through Hyprland.
 if [[ -f "$BINDINGS" ]]; then
   strip_block "$BINDINGS"
+  trim_trailing_blanks "$BINDINGS"
   cat >> "$BINDINGS" <<'LUA'
 
 -- >>> omavoi
@@ -101,6 +142,22 @@ else
   say "no $BINDINGS -- skipped the keybinding"
 fi
 
+# 3. A row in the Omarchy menu -- SUPER+SPACE, and SUPER+ALT+SPACE for the
+# apps list directly. Both come from what Quickshell's DesktopEntries finds in
+# the XDG data dirs, so joining them is a plain .desktop file: the plugin
+# manifest has no field for a menu entry, and the one plugin-facing app API is
+# for reading the app list rather than joining it.
+mkdir -p "$APPS_DIR" "$ICON_DIR"
+install -m 0644 "$HERE/$PLUGIN_ID.desktop" "$APPS_DIR/$PLUGIN_ID.desktop"
+install -m 0644 "$HERE/$PLUGIN_ID.svg" "$ICON_DIR/$PLUGIN_ID.svg"
+say "added the Omarchy menu entry and its icon"
+# The shell watches the directory and picks the entry up on its own. This is
+# for every other launcher on the machine, which reads a cache instead.
+if command -v update-desktop-database >/dev/null; then
+  update-desktop-database "$APPS_DIR" 2>/dev/null || true
+fi
+
 echo
 echo "Next:"
 echo "  omavoi setup      # shows what is still missing, with the command for each"
+echo "  SUPER + SPACE     # Omavoi is in the menu now, or SUPER + ALT + V for the console"

@@ -136,6 +136,15 @@ ColumnLayout {
                     argv: ["pkexec", "/usr/bin/pacman", "-S", "--needed",
                            "--noconfirm"].concat(pkgs) })
     }
+    // The plugin's own installer, re-run. It is the only thing that puts the
+    // unit, the Hyprland keybinding and the Omarchy menu entry in place, and
+    // nothing else in this plan touches them -- so a user who installed six
+    // versions ago kept whatever those files said then, and a change to any
+    // of the three reached new installs only. It is idempotent to the byte,
+    // so being already current costs a no-op.
+    plan.push({ key: "shortcuts", label: root.t("up.step.shortcuts"),
+                argv: [Quickshell.env("HOME") + "/.config/omarchy/plugins/"
+                       + root.pluginId + "/install.sh"] })
     plan.push({ key: "restart", label: root.t("up.step.restart"),
                 argv: ["systemctl", "--user", "restart", "omavoid"] })
     return plan

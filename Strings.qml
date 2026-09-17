@@ -89,7 +89,7 @@ Item {
       "first.step.weights": "model weights",
       "first.step.use": "select the model",
       "first.step.mode": "default mode",
-      "first.step.service": "unit and keybinding",
+      "first.step.service": "unit, keybinding and menu entry",
 
       // ---- update
       "up.title": "UPDATE",
@@ -105,6 +105,7 @@ Item {
       "up.done": "Updated",
       "up.step.plugin": "the plugin",
       "up.step.daemon": "the daemon",
+      "up.step.shortcuts": "unit, keybinding and menu entry",
       "up.step.restart": "restart",
 
       // ---- shared-and-setup
@@ -393,7 +394,7 @@ Item {
       "first.step.weights": "模型权重",
       "first.step.use": "选用模型",
       "first.step.mode": "默认模式",
-      "first.step.service": "服务与快捷键",
+      "first.step.service": "服务、快捷键与菜单项",
 
       // ---- update
       "up.title": "更新",
@@ -409,6 +410,7 @@ Item {
       "up.done": "已更新",
       "up.step.plugin": "插件",
       "up.step.daemon": "守护进程",
+      "up.step.shortcuts": "服务、快捷键与菜单项",
       "up.step.restart": "重启服务",
 
       // ---- shared-and-setup
@@ -697,7 +699,7 @@ Item {
       "first.step.weights": "น้ำหนักโมเดล",
       "first.step.use": "เลือกโมเดล",
       "first.step.mode": "โหมดเริ่มต้น",
-      "first.step.service": "ยูนิตและปุ่มลัด",
+      "first.step.service": "ยูนิต ปุ่มลัด และรายการในเมนู",
 
       // ---- update
       "up.title": "อัปเดต",
@@ -713,6 +715,7 @@ Item {
       "up.done": "อัปเดตแล้ว",
       "up.step.plugin": "ปลั๊กอิน",
       "up.step.daemon": "เดมอน",
+      "up.step.shortcuts": "ยูนิต ปุ่มลัด และรายการในเมนู",
       "up.step.restart": "รีสตาร์ต",
 
       // ---- shared-and-setup
@@ -1001,7 +1004,7 @@ Item {
       "first.step.weights": "Modellgewichte",
       "first.step.use": "Modell auswählen",
       "first.step.mode": "Vorgabemodus",
-      "first.step.service": "Unit und Tastenkürzel",
+      "first.step.service": "Unit, Tastenkürzel und Menüeintrag",
 
       // ---- update
       "up.title": "AKTUALISIEREN",
@@ -1017,6 +1020,7 @@ Item {
       "up.done": "Aktualisiert",
       "up.step.plugin": "das Plugin",
       "up.step.daemon": "der Dienst",
+      "up.step.shortcuts": "Unit, Tastenkürzel und Menüeintrag",
       "up.step.restart": "neu starten",
 
       // ---- shared-and-setup
@@ -1305,7 +1309,7 @@ Item {
       "first.step.weights": "poids du modèle",
       "first.step.use": "sélectionner le modèle",
       "first.step.mode": "mode par défaut",
-      "first.step.service": "unité et raccourci",
+      "first.step.service": "unité, raccourci et entrée de menu",
 
       // ---- update
       "up.title": "MISE À JOUR",
@@ -1321,6 +1325,7 @@ Item {
       "up.done": "Mis à jour",
       "up.step.plugin": "le plugin",
       "up.step.daemon": "le démon",
+      "up.step.shortcuts": "unité, raccourci et entrée de menu",
       "up.step.restart": "redémarrer",
 
       // ---- shared-and-setup
@@ -1609,7 +1614,7 @@ Item {
       "first.step.weights": "pesos del modelo",
       "first.step.use": "seleccionar el modelo",
       "first.step.mode": "modo por defecto",
-      "first.step.service": "unidad y atajo",
+      "first.step.service": "unidad, atajo y entrada de menú",
 
       // ---- update
       "up.title": "ACTUALIZAR",
@@ -1625,6 +1630,7 @@ Item {
       "up.done": "Actualizado",
       "up.step.plugin": "el plugin",
       "up.step.daemon": "el demonio",
+      "up.step.shortcuts": "unidad, atajo y entrada de menú",
       "up.step.restart": "reiniciar",
 
       // ---- shared-and-setup
@@ -1913,7 +1919,7 @@ Item {
       "first.step.weights": "モデルの重み",
       "first.step.use": "モデルを選択",
       "first.step.mode": "既定のモード",
-      "first.step.service": "ユニットとキー割り当て",
+      "first.step.service": "ユニット・ショートカット・メニュー項目",
 
       // ---- update
       "up.title": "更新",
@@ -1929,6 +1935,7 @@ Item {
       "up.done": "更新しました",
       "up.step.plugin": "プラグイン",
       "up.step.daemon": "デーモン",
+      "up.step.shortcuts": "ユニット・ショートカット・メニュー項目",
       "up.step.restart": "再起動",
 
       // ---- shared-and-setup
@@ -2217,7 +2224,7 @@ Item {
       "first.step.weights": "trọng số mô hình",
       "first.step.use": "chọn mô hình",
       "first.step.mode": "chế độ mặc định",
-      "first.step.service": "unit và phím tắt",
+      "first.step.service": "unit, phím tắt và mục trong menu",
 
       // ---- update
       "up.title": "CẬP NHẬT",
@@ -2233,6 +2240,7 @@ Item {
       "up.done": "Đã cập nhật",
       "up.step.plugin": "plugin",
       "up.step.daemon": "dịch vụ",
+      "up.step.shortcuts": "unit, phím tắt và mục trong menu",
       "up.step.restart": "khởi động lại",
 
       // ---- shared-and-setup

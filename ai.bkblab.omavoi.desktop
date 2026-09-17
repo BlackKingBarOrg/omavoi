@@ -1,0 +1,48 @@
+# A row in the Omarchy menu. SUPER+SPACE lists what Quickshell's
+# DesktopEntries finds in the XDG data dirs, so this is a plain .desktop file:
+# the plugin manifest has no field for a menu entry, and the one plugin-facing
+# app API (PluginAppLibraryApi) is for reading the app list, not joining it.
+#
+# Name is not translated. It is a product noun, like wtype and ggml elsewhere
+# in this plugin -- translating the thing you search for makes it unfindable.
+# GenericName is what the menu shows underneath it, and Comment and Keywords
+# are what it matches your typing against, so those are in all eight.
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Omavoi
+GenericName=Voice dictation
+GenericName[de]=Spracheingabe
+GenericName[es]=Dictado por voz
+GenericName[fr]=Dictée vocale
+GenericName[ja]=音声入力
+GenericName[th]=การพิมพ์ด้วยเสียง
+GenericName[vi]=Nhập bằng giọng nói
+GenericName[zh_CN]=语音输入
+GenericName[zh]=语音输入
+Comment=Hold a key, talk, and the text lands where you were already typing
+Comment[de]=Taste halten, sprechen — der Text landet dort, wo du schon geschrieben hast
+Comment[es]=Mantén una tecla, habla, y el texto aparece donde ya estabas escribiendo
+Comment[fr]=Maintiens une touche, parle, et le texte arrive là où tu écrivais déjà
+Comment[ja]=キーを押しながら話すと、入力していた場所にそのまま文字が入ります
+Comment[th]=กดปุ่มค้างไว้แล้วพูด ข้อความจะไปอยู่ตรงที่คุณกำลังพิมพ์อยู่
+Comment[vi]=Giữ một phím, nói, và văn bản hiện ra ngay nơi bạn đang gõ
+Comment[zh_CN]=按住一个键说话，文字就落在你本来正在输入的地方
+Comment[zh]=按住一个键说话，文字就落在你本来正在输入的地方
+Exec=omarchy-shell shell toggle ai.bkblab.omavoi
+Icon=ai.bkblab.omavoi
+Terminal=false
+Categories=Utility;Accessibility;
+Keywords=voice;dictation;speech;transcribe;whisper;microphone;stt;
+Keywords[de]=Stimme;Sprache;Diktat;Diktieren;Mikrofon;
+Keywords[es]=voz;dictado;habla;transcribir;micrófono;
+Keywords[fr]=voix;dictée;parole;transcrire;microphone;
+Keywords[ja]=音声;入力;文字起こし;書き起こし;マイク;
+Keywords[th]=เสียง;พิมพ์ด้วยเสียง;ถอดเสียง;ไมโครโฟน;
+Keywords[vi]=giọng nói;nhập liệu;chuyển thành chữ;micro;
+Keywords[zh_CN]=语音;听写;转写;语音输入;麦克风;yuyin;tingxie;
+Keywords[zh]=语音;听写;转写;语音输入;麦克风;yuyin;tingxie;
+# The console is an overlay in the shell's own process, so no new toplevel
+# ever appears and a launcher that waits for one shows a hung cursor until it
+# times out.
+StartupNotify=false

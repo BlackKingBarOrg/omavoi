@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Omavoi, drawn for the size it is actually shown at.
+       Omarchy's menu renders an app icon at Style.font.iconLarge, which is 18
+       logical pixels, decoded at 18 x devicePixelRatio — so 18px on this
+       display and 36px on a HiDPI one. That is the whole operating range, and
+       it is what the geometry here is tuned to: one bold silhouette, strokes
+       thick enough to survive a 14:1 downscale, and no interior detail.
+       A first pass put the HUD's meter inside the capsule as a grille, which
+       is the one mark that would have been Omavoi rather than any dictation
+       app. At 18px it averaged into grey, and at 32 the outer two bars paired
+       up and read as a face. Three bars cost more than they bought.
+       Qt's SVG renderer is a tiny-1.2 subset — gradients and plain shapes,
+       no masks, no CSS — and it is what draws this. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b6bff"/>
+      <stop offset=".55" stop-color="#6244e8"/>
+      <stop offset="1" stop-color="#3a1d9b"/>
+    </linearGradient>
+    <!-- Light from the top-left, painted on the tile's own shape so the
+         rounded corners stay rounded. -->
+    <radialGradient id="glow" cx=".28" cy=".18" r=".9">
+      <stop offset="0" stop-color="#fff" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="58" fill="url(#tile)"/>
+  <rect width="256" height="256" rx="58" fill="url(#glow)"/>
+
+  <!-- A microphone: the icon has to say what this is from an eighteen-pixel
+       row in a list of ninety. Capsule, cradle, stem — three shapes, and the
+       two gaps between them stay open at a pixel and a half each. -->
+  <g fill="none" stroke="#fff" stroke-width="25" stroke-linecap="round">
+    <path d="M60 126a68 68 0 0 0 136 0"/>
+    <path d="M128 194v27"/>
+  </g>
+  <rect x="91" y="23" width="74" height="136" rx="37" fill="#fff"/>
+</svg>
