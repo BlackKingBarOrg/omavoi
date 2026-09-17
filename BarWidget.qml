@@ -12,14 +12,21 @@ BarWidget {
   id: root
   moduleName: "ai.bkblab.omavoi"
 
-  property bool setupReady: true
+  // Not ready until something says so. The console carried the optimistic
+  // default and its own comment records what that cost: on a machine with no
+  // daemon the probe could not even start, so it kept claiming everything was
+  // fine. `setupKnown` is what lets the default be correct without flashing a
+  // badge on a working machine for the frame before the first answer.
+  property bool setupKnown: false
+  property bool setupReady: false
   property int setupDone: 0
   property int setupTotal: 5
 
   readonly property bool recording: link.state === "recording"
   readonly property bool working: link.state === "transcribing"
   readonly property bool missing: link.state === "stopped"
-  readonly property bool needsSetup: !setupReady && !recording && !working
+  readonly property bool needsSetup: setupKnown && !setupReady
+                                     && !recording && !working
 
   implicitWidth: reading.visible ? reading.implicitWidth : button.implicitWidth
   implicitHeight: button.implicitHeight
@@ -39,6 +46,7 @@ BarWidget {
     command: ["omavoi", "setup", "--json"]
     stdout: StdioCollector {
       onStreamFinished: {
+        root.setupKnown = true
         try {
           var r = JSON.parse(text)
           root.setupReady = !!r.ready
@@ -51,35 +59,39 @@ BarWidget {
     }
   }
 
-  // Only while there is something left to install. This was the one timer in
-  // the plugin with an unconditional `running: true` -- every sibling is
-  // gated on a condition -- and a bar widget is instantiated once per
-  // monitor, so on a two-monitor machine it spawned `omavoi setup --json`
-  // twice every fifteen seconds for the whole session, forever, to re-ask a
-  // question whose answer had stopped changing. Before the daemon is
-  // installed at all, each of those is a process that cannot start and a
-  // warning in the journal.
+  // Only while the daemon is up and something is still missing. This was the
+  // one timer in the plugin with an unconditional `running: true` -- every
+  // sibling is gated on a condition -- and a bar widget is instantiated once
+  // per monitor, so on a two-monitor machine it spawned `omavoi setup --json`
+  // twice every fifteen seconds for the life of the session: after setup was
+  // finished, to re-ask a question whose answer had stopped changing, and
+  // before the daemon existed at all, as a pair of processes that could not
+  // start and two warnings in the journal.
   //
-  // The first probe comes from Component.onCompleted rather than from
-  // triggeredOnStart: `setupReady` starts optimistic so the module does not
-  // flash a badge before the first answer, which would leave this timer off
-  // and the probe that turns it on unreachable.
+  // Both halves come from the same mistake, which is asking. With no daemon
+  // there is nothing to ask and nothing to ask it with -- IpcLink already
+  // knows, and `missing` puts "Setup" on the bar without a single process.
+  // Once setup is complete there is nothing left to learn. So the window
+  // where this question is worth asking is exactly: daemon up, setup
+  // unfinished, which is the minutes of a first run.
   //
-  // Nothing polls once setup is complete. If it later comes apart -- a
-  // package removed by hand -- the Connections below re-probe on the next
-  // take, and opening the console re-probes on its own.
+  // A setup that comes apart later -- a package removed by hand -- is caught
+  // by the re-probe below on the next take, and by the console, which probes
+  // on its own when it opens.
   Timer {
     interval: 15000
     repeat: true
-    running: !root.setupReady
+    running: link.alive && !root.setupReady
     onTriggered: if (!root.recording && !root.working) probe.running = true
   }
 
-  Component.onCompleted: probe.running = true
-
   Connections {
     target: link
+    // A daemon coming up is what makes the question answerable, so this is
+    // the probe's way in as well as its refresh: the timer above cannot run
+    // until something is alive to answer.
     function onStateChanged() { if (link.state === "idle") probe.running = true }
+    function onAliveChanged() { if (link.alive) probe.running = true }
   }
 
   // Two buttons rather than one, because they measure differently.
