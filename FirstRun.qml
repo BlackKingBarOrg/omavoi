@@ -73,8 +73,12 @@ Flickable {
     var out = []
     if (root.foundWeights !== "")
       out.push({ key: "reuse", size: "", note: root.t("first.reuse") })
-    out.push({ key: "ggml:large-v3", size: "3.0G", note: root.t("first.m.large") })
-    out.push({ key: "ggml:large-v3-turbo-q5_0", size: "0.6G", note: root.t("first.m.turbo") })
+    // The default first, and the sizes are the catalogue's real ones — this
+    // screen runs before omavoi is installed, so it cannot ask, and 3.0G was
+    // a decimal-megabyte figure for a 2.9 GiB file.
+    out.push({ key: "ggml:large-v3-turbo", size: "1.5G", note: root.t("first.m.turbo") })
+    out.push({ key: "ggml:large-v3-turbo-q5_0", size: "0.5G", note: root.t("first.m.light") })
+    out.push({ key: "ggml:large-v3", size: "2.9G", note: root.t("first.m.large") })
     return out
   }
 
@@ -92,7 +96,7 @@ Flickable {
                                    "llama-cpp", "xdotool"]
 
   readonly property var steps: {
-    var chosen = (root.model === "reuse") ? "ggml:large-v3" : root.model
+    var chosen = (root.model === "reuse") ? "ggml:large-v3-turbo" : root.model
     // One pkexec, because polkit prompts for every call. When the input group
     // is also needed it joins the same shell line rather than asking twice —
     // and the line is printed in full below before anything runs.
