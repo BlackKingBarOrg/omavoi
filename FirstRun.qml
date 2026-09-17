@@ -99,7 +99,14 @@ Flickable {
   // local LLM step out of the box, and adding one is the first thing anyone
   // does. Without the binary the step falls through silently and the take
   // looks like plain dictation with no clue why. 7 MB to download.
-  readonly property var packages: ["uv", "whisper-cpp", "ggml-cpu", "ggml-vulkan",
+  // `ggml`, not `ggml-cpu`. Arch once shipped the CPU backend as its own
+  // optional package; it is folded into `ggml` now, which declares both
+  // `provides ggml-cpu` and `conflicts ggml-cpu`. Asking for the old name
+  // pins a stale 0.21.0 split package that cannot coexist with the `ggml`
+  // that whisper-cpp, ggml-vulkan and llama-cpp all depend on — so pacman
+  // rejected the entire transaction with "unresolvable package conflicts"
+  // and the first screen a new user meets could not get past step one.
+  readonly property var packages: ["uv", "whisper-cpp", "ggml", "ggml-vulkan",
                                    "llama-cpp", "xdotool"]
 
   readonly property var steps: {

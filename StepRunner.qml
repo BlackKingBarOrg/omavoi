@@ -117,7 +117,13 @@ ColumnLayout {
         color: root.at > idx ? "#9ece6a" : Color.accent
       }
       OmText {
-        Layout.preferredWidth: Style.space(150)
+        // Wide enough for the longest label any translation has, and eliding
+        // rather than trusting that. At 150 the step that installs the unit,
+        // the keybinding and the menu entry ran straight over the command
+        // beside it — the label grew by three words and nothing here was
+        // sized to notice.
+        Layout.preferredWidth: Style.space(232)
+        elide: Text.ElideRight
         text: step.label
         color: root.at >= idx ? Color.foreground : Color.muted
       }

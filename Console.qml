@@ -179,7 +179,14 @@ Item {
 
   Strings {
     id: strings
-    lang: (root.configData.ui && root.configData.ui.language) || ""
+    // Before the daemon exists there is no config to read, so the first-run
+    // screen's own picker is the only statement of intent there is. Without
+    // this, choosing 简体中文 on that screen changed the command it would
+    // run and not one word on it — the whole page stayed in English, which
+    // reads as the picker being broken.
+    lang: (!root.daemonPresent && firstRun.lang !== "")
+          ? firstRun.lang
+          : ((root.configData.ui && root.configData.ui.language) || "")
   }
 
   Connections {
@@ -469,6 +476,7 @@ Item {
           // below has nothing to list. This asks the two questions instead and
           // then installs, which is the only screen a new user should meet.
           FirstRun {
+            id: firstRun
             visible: !root.daemonPresent
             Layout.fillWidth: true
             Layout.fillHeight: true
