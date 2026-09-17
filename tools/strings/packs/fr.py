@@ -268,7 +268,7 @@ PACK = {
  "set.dwell.never": "jamais",
  "set.hotkey": "RACCOURCI",
  "set.key.rebind": 'Appuie sur une touche',
- "set.key.press": 'en attente — appuie maintenant',
+ "set.key.press": "en attente — appuyez maintenant, ou maintenez une combinaison",
  "set.key": "touche",
  "set.behaviour": "comportement",
  "set.key.check": 'Vérifier à nouveau',

@@ -272,7 +272,7 @@ PACK = {
  "set.dwell.never": "nie",
  "set.hotkey": "TASTENKÜRZEL",
  "set.key.rebind": 'Taste drücken',
- "set.key.press": 'warte — jetzt drücken',
+ "set.key.press": "warte — drück sie jetzt, oder halte eine Kombination",
  "set.key": "Taste",
  "set.behaviour": "Verhalten",
  "set.key.check": 'Erneut prüfen',

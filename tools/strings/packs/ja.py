@@ -259,7 +259,7 @@ PACK = {
  "set.dwell.never": "しない",
  "set.hotkey": "ホットキー",
  "set.key.rebind": 'キーを押す',
- "set.key.press": '待機中 —— いま押してください',
+ "set.key.press": "待機中 — 今押してください。組み合わせを押したままでも構いません",
  "set.key": "キー",
  "set.behaviour": "動作",
  "set.key.check": 'もう一度確認',

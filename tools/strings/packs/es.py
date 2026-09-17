@@ -267,7 +267,7 @@ PACK = {
  "set.dwell.never": "nunca",
  "set.hotkey": "ATAJO",
  "set.key.rebind": 'Pulsa una tecla',
- "set.key.press": 'esperando — púlsala ahora',
+ "set.key.press": "esperando — púlsala ahora, o mantén una combinación",
  "set.key": "tecla",
  "set.behaviour": "comportamiento",
  "set.key.check": 'Comprobar de nuevo',

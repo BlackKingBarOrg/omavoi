@@ -262,7 +262,7 @@ PACK = {
  "set.dwell.never": "không bao giờ",
  "set.hotkey": "PHÍM NÓNG",
  "set.key.rebind": 'Bấm một phím',
- "set.key.press": 'đang chờ — bấm ngay',
+ "set.key.press": "đang chờ — bấm ngay, hoặc giữ một tổ hợp phím",
  "set.key": "phím",
  "set.behaviour": "cách hoạt động",
  "set.key.check": 'Kiểm tra lại',
