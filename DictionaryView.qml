@@ -88,7 +88,7 @@ Flickable {
         Item { Layout.fillWidth: r.shadowed_by === "" }
         Button {
           text: root.t("dict.remove")
-          onClicked: root.command("omavoi dict rm " + JSON.stringify(r.heard))
+          onClicked: root.commandArgs(["omavoi", "dict", "rm", String(r.heard)])
         }
       }
     }
@@ -131,7 +131,7 @@ Flickable {
         Item { Layout.fillWidth: true }
         Button {
           text: root.t("dict.remove")
-          onClicked: root.command("omavoi names rm " + JSON.stringify(n.name))
+          onClicked: root.commandArgs(["omavoi", "names", "rm", String(n.name)])
         }
       }
     }

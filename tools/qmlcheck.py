@@ -33,6 +33,7 @@ true of every file here and actionable in none of them.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -138,6 +139,27 @@ def _qmllint() -> str | None:
     return None
 
 
+# `command(...)` is run as `bash -lc`; `commandArgs([...])` is argv with no
+# shell at all. JSON.stringify inside the first is the tell that somebody
+# knew the value needed quoting and reached for the wrong kind: it escapes "
+# and \ for JSON, and leaves $(…) and backticks to be run by the shell.
+#
+# That is how a dictionary key, a proper noun, a base_url and a model id —
+# four things typed into text boxes — reached a command line. The values
+# still go through, unquoted and verbatim, as argv.
+_SHELL_QUOTED = re.compile(r"\bcommand\((?:[^()]|\([^()]*\))*JSON\.stringify")
+
+
+def shell_quoting(text: str) -> list[str]:
+    """Places that JSON-quote a value on its way into a shell string."""
+    out = []
+    for match in _SHELL_QUOTED.finditer(text):
+        out.append(f"line {text[: match.start()].count(chr(10)) + 1}: "
+                   "JSON.stringify inside command() — JSON quoting is not shell "
+                   "quoting; use commandArgs([...]) and pass the value as argv")
+    return out
+
+
 def main(argv: list[str]) -> int:
     here = Path(__file__).resolve().parent.parent
     files = [Path(a) for a in argv] or sorted(here.glob("*.qml"))
@@ -150,16 +172,19 @@ def main(argv: list[str]) -> int:
         # outside a shell, so its import and type warnings are noise here.
         errors = [ln for ln in (proc.stdout + proc.stderr).splitlines()
                   if "[syntax]" in ln or ln.lstrip().startswith("error:")]
+        for f in files:
+            errors += [f"{f.name}: {p}" for p in shell_quoting(f.read_text())]
         if errors:
             print("\n".join(errors))
-            print(f"\n{len(errors)} syntax error(s) in {len(files)} file(s)")
+            print(f"\n{len(errors)} problem(s) in {len(files)} file(s)")
             return 1
-        print(f"qmllint: {len(files)} file(s) parse")
+        print(f"qmllint: {len(files)} file(s) parse, no shell-quoted values")
         return 0
 
     bad = 0
     for f in files:
-        for problem in imbalances(f.read_text()):
+        text = f.read_text()
+        for problem in [*imbalances(text), *shell_quoting(text)]:
             print(f"{f.name}: {problem}")
             bad += 1
     if bad:

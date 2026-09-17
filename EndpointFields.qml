@@ -46,6 +46,10 @@ ColumnLayout {
   property string defaultModel: ""
 
   signal command(string cmd)
+  // Anything carrying typed text goes as argv. A base_url or a model id is
+  // whatever someone pasted, and JSON.stringify is JSON quoting, not shell
+  // quoting: "$(…)" and backticks still run inside double quotes.
+  signal commandArgs(var argv)
 
   function t(k) { return fields.strings ? fields.strings.t(k) : k }
   function tf(k, a) { return fields.strings ? fields.strings.tf(k, a) : k }
@@ -126,9 +130,10 @@ ColumnLayout {
         font.pixelSize: Style.font.caption
         onEditingFinished: {
           if (text === now) return
-          fields.command("omavoi config set " + fields.prefix + "."
-                         + (f.key === "url" ? "base_url" : "model")
-                         + " " + JSON.stringify(text))
+          fields.commandArgs(
+            ["omavoi", "config", "set",
+             fields.prefix + "." + (f.key === "url" ? "base_url" : "model"),
+             String(text)])
         }
       }
     }
@@ -206,8 +211,8 @@ ColumnLayout {
         readonly property string mid: modelData
         label: mid
         on: mid === fields.model
-        onClicked: fields.command("omavoi config set " + fields.prefix
-                                  + ".model " + JSON.stringify(mid))
+        onClicked: fields.commandArgs(
+          ["omavoi", "config", "set", fields.prefix + ".model", String(mid)])
       }
     }
   }

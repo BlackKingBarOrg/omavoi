@@ -559,9 +559,10 @@ Item {
                 readonly property var rule: modelData
                 label: rule.label
                 on: root.mode && root.mode.rules ? root.mode.rules[rule.k] !== false : true
-                onClicked: root.command(
-                  "omavoi config set modes." + root.current + ".rules." + rule.k
-                  + " " + (on ? "false" : "true"))
+                onClicked: root.commandArgs(
+                  ["omavoi", "config", "set",
+                   "modes." + root.current + ".rules." + rule.k,
+                   on ? "false" : "true"])
               }
             }
             Rectangle {
@@ -572,9 +573,10 @@ Item {
               label: root.t("modes.keeppunct")
               on: !(root.mode && root.mode.rules
                     && root.mode.rules.punctuation === "strip")
-              onClicked: root.command(
-                "omavoi config set modes." + root.current + ".rules.punctuation "
-                + (on ? "strip" : "keep"))
+              onClicked: root.commandArgs(
+                ["omavoi", "config", "set",
+                 "modes." + root.current + ".rules.punctuation",
+                 on ? "strip" : "keep"])
             }
           }
         }

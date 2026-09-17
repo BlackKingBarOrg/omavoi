@@ -17,6 +17,9 @@ Item {
   property var strings: null
 
   signal command(string cmd)
+  // Forwarded from EndpointFields, whose base_url and model id are typed
+  // into a text box and must never be spliced into a shell string.
+  signal commandArgs(var argv)
 
   // `strings` is null for the instant between creation and the Loader setting
   // it, so the key stands in until then rather than a blank.
@@ -337,6 +340,7 @@ Item {
             defaultBaseUrl: String(root.speechApi.default_base_url || "")
             defaultModel: String(root.speechApi.default_model || "")
             onCommand: function (c) { root.command(c) }
+            onCommandArgs: function (a) { root.commandArgs(a) }
           }
 
           // -- models --
@@ -550,6 +554,7 @@ Item {
           defaultBaseUrl: "https://api.openai.com/v1"
           defaultModel: "gpt-4o-mini"
           onCommand: function (c) { root.command(c) }
+          onCommandArgs: function (a) { root.commandArgs(a) }
         }
 
           // -- the LLM catalogue --

@@ -515,6 +515,7 @@ Item {
             payload: root.modelsData
             pulling: root.pulling
             onCommand: function (c) { root.apply(c) }
+            onCommandArgs: function (a) { root.applyArgs(a) }
           }
 
           DictionaryView {
