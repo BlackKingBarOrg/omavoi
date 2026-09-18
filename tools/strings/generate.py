@@ -281,6 +281,9 @@ section("history", {
  "hist.segments":  ("SEGMENT CONFIDENCE", "分段置信度", "ความมั่นใจต่อช่วง"),
  "hist.copy":      ("Copy", "复制", "คัดลอก"),
  "hist.play":      ("Play", "播放", "เล่น"),
+ # The right-click menu on a take. The two above are in it as well, which is
+ # why they are one word each rather than "Copy the text".
+ "hist.delete":    ("Delete", "删除", "ลบ"),
 })
 
 section("modes", {
@@ -673,6 +676,22 @@ section("dictionary", {
                     "存下的音频是「换个模型重跑一次」和名称试运行的前提。设成 0，这两个功能也一起没了。",
                     "เสียงที่เก็บไว้คือสิ่งที่ทำให้รันรายการเดิมด้วยโมเดลอื่น และการทดลองรันชื่อ เป็นไปได้ "
                     "ตั้งเป็น 0 แล้วสองอย่างนั้นก็หายไปด้วย"),
+ # The other end of the right-click delete in the history tab. Everything
+ # about this one is worded to say it is not that: the button is the urgent
+ # colour, the note says what goes, and it is the only thing in this console
+ # that asks before it acts.
+ "set.clearhistory":("Clear all history", "清空全部历史", "ล้างประวัติทั้งหมด"),
+ "set.clearnote":  ("Every take, and every recording still on disk, at once. There is no "
+                    "undo — one at a time is a right-click in the history tab.",
+                    "所有记录，以及还留在磁盘上的录音，一次清掉。没有撤销 —— "
+                    "要一条一条删，在「历史」页里右键。",
+                    "ทุกรายการ และไฟล์เสียงที่ยังอยู่บนดิสก์ ทั้งหมดในครั้งเดียว ย้อนกลับไม่ได้ — "
+                    "ถ้าจะลบทีละรายการ ให้คลิกขวาในแท็บประวัติ"),
+ "set.clear.confirm":("Delete every take and every recording? This cannot be undone.",
+                    "删除全部记录和录音？此操作无法撤销。",
+                    "ลบทุกรายการและไฟล์เสียงทั้งหมดหรือไม่? การกระทำนี้ย้อนกลับไม่ได้"),
+ "set.clear.cancel":("Cancel", "取消", "ยกเลิก"),
+ "set.clear.go":   ("Delete everything", "全部删除", "ลบทั้งหมด"),
  "set.neverleaves":("Audio never leaves this machine", "音频永不离开本机",
                     "เสียงไม่เคยออกจากเครื่องนี้"),
  # The banner above was unconditional, and the console offers a remote

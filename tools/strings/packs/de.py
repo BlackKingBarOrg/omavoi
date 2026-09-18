@@ -96,6 +96,7 @@ PACK = {
  "hist.segments": "SEGMENT-KONFIDENZ",
  "hist.copy": "Kopieren",
  "hist.play": "Abspielen",
+ "hist.delete": "Löschen",
 
  "modes.wontfit": 'braucht %1 frei',
  "modes.blocked": 'nicht gewechselt — das Modell dieses Modus passt gerade nicht in den VRAM',
@@ -326,6 +327,11 @@ PACK = {
  "set.historynote": "Gespeichertes Audio macht es möglich, eine Aufnahme mit einem "
                     "anderen Modell zu wiederholen und den Namens-Probelauf zu fahren. "
                     "Auf 0 gesetzt, verschwindet beides mit.",
+ "set.clearhistory": "Gesamten Verlauf löschen",
+ "set.clearnote": "Jede Aufnahme und jede noch vorhandene Audiodatei, auf einmal. Es gibt kein Zurück — einzeln löschst du per Rechtsklick im Verlauf.",
+ "set.clear.confirm": "Alle Aufnahmen und alle Audiodateien löschen? Das lässt sich nicht rückgängig machen.",
+ "set.clear.cancel": "Abbrechen",
+ "set.clear.go": "Alles löschen",
  "set.neverleaves": "Audio verlässt diesen Rechner nie",
  "set.audioleaves": "Audio wird zu %1 hochgeladen",
  "set.privacynote.api": "Die Spracherkennung ist eine entfernte API, also verlässt das Audio jeder Aufnahme diesen Rechner. Der Endpunkt steht im Tab Modelle, und die beiden lokalen Engines dort behalten das Audio auf der GPU.",

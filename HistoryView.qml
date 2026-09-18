@@ -23,12 +23,69 @@ Item {
   property int pad: Style.space(22)
   // What the daemon says the key is, for the empty state's instruction.
   property string hotkey: ""
+  // What the last delete said when it refused. Nothing else on this tab
+  // reports anything, so without this a delete against a daemon too old to
+  // have `omavoi history rm` -- the plugin updates separately from it --
+  // does nothing and says nothing about why.
+  property string error: ""
 
   readonly property var take: (takes && takes.length > selected)
                               ? takes[selected] : null
 
-  signal run(string cmd)
+  // argv rather than a command line: all three of these carry a sentence
+  // somebody dictated, and a sentence has spaces, quotes and newlines in it.
+  signal runArgs(var argv)
   signal pick(int index)
+  signal remove(string id)
+
+  // ---- the right-click menu ---------------------------------------------
+  //
+  // The take it was opened on rather than the row's index: the list reloads
+  // while the menu is up -- finishing a take does it -- and an index would by
+  // then name a different take than the one that was clicked. Delete has to
+  // mean the row you pointed at.
+  property var menuTake: null
+  property real menuX: 0
+  property real menuY: 0
+  readonly property bool menuOpen: view.menuTake !== null
+
+  readonly property var menuActions: {
+    var t = view.menuTake
+    if (!t) return []
+    var out = []
+    // A dropped take has no text to copy, and a take old enough for
+    // `history.keep_audio` to have swept it has no recording to play.
+    if (t.text) out.push({ key: "copy", label: view.strings.t("hist.copy") })
+    if (t.wav) out.push({ key: "play", label: view.strings.t("hist.play") })
+    out.push({ key: "delete", label: view.strings.t("hist.delete"), danger: true })
+    return out
+  }
+
+  function openMenu(take, index, point) {
+    // Selected as well as pointed at, so the detail on the right is the take
+    // the menu is about.
+    view.pick(index)
+    view.menuTake = take
+    view.menuX = point.x
+    view.menuY = point.y
+  }
+
+  // Returns whether there was a menu to close, so the console can tell an
+  // Escape that means "this menu" from one that means "the whole console".
+  function dismissMenu() {
+    if (!view.menuOpen) return false
+    view.menuTake = null
+    return true
+  }
+
+  function fire(key) {
+    var t = view.menuTake
+    view.dismissMenu()
+    if (!t) return
+    if (key === "copy") view.runArgs(["wl-copy", "--", String(t.text || "")])
+    else if (key === "play") view.runArgs(["pw-play", String(t.wav || "")])
+    else if (key === "delete") view.remove(String(t.id || ""))
+  }
 
   RowLayout {
     anchors.fill: parent
@@ -86,7 +143,13 @@ Item {
           }
           MouseArea {
             anchors.fill: parent
-            onClicked: view.pick(index)
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: function (mouse) {
+              if (mouse.button === Qt.RightButton)
+                view.openMenu(modelData, index, mapToItem(view, mouse.x, mouse.y))
+              else
+                view.pick(index)
+            }
           }
         }
         OmText {
@@ -95,6 +158,26 @@ Item {
           text: view.strings.tf("hist.none", view.hotkey || view.strings.t("hist.yourkey"))
           size: "body"
           color: Color.muted
+        }
+      }
+
+      Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: errorText.implicitHeight + Style.space(14)
+        visible: view.error !== ""
+        color: Qt.rgba(Color.urgent.r, Color.urgent.g, Color.urgent.b, 0.16)
+        OmText {
+          id: errorText
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.leftMargin: Style.space(14)
+          anchors.rightMargin: Style.space(14)
+          wrapMode: Text.Wrap
+          text: view.error
+          color: Color.urgent
         }
       }
     }
@@ -322,14 +405,109 @@ Item {
         RowLayout {
           Layout.topMargin: Style.space(6)
           spacing: Style.space(8)
+          // Copy used to run `omavoi last --raw`, which is two takes away
+          // from this one: the last take rather than the selected one, and
+          // the model's raw output rather than what was actually typed. The
+          // console already has the take in hand, so it copies that.
           Button {
             text: view.strings.t("hist.copy")
-            onClicked: view.run("omavoi last --raw | wl-copy")
+            visible: !!(view.take && view.take.text)
+            onClicked: view.runArgs(["wl-copy", "--", String(view.take.text)])
           }
           Button {
             text: view.strings.t("hist.play")
             visible: !!(view.take && view.take.wav)
-            onClicked: view.run("pw-play " + JSON.stringify(view.take.wav))
+            onClicked: view.runArgs(["pw-play", String(view.take.wav)])
+          }
+        }
+      }
+    }
+  }
+
+  // ---- the menu itself ---------------------------------------------------
+  //
+  // Drawn inside this tab rather than as a QtQuick.Controls Menu, which is
+  // its own window: the console is a layer-shell surface holding keyboard
+  // focus exclusively, and a second window over it is a thing to get wrong
+  // for no gain. The full-size MouseArea is what makes a click anywhere else
+  // dismiss it.
+  MouseArea {
+    anchors.fill: parent
+    z: 50
+    visible: view.menuOpen
+    hoverEnabled: true
+    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    onClicked: view.dismissMenu()
+
+    Rectangle {
+      id: menuCard
+      x: Math.max(Style.space(4),
+                  Math.min(view.menuX, parent.width - width - Style.space(4)))
+      y: Math.max(Style.space(4),
+                  Math.min(view.menuY, parent.height - height - Style.space(4)))
+      width: Style.space(190)
+      height: menuRows.implicitHeight + Style.space(10)
+      color: Color.popups.background
+      radius: Style.cornerRadius
+      border.width: 1
+      border.color: Color.popups.border
+
+      // Swallow clicks so a miss between two rows does not fall through to
+      // the dismissal behind the card.
+      MouseArea { anchors.fill: parent }
+
+      ColumnLayout {
+        id: menuRows
+        anchors.fill: parent
+        anchors.margins: Style.space(5)
+        spacing: 0
+
+        Repeater {
+          model: view.menuActions
+          Rectangle {
+            readonly property bool danger: modelData.danger === true
+            Layout.fillWidth: true
+            implicitHeight: menuLabel.implicitHeight + Style.space(14)
+            radius: Style.cornerRadius
+            color: menuHover.containsMouse
+                   ? (danger ? Qt.rgba(Color.urgent.r, Color.urgent.g,
+                                       Color.urgent.b, 0.18)
+                             : Qt.rgba(Color.foreground.r, Color.foreground.g,
+                                       Color.foreground.b, 0.08))
+                   : "transparent"
+
+            // A hairline above the destructive row, where there is something
+            // above it: a delete one pixel from a copy is a delete you make
+            // by accident.
+            Rectangle {
+              visible: parent.danger && index > 0
+              width: parent.width - Style.space(12)
+              height: 1
+              anchors.top: parent.top
+              anchors.horizontalCenter: parent.horizontalCenter
+              color: Qt.rgba(Color.muted.r, Color.muted.g, Color.muted.b, 0.35)
+            }
+
+            OmText {
+              id: menuLabel
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              anchors.leftMargin: Style.space(12)
+              anchors.rightMargin: Style.space(12)
+              elide: Text.ElideRight
+              text: modelData.label
+              size: "body"
+              color: parent.danger ? Color.urgent : Color.foreground
+            }
+
+            MouseArea {
+              id: menuHover
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: view.fire(modelData.key)
+            }
           }
         }
       }

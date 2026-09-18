@@ -95,6 +95,7 @@ PACK = {
  "hist.segments": "ĐỘ TIN CẬY TỪNG ĐOẠN",
  "hist.copy": "Sao chép",
  "hist.play": "Phát",
+ "hist.delete": "Xóa",
 
  "modes.wontfit": 'cần %1 trống',
  "modes.blocked": 'chưa chuyển — mô hình của chế độ này hiện không vừa VRAM',
@@ -314,6 +315,11 @@ PACK = {
  "set.takes": " bản ghi",
  "set.historynote": "Âm thanh đã lưu là thứ cho phép chạy lại một bản ghi trên mô hình khác, "
                     "và chạy thử phần tên riêng. Đặt về 0 thì cả hai mất theo.",
+ "set.clearhistory": "Xóa toàn bộ lịch sử",
+ "set.clearnote": "Mọi bản ghi, và mọi tệp âm thanh còn trên đĩa, cùng một lúc. Không hoàn tác được — muốn xóa từng cái thì nhấp chuột phải trong tab lịch sử.",
+ "set.clear.confirm": "Xóa mọi bản ghi và mọi tệp âm thanh? Không thể hoàn tác.",
+ "set.clear.cancel": "Hủy",
+ "set.clear.go": "Xóa tất cả",
  "set.neverleaves": "Âm thanh không bao giờ rời khỏi máy này",
  "set.audioleaves": "Âm thanh được tải lên %1",
  "set.privacynote.api": "Bộ máy nhận dạng là một API từ xa, nên âm thanh của mỗi lần đọc đều rời khỏi máy này. Địa chỉ nằm ở tab Mô hình, và hai bộ máy cục bộ ở đó giữ âm thanh trên GPU.",

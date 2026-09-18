@@ -23,6 +23,11 @@ Item {
   property var setupReport: ({ ready: false, done: 0, total: 5, steps: [] })
   property var takes: []
   property int selected: 0
+  // Which row the next history load should land on. -1 means the newest,
+  // which is right for every load except the one after a delete: there, the
+  // row you were on is gone and what you want to be looking at is whatever
+  // took its place.
+  property int keepSelected: -1
   property var modesData: ({ modes: [], llm: [] })
   property var modelsData: ({ models: [] })
   property var dictData: ({ rules: [] })
@@ -126,7 +131,13 @@ Item {
     opened = true
     refresh()
   }
-  function close() { opened = false }
+  // The menu goes with it. Closing the console leaves the history tab
+  // mounted, so a menu left open would still be open on the next opening,
+  // over a list that has moved on since.
+  function close() {
+    historyView.dismissMenu()
+    opened = false
+  }
   function toggle() { opened ? close() : open("") }
 
   function refresh() {
@@ -173,7 +184,10 @@ Item {
     applier.running = true
   }
 
-  onTabChanged: if (opened && ready) loadTab()
+  onTabChanged: {
+    historyView.dismissMenu()
+    if (opened && ready) loadTab()
+  }
 
   IpcLink { id: link }
 
@@ -248,8 +262,11 @@ Item {
         try {
           var list = JSON.parse(text)
           root.takes = list.reverse()
-          root.selected = 0
+          root.selected = root.keepSelected < 0 ? 0
+                          : Math.max(0, Math.min(root.keepSelected,
+                                                 root.takes.length - 1))
         } catch (e) { root.takes = [] }
+        root.keepSelected = -1
       }
     }
   }
@@ -348,6 +365,46 @@ Item {
     runner.running = true
   }
 
+  // Same rule as argRunner above, for the commands that are not settings:
+  // copying a take hands a whole dictated sentence to wl-copy.
+  Process { id: argvRunner }
+  function runArgv(argv) {
+    argvRunner.command = argv
+    argvRunner.running = true
+  }
+
+  // Why the last delete was refused. Its own property rather than
+  // `lastError`, which the settings tab shows: a refused `config set` has
+  // nothing to do with the history tab, and a refused delete has nothing to
+  // do with settings.
+  property string historyError: ""
+
+  // The two commands that change the history. Deliberately not `applyArgs`:
+  // that one reloads the daemon's config afterwards and re-reads every tab,
+  // and the history is not config -- there is nothing for the daemon to pick
+  // up, and nothing else on screen that a deleted take changes.
+  Process {
+    id: histEdit
+    stderr: StdioCollector { id: histEditErr }
+    onExited: function (code, status) {
+      root.historyError = code === 0 ? "" : String(histEditErr.text || "").trim()
+      histProc.running = true
+    }
+  }
+
+  function removeTake(id) {
+    if (!id) return
+    root.keepSelected = root.selected
+    histEdit.command = ["omavoi", "history", "rm", String(id)]
+    histEdit.running = true
+  }
+
+  function clearHistory() {
+    root.keepSelected = -1
+    histEdit.command = ["omavoi", "history", "clear"]
+    histEdit.running = true
+  }
+
   PanelWindow {
     id: panel
     visible: root.opened
@@ -360,6 +417,14 @@ Item {
     Item {
       anchors.fill: parent
       focus: true
+      // Innermost first. The dialog takes Enter and the arrows as well as
+      // Escape, and an Enter that reached the console behind it would be
+      // answering a question nobody could see.
+      Keys.onPressed: function (event) {
+        if (confirmClear.handleKey(event)) { event.accepted = true; return }
+        if (event.key === Qt.Key_Escape && historyView.dismissMenu())
+          event.accepted = true
+      }
       Keys.onEscapePressed: root.close()
 
       MouseArea {
@@ -513,6 +578,7 @@ Item {
 
           // ---- history ------------------------------------------------
           HistoryView {
+            id: historyView
             visible: root.ready && root.tab === "history"
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -521,8 +587,10 @@ Item {
             selected: root.selected
             pad: root.pad
             hotkey: link.hotkey
+            error: root.historyError
             onPick: function (i) { root.selected = i }
-            onRun: function (cmd) { root.run(cmd) }
+            onRunArgs: function (a) { root.runArgv(a) }
+            onRemove: function (id) { root.removeTake(id) }
           }
 
 
@@ -574,6 +642,29 @@ Item {
             lastError: root.lastError
             onCommand: function (c) { root.apply(c) }
             onCommandArgs: function (a) { root.applyArgs(a) }
+            onClearHistory: confirmClear.opened = true
+          }
+        }
+
+        // The one destructive thing in this console that asks first.
+        // Removing a mode, a model or a dictionary rule is one click here
+        // and always has been -- each of those can be written again or
+        // downloaded again. Every take you have ever dictated cannot.
+        //
+        // A child of the card rather than of the settings tab, because that
+        // tab is a Flickable: inside it the dialog would scroll with the
+        // page and be clipped by it.
+        ConfirmDialog {
+          id: confirmClear
+          anchors.fill: parent
+          z: 100
+          message: strings.t("set.clear.confirm")
+          cancelText: strings.t("set.clear.cancel")
+          confirmText: strings.t("set.clear.go")
+          onCanceled: confirmClear.opened = false
+          onConfirmed: {
+            confirmClear.opened = false
+            root.clearHistory()
           }
         }
       }

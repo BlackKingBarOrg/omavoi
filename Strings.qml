@@ -161,6 +161,7 @@ Item {
       "hist.segments": "SEGMENT CONFIDENCE",
       "hist.copy": "Copy",
       "hist.play": "Play",
+      "hist.delete": "Delete",
 
       // ---- modes
       "modes.wontfit": "needs %1 free",
@@ -354,6 +355,11 @@ Item {
       "set.keepaudio": "keep audio for",
       "set.takes": " takes",
       "set.historynote": "Stored audio is what makes re-running a take on another model, and the names dry run, possible. Set it to 0 and those go away with it.",
+      "set.clearhistory": "Clear all history",
+      "set.clearnote": "Every take, and every recording still on disk, at once. There is no undo — one at a time is a right-click in the history tab.",
+      "set.clear.confirm": "Delete every take and every recording? This cannot be undone.",
+      "set.clear.cancel": "Cancel",
+      "set.clear.go": "Delete everything",
       "set.neverleaves": "Audio never leaves this machine",
       "set.audioleaves": "Audio is uploaded to %1",
       "set.privacynote.api": "The speech engine is a remote API, so every take's audio leaves this machine. The Models tab has the endpoint, and the two local engines there keep audio on the GPU.",
@@ -467,6 +473,7 @@ Item {
       "hist.segments": "分段置信度",
       "hist.copy": "复制",
       "hist.play": "播放",
+      "hist.delete": "删除",
 
       // ---- modes
       "modes.wontfit": "需要 %1 空闲显存",
@@ -660,6 +667,11 @@ Item {
       "set.keepaudio": "保留音频",
       "set.takes": " 条",
       "set.historynote": "存下的音频是「换个模型重跑一次」和名称试运行的前提。设成 0，这两个功能也一起没了。",
+      "set.clearhistory": "清空全部历史",
+      "set.clearnote": "所有记录，以及还留在磁盘上的录音，一次清掉。没有撤销 —— 要一条一条删，在「历史」页里右键。",
+      "set.clear.confirm": "删除全部记录和录音？此操作无法撤销。",
+      "set.clear.cancel": "取消",
+      "set.clear.go": "全部删除",
       "set.neverleaves": "音频永不离开本机",
       "set.audioleaves": "音频会被上传到 %1",
       "set.privacynote.api": "语音引擎用的是远程 API，所以每次录音的音频都会离开本机。端点在「模型」标签页里，那里的两个本地引擎会把音频留在 GPU 上。",
@@ -773,6 +785,7 @@ Item {
       "hist.segments": "ความมั่นใจต่อช่วง",
       "hist.copy": "คัดลอก",
       "hist.play": "เล่น",
+      "hist.delete": "ลบ",
 
       // ---- modes
       "modes.wontfit": "ต้องมี %1 ว่าง",
@@ -966,6 +979,11 @@ Item {
       "set.keepaudio": "เก็บเสียงไว้",
       "set.takes": " รายการ",
       "set.historynote": "เสียงที่เก็บไว้คือสิ่งที่ทำให้รันรายการเดิมด้วยโมเดลอื่น และการทดลองรันชื่อ เป็นไปได้ ตั้งเป็น 0 แล้วสองอย่างนั้นก็หายไปด้วย",
+      "set.clearhistory": "ล้างประวัติทั้งหมด",
+      "set.clearnote": "ทุกรายการ และไฟล์เสียงที่ยังอยู่บนดิสก์ ทั้งหมดในครั้งเดียว ย้อนกลับไม่ได้ — ถ้าจะลบทีละรายการ ให้คลิกขวาในแท็บประวัติ",
+      "set.clear.confirm": "ลบทุกรายการและไฟล์เสียงทั้งหมดหรือไม่? การกระทำนี้ย้อนกลับไม่ได้",
+      "set.clear.cancel": "ยกเลิก",
+      "set.clear.go": "ลบทั้งหมด",
       "set.neverleaves": "เสียงไม่เคยออกจากเครื่องนี้",
       "set.audioleaves": "เสียงถูกอัปโหลดไปที่ %1",
       "set.privacynote.api": "เครื่องยนต์เสียงเป็น API ระยะไกล ดังนั้นเสียงของทุกครั้งที่อัดจะออกจากเครื่องนี้ ปลายทางอยู่ในแท็บโมเดล และเครื่องยนต์ในเครื่องสองตัวที่นั่นเก็บเสียงไว้บน GPU",
@@ -1079,6 +1097,7 @@ Item {
       "hist.segments": "SEGMENT-KONFIDENZ",
       "hist.copy": "Kopieren",
       "hist.play": "Abspielen",
+      "hist.delete": "Löschen",
 
       // ---- modes
       "modes.wontfit": "braucht %1 frei",
@@ -1272,6 +1291,11 @@ Item {
       "set.keepaudio": "Audio behalten für",
       "set.takes": " Aufnahmen",
       "set.historynote": "Gespeichertes Audio macht es möglich, eine Aufnahme mit einem anderen Modell zu wiederholen und den Namens-Probelauf zu fahren. Auf 0 gesetzt, verschwindet beides mit.",
+      "set.clearhistory": "Gesamten Verlauf löschen",
+      "set.clearnote": "Jede Aufnahme und jede noch vorhandene Audiodatei, auf einmal. Es gibt kein Zurück — einzeln löschst du per Rechtsklick im Verlauf.",
+      "set.clear.confirm": "Alle Aufnahmen und alle Audiodateien löschen? Das lässt sich nicht rückgängig machen.",
+      "set.clear.cancel": "Abbrechen",
+      "set.clear.go": "Alles löschen",
       "set.neverleaves": "Audio verlässt diesen Rechner nie",
       "set.audioleaves": "Audio wird zu %1 hochgeladen",
       "set.privacynote.api": "Die Spracherkennung ist eine entfernte API, also verlässt das Audio jeder Aufnahme diesen Rechner. Der Endpunkt steht im Tab Modelle, und die beiden lokalen Engines dort behalten das Audio auf der GPU.",
@@ -1385,6 +1409,7 @@ Item {
       "hist.segments": "CONFIANCE PAR SEGMENT",
       "hist.copy": "Copier",
       "hist.play": "Écouter",
+      "hist.delete": "Supprimer",
 
       // ---- modes
       "modes.wontfit": "demande %1 de libre",
@@ -1578,6 +1603,11 @@ Item {
       "set.keepaudio": "garder l'audio pour",
       "set.takes": " prises",
       "set.historynote": "L'audio stocké est ce qui rend possible de rejouer une prise sur un autre modèle, et l'essai à blanc des noms. Mets-le à 0 et les deux disparaissent avec.",
+      "set.clearhistory": "Effacer tout l'historique",
+      "set.clearnote": "Toutes les prises, et tous les enregistrements encore sur le disque, d'un coup. C'est sans retour — une par une, c'est un clic droit dans l'onglet historique.",
+      "set.clear.confirm": "Supprimer toutes les prises et tous les enregistrements ? C'est sans retour.",
+      "set.clear.cancel": "Annuler",
+      "set.clear.go": "Tout supprimer",
       "set.neverleaves": "L'audio ne quitte jamais cette machine",
       "set.audioleaves": "L'audio est envoyé à %1",
       "set.privacynote.api": "Le moteur de reconnaissance est une API distante : l'audio de chaque prise quitte donc cette machine. L'adresse est dans l'onglet Modèles, et les deux moteurs locaux qui s'y trouvent gardent l'audio sur le GPU.",
@@ -1691,6 +1721,7 @@ Item {
       "hist.segments": "CONFIANZA POR SEGMENTO",
       "hist.copy": "Copiar",
       "hist.play": "Reproducir",
+      "hist.delete": "Eliminar",
 
       // ---- modes
       "modes.wontfit": "necesita %1 libres",
@@ -1884,6 +1915,11 @@ Item {
       "set.keepaudio": "guardar audio de",
       "set.takes": " tomas",
       "set.historynote": "El audio guardado es lo que permite volver a pasar una toma por otro modelo, y la prueba en seco de los nombres. Ponlo a 0 y ambas cosas se van con él.",
+      "set.clearhistory": "Borrar todo el historial",
+      "set.clearnote": "Todas las tomas, y todas las grabaciones que sigan en el disco, de una vez. No se puede deshacer — de una en una es un clic derecho en la pestaña de historial.",
+      "set.clear.confirm": "¿Eliminar todas las tomas y todas las grabaciones? Esto no se puede deshacer.",
+      "set.clear.cancel": "Cancelar",
+      "set.clear.go": "Eliminar todo",
       "set.neverleaves": "El audio nunca sale de esta máquina",
       "set.audioleaves": "El audio se sube a %1",
       "set.privacynote.api": "El motor de voz es una API remota, así que el audio de cada toma sale de esta máquina. El endpoint está en la pestaña Modelos, y los dos motores locales de ahí mantienen el audio en la GPU.",
@@ -1997,6 +2033,7 @@ Item {
       "hist.segments": "セグメント信頼度",
       "hist.copy": "コピー",
       "hist.play": "再生",
+      "hist.delete": "削除",
 
       // ---- modes
       "modes.wontfit": "空き %1 が必要",
@@ -2190,6 +2227,11 @@ Item {
       "set.keepaudio": "音声を保持する件数",
       "set.takes": " 件",
       "set.historynote": "保存した音声があるからこそ、別のモデルで録音を再実行することも、固有名詞のドライランもできます。0 にすると、その両方が一緒に失われます。",
+      "set.clearhistory": "履歴をすべて削除",
+      "set.clearnote": "すべての記録と、ディスクに残っている音声を一度に削除します。取り消しはできません —— 1 件ずつなら履歴タブで右クリックしてください。",
+      "set.clear.confirm": "すべての記録と音声を削除しますか？取り消しはできません。",
+      "set.clear.cancel": "キャンセル",
+      "set.clear.go": "すべて削除",
       "set.neverleaves": "音声はこの端末から出ません",
       "set.audioleaves": "音声は %1 にアップロードされます",
       "set.privacynote.api": "音声エンジンがリモート API なので、録音のたびに音声がこのマシンから出ていきます。エンドポイントはモデルタブにあり、そこにあるローカルエンジン二つは音声を GPU 上に留めます。",
@@ -2303,6 +2345,7 @@ Item {
       "hist.segments": "ĐỘ TIN CẬY TỪNG ĐOẠN",
       "hist.copy": "Sao chép",
       "hist.play": "Phát",
+      "hist.delete": "Xóa",
 
       // ---- modes
       "modes.wontfit": "cần %1 trống",
@@ -2496,6 +2539,11 @@ Item {
       "set.keepaudio": "giữ âm thanh cho",
       "set.takes": " bản ghi",
       "set.historynote": "Âm thanh đã lưu là thứ cho phép chạy lại một bản ghi trên mô hình khác, và chạy thử phần tên riêng. Đặt về 0 thì cả hai mất theo.",
+      "set.clearhistory": "Xóa toàn bộ lịch sử",
+      "set.clearnote": "Mọi bản ghi, và mọi tệp âm thanh còn trên đĩa, cùng một lúc. Không hoàn tác được — muốn xóa từng cái thì nhấp chuột phải trong tab lịch sử.",
+      "set.clear.confirm": "Xóa mọi bản ghi và mọi tệp âm thanh? Không thể hoàn tác.",
+      "set.clear.cancel": "Hủy",
+      "set.clear.go": "Xóa tất cả",
       "set.neverleaves": "Âm thanh không bao giờ rời khỏi máy này",
       "set.audioleaves": "Âm thanh được tải lên %1",
       "set.privacynote.api": "Bộ máy nhận dạng là một API từ xa, nên âm thanh của mỗi lần đọc đều rời khỏi máy này. Địa chỉ nằm ở tab Mô hình, và hai bộ máy cục bộ ở đó giữ âm thanh trên GPU.",

@@ -42,6 +42,10 @@ where everything is configured. Every step of a mode is on one screen: what
 the speech model is told, the deterministic rules, the optional LLM steps, and
 how the text is typed.
 
+The history tab keeps every take with the numbers behind it. Right-click one
+to copy its text, play the recording back, or delete it — the recording goes
+with the take — and Settings has the button that clears the lot.
+
 | Modes | Models |
 |---|---|
 | ![Modes: speech settings, rules, LLM steps and injection for one mode](docs/img/console-modes.webp) | ![Models: speech engines and weights, LLM configurations, and the VRAM in use](docs/img/console-models.webp) |

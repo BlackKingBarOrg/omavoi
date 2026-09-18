@@ -20,6 +20,9 @@ Flickable {
   property string lastError: ""
 
   signal command(string cmd)
+  // Asked of the console rather than run here: the answer is a dialog over
+  // the whole card, and this view is a Flickable that would scroll it away.
+  signal clearHistory()
   // Typed text goes as argv, never spliced into a shell string: a key name
   // is `[A-Z0-9_+]` once it has been checked, and what is typed here has
   // not been checked yet.
@@ -473,6 +476,28 @@ Flickable {
         wrapMode: Text.Wrap
         text: root.t("set.historynote")
         color: Qt.darker(Color.muted, 1.15)
+      }
+
+      // One take goes from the history tab, by right-clicking it. This is
+      // the other end of that: everything, including the recordings that
+      // `keep audio` has not swept yet.
+      RowLayout {
+        Layout.fillWidth: true
+        Layout.topMargin: Style.space(4)
+        spacing: Style.space(12)
+        Button {
+          text: root.t("set.clearhistory")
+          foreground: Color.urgent
+          bordered: true
+          onClicked: root.clearHistory()
+        }
+        OmText {
+          Layout.maximumWidth: Style.space(560)
+          Layout.fillWidth: true
+          wrapMode: Text.Wrap
+          text: root.t("set.clearnote")
+          color: Qt.darker(Color.muted, 1.15)
+        }
       }
 
       Rectangle {

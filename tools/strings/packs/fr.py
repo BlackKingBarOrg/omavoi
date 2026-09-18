@@ -95,6 +95,7 @@ PACK = {
  "hist.segments": "CONFIANCE PAR SEGMENT",
  "hist.copy": "Copier",
  "hist.play": "Écouter",
+ "hist.delete": "Supprimer",
 
  "modes.wontfit": 'demande %1 de libre',
  "modes.blocked": 'non basculé — le modèle de ce mode ne tient pas dans la VRAM actuellement',
@@ -322,6 +323,11 @@ PACK = {
  "set.historynote": "L'audio stocké est ce qui rend possible de rejouer une prise sur un "
                     "autre modèle, et l'essai à blanc des noms. Mets-le à 0 et les deux "
                     "disparaissent avec.",
+ "set.clearhistory": "Effacer tout l'historique",
+ "set.clearnote": "Toutes les prises, et tous les enregistrements encore sur le disque, d'un coup. C'est sans retour — une par une, c'est un clic droit dans l'onglet historique.",
+ "set.clear.confirm": "Supprimer toutes les prises et tous les enregistrements ? C'est sans retour.",
+ "set.clear.cancel": "Annuler",
+ "set.clear.go": "Tout supprimer",
  "set.neverleaves": "L'audio ne quitte jamais cette machine",
  "set.audioleaves": "L'audio est envoyé à %1",
  "set.privacynote.api": "Le moteur de reconnaissance est une API distante : l'audio de chaque prise quitte donc cette machine. L'adresse est dans l'onglet Modèles, et les deux moteurs locaux qui s'y trouvent gardent l'audio sur le GPU.",

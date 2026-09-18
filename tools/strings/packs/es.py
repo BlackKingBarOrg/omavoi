@@ -95,6 +95,7 @@ PACK = {
  "hist.segments": "CONFIANZA POR SEGMENTO",
  "hist.copy": "Copiar",
  "hist.play": "Reproducir",
+ "hist.delete": "Eliminar",
 
  "modes.wontfit": 'necesita %1 libres',
  "modes.blocked": 'no se cambió — el modelo de este modo no cabe ahora en la VRAM',
@@ -320,6 +321,11 @@ PACK = {
  "set.historynote": "El audio guardado es lo que permite volver a pasar una toma por otro "
                     "modelo, y la prueba en seco de los nombres. Ponlo a 0 y ambas cosas se "
                     "van con él.",
+ "set.clearhistory": "Borrar todo el historial",
+ "set.clearnote": "Todas las tomas, y todas las grabaciones que sigan en el disco, de una vez. No se puede deshacer — de una en una es un clic derecho en la pestaña de historial.",
+ "set.clear.confirm": "¿Eliminar todas las tomas y todas las grabaciones? Esto no se puede deshacer.",
+ "set.clear.cancel": "Cancelar",
+ "set.clear.go": "Eliminar todo",
  "set.neverleaves": "El audio nunca sale de esta máquina",
  "set.audioleaves": "El audio se sube a %1",
  "set.privacynote.api": "El motor de voz es una API remota, así que el audio de cada toma sale de esta máquina. El endpoint está en la pestaña Modelos, y los dos motores locales de ahí mantienen el audio en la GPU.",
