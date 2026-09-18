@@ -1,11 +1,51 @@
 # Omavoi
 
+*Omarchy comes with dictation. This is the one you keep.*
+
 ![Omavoi: hold a key, talk, and the text lands where you were typing](preview.png)
 
-Voice dictation for [Omarchy](https://omarchy.org) and Hyprland. Hold a key,
-talk, and the text lands in whatever window you were already typing into.
-Speech runs on your own GPU through whisper.cpp; audio never leaves the
-machine.
+- **An omarchy-shell plugin, not an app in a window.** The bar module, the
+  recording overlay and the five-tab console are drawn by the shell itself,
+  from its own QML kit in your own theme. Switch theme and they switch with it.
+- **The speech model runs here.** whisper.cpp on your own GPU — one Vulkan
+  build for NVIDIA, AMD and Intel, no CUDA to install — or on the CPU when
+  there is none, with large-v3-turbo by default: no account, no subscription.
+  A machine that cannot carry 3 GB of weights can use the whisper.cpp server
+  on another machine of yours, or a hosted endpoint (OpenAI, Groq,
+  SiliconFlow, DeepInfra). One setting, not a different install.
+- **The LLM step can be the agent you already have.** Point a mode's cleanup
+  pass at whichever coding agent `omarchy default agent` is set to — it is
+  logged in already, so there is no key to paste — or at a local llama.cpp,
+  or at an endpoint you name. Or at nothing: every step is optional, per mode.
+  The agent and the endpoint want no VRAM at all.
+- **A mode per window.** Your terminal gets no trailing full stop and no LLM
+  round-trip, your editor gets a paste instead of synthetic keystrokes, prose
+  gets the cleanup pass. It follows whatever you are typing into.
+- **Push to talk on any key, even a modifier.** Read from evdev, below your
+  keyboard layout, and never taken over — Right Alt starts a take and still
+  does everything it did before.
+- **Eight interface languages, and more than one at a time.** A Chinese
+  sentence with English words in it comes out with both, spaced and punctuated
+  by script. Hesitations go from a list per language — and so does the
+  "Thanks for watching!" whisper writes when it has heard nothing at all.
+- **Every take is kept, with the numbers behind it.** What the model heard,
+  what each rule changed, the confidence of every segment: "why did it type
+  that" is a question with an answer.
+- **And all of it stays here.** Those takes and their recordings are files on
+  your own disk at 0600 — no account, no telemetry, nothing sent anywhere —
+  and a take is yours to delete, recording and all. Point a mode at a remote
+  speech endpoint or a remote LLM and that stops being true; the console says
+  so, on the screen where you choose it, and only where it is true.
+
+Omarchy already has dictation, and it is worth knowing what you are choosing
+between. `omarchy-voxtype-install` puts Voxtype behind F9: a 150 MB `base.en`
+model, `language = "en"`, a TOML file to edit and one shell command to pipe
+the text through. That is less to install than this, and enough if you dictate
+English and nothing else. Omavoi is the other end of that trade.
+
+[daemon]: https://github.com/BlackKingBarOrg/omavoi-daemon
+
+## How it works
 
 ```
                  hold RIGHTALT ─────────────────────────┐
@@ -14,13 +54,6 @@ machine.
    (pre-roll)      whisper.cpp     dictionary,  per mode      wtype or
                    on Vulkan       names, …                   paste
 ```
-
-This repository is what you install: the recording HUD, the bar module and
-the five-tab console. The model, the microphone and the hotkey live in a
-daemon of their own, [omavoi-daemon][daemon], which the first-run screen
-installs for you at a pinned commit.
-
-[daemon]: https://github.com/BlackKingBarOrg/omavoi-daemon
 
 ## Install
 
