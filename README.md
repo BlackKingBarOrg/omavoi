@@ -1,8 +1,11 @@
 # Omavoi — Omarchy shell plugin
 
+![Omavoi: hold a key, talk, and the text lands where you were typing](preview.png)
+
 The desktop half of [Omavoi](https://github.com/BlackKingBarOrg/omavoi): voice
 dictation for Omarchy and Hyprland. Hold a key, talk, and the text lands in
-whatever window you were already typing into.
+whatever window you were already typing into. Speech runs on your own GPU
+through whisper.cpp; audio never leaves the machine.
 
 This repository is the recording HUD, the bar module, and the five-tab console.
 It is what you install.
@@ -20,6 +23,39 @@ interface in and which speech model to use, then does the rest itself. Its
 last step adds the three things a plugin cannot add for itself — the systemd
 unit, the keybinding, and an Omavoi row in the Omarchy menu under
 `SUPER + SPACE`.
+
+## What it looks like
+
+The strip that appears while you hold the key — pre-roll bars on the left,
+the live meter, the clock — and the bar module beside your tray:
+
+<p>
+  <img src="docs/img/hud-recording.png" alt="The recording HUD: a small strip with a level meter and a timer" height="96">
+  &nbsp;&nbsp;
+  <img src="docs/img/bar-recording.png" alt="The bar module while recording, showing the elapsed time" height="88">
+  &nbsp;&nbsp;
+  <img src="docs/img/menu.png" alt="Omavoi in the Omarchy application menu" height="150">
+</p>
+
+The console — `SUPER + ALT + V`, the bar module, or the Omarchy menu — is
+where everything is configured. Every step of a mode is on one screen: what
+the speech model is told, the deterministic rules, the optional LLM steps, and
+how the text is typed.
+
+| Modes | Models |
+|---|---|
+| ![Modes: speech settings, rules, LLM steps and injection for one mode](docs/img/console-modes.webp) | ![Models: speech engines and weights, LLM configurations, and the VRAM in use](docs/img/console-models.webp) |
+
+| Settings | Dictionary |
+|---|---|
+| ![Settings: hotkey, audio, HUD, history, update](docs/img/console-settings.webp) | ![Dictionary: heard → meant rules and names](docs/img/console-dictionary.webp) |
+
+The same console in 简体中文 and ไทย — one of eight languages, picked from the
+dropdown in the top bar:
+
+| 简体中文 | ไทย |
+|---|---|
+| ![The Modes tab in Simplified Chinese](docs/img/console-modes-zh.webp) | ![The Modes tab in Thai](docs/img/console-modes-th.webp) |
 
 ## Why this is a separate repository
 
