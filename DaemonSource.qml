@@ -19,6 +19,6 @@ import QtQuick
 // full 40-hex commit.
 QtObject {
   readonly property string repo: "https://github.com/BlackKingBarOrg/omavoi"
-  readonly property string sha: "c7a19415293b4a9a2ea7c04e35f98a52c699c09a"
+  readonly property string sha: "dcce1c24bc58cbc6a2254b82df2500f8a5a2cbff"
   readonly property string spec: "git+" + repo + "@" + sha
 }
