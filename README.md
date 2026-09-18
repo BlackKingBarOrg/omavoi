@@ -47,12 +47,46 @@ trusted directory and is not itself trusted — so the screen asks instead.
 
 | | needs root |
 |---|---|
-| system packages: `uv`, `whisper-cpp`, `ggml-cpu`, `ggml-vulkan`, `xdotool` | yes — one password prompt, drawn by Omarchy's own polkit agent |
-| the daemon, its systemd user unit, and starting it | no |
+| system packages: `uv`, `whisper-cpp`, `ggml`, `ggml-vulkan`, `llama-cpp`, `xdotool`, and adding you to the `input` group | yes — one `pkexec` prompt, drawn by Omarchy's own polkit agent |
+| the daemon — `uv tool install` of the main repository, pinned to one commit | no |
 | the speech model, if you do not already have usable weights on disk | no |
+| the systemd user unit, the `SUPER + ALT + V` keybinding, the Omarchy menu entry | no |
 
 Existing `ggml` weights are found and reused rather than downloaded again, so
 if another tool already put a 3 GB model on this machine, that step is free.
+
+The daemon is installed at the exact commit named in `DaemonSource.qml`, so
+what a given plugin commit installs is itself fixed. Bumping it is
+`python3 tools/check_pin.py --sync` against a checkout of the main repository.
+
+### The `input` group
+
+Reading a key below the keyboard layout means reading `/dev/input/event*`,
+which is `crw-rw---- root input`. A group is granted at login, and the login
+that runs the first-run screen predates its own `usermod -aG input` by one
+step — so the last step starts the daemon through `newgrp`, which is setuid
+root and re-reads `/etc/group`, and the key works the moment setup finishes.
+That override is a single file under `$XDG_RUNTIME_DIR/systemd/user/`, which
+logind clears when the session ends; the next login has the group itself and
+needs none. Nothing on disk changes, and a login that already has the group
+gets no override.
+
+## Dependencies
+
+Everything outside this repository, and where it comes from:
+
+| | package / source | why |
+|---|---|---|
+| whisper.cpp | `whisper-cpp`, `ggml`, `ggml-vulkan` (Arch extra) | the speech model, on any GPU through Vulkan |
+| llama.cpp | `llama-cpp` (Arch extra) | modes with a local LLM step; optional in practice |
+| xdotool | `xdotool` (Arch extra) | typing into XWayland windows — WeChat, Feishu, Steam |
+| uv | `uv` (Arch extra) | installs the daemon |
+| the daemon | [BlackKingBarOrg/omavoi](https://github.com/BlackKingBarOrg/omavoi), MIT, pinned commit | the model, the microphone, the hotkey |
+| model weights | downloaded on request from Hugging Face; never bundled | 0.5–3 GB depending on the model |
+
+The plugin itself is QML only and ships no binaries. It never runs anything
+as root except the one `pkexec pacman`/`usermod` line the first-run screen
+prints before asking.
 
 ## Uninstall
 
@@ -61,9 +95,10 @@ if another tool already put a 3 GB model on this machine, that step is free.
 omarchy plugin remove ai.bkblab.omavoi
 ```
 
-The first line takes out the systemd unit, the keybinding and the menu entry;
-`bindings.lua` is edited between markers, so it removes exactly what was
-added and leaves the rest of the file byte for byte as it was. The daemon,
+The first line takes out the systemd unit, the keybinding, the menu entry and
+its icon, and the runtime `newgrp` override if one was written; `bindings.lua`
+is edited between markers, so it removes exactly what was added and leaves the
+rest of the file byte for byte as it was. The daemon,
 your config and any downloaded weights are left alone — see the main
 repository to remove those too.
 

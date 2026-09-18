@@ -94,7 +94,9 @@ Flickable {
   // Ordered so the daemon starts exactly once, at the end, with a model
   // already chosen — otherwise its first start exits 78 and the screen would
   // have to explain a failure it caused itself.
-  readonly property string repo: "git+https://github.com/BlackKingBarOrg/omavoi"
+  // Pinned to one commit, in one place. See DaemonSource.qml.
+  DaemonSource { id: daemonSource }
+  readonly property string repo: daemonSource.spec
   // llama-cpp is here because a shipped mode already needs it: `prose` has a
   // local LLM step out of the box, and adding one is the first thing anyone
   // does. Without the binary the step falls through silently and the take

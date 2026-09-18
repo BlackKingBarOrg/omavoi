@@ -26,7 +26,9 @@ ColumnLayout {
   function t(k) { return root.strings ? root.strings.t(k) : k }
   function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
 
-  readonly property string repo: "git+https://github.com/BlackKingBarOrg/omavoi"
+  // Pinned to one commit, in one place. See DaemonSource.qml.
+  DaemonSource { id: daemonSource }
+  readonly property string repo: daemonSource.spec
   readonly property string pluginId: "ai.bkblab.omavoi"
 
   // -- is there anything to do? -------------------------------------------
