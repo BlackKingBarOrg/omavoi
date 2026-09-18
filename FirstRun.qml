@@ -415,9 +415,19 @@ Flickable {
       }
       OmText {
         visible: root.running
-        text: root.running && root.at < root.steps.length
-              ? root.tf("first.working", root.steps[root.at].label)
-              : ""
+        // `running` and `at` are both mirrors of the runner's, and QML
+        // re-evaluates this the moment either moves -- before the other has
+        // caught up. Pressing Install on a clean machine logged
+        // "Cannot read property 'label' of undefined" from here, once, at
+        // exactly that instant: at had moved and steps[at] was not there
+        // yet. Cosmetic -- the flow went on -- but a warning in the journal
+        // on the first screen a new user meets is not the impression to
+        // make. Tolerate the in-between frame.
+        text: {
+          if (!root.running || root.at < 0) return ""
+          var step = root.steps[root.at]
+          return step ? root.tf("first.working", step.label) : ""
+        }
         size: "body"
         color: Color.accent
       }
