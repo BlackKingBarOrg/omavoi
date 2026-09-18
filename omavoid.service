@@ -1,6 +1,6 @@
 [Unit]
 Description=Omavoi dictation daemon
-Documentation=https://github.com/BlackKingBarOrg/omavoi
+Documentation=https://github.com/BlackKingBarOrg/omavoi-daemon
 # The daemon needs the graphical session's PipeWire and Wayland sockets, so it
 # starts with the session rather than at boot.
 PartOf=graphical-session.target

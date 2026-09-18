@@ -7,7 +7,7 @@ is already on its origin/master -- i.e. when the daemon moved and the plugin did
 not. `--sync` rewrites the pin to that HEAD.
 
 The checkout is looked for in three places, in order: a path argument,
-$OMAVOI_DAEMON, then a sibling directory named Omavoi or omavoi. The sibling
+$OMAVOI_DAEMON, then a sibling directory named omavoi-daemon. The sibling
 default holds for a plugin checkout kept next to the daemon's, which is where
 this file was written. It does not hold for the copy that is also the *installed*
 plugin: that one lives in ~/.config/omarchy/plugins, and the only way to give it
@@ -46,11 +46,15 @@ def daemon_dir():
             if not os.path.isdir(os.path.join(path, ".git")):
                 sys.exit(f"{where}: not a git checkout: {path}")
             return path, f"{where} {path}"
-    for name in ("Omavoi", "omavoi"):
+    # Only the daemon's own name. A bare "omavoi" was in this list until the
+    # repositories were renamed, and it now names *this* checkout -- which is a
+    # git repository, so it would be accepted and the pin synced to a plugin
+    # commit.
+    for name in ("omavoi-daemon", "Omavoi-daemon"):
         path = os.path.join(HERE, "..", "..", name)
         if os.path.isdir(os.path.join(path, ".git")):
             return path, f"sibling ../../{name}"
-    return None, "no argument, no $OMAVOI_DAEMON, no sibling Omavoi or omavoi checkout"
+    return None, "no argument, no $OMAVOI_DAEMON, no sibling omavoi-daemon checkout"
 
 def daemon_head():
     """(sha, where) for a HEAD that can actually be fetched; sha is None otherwise."""

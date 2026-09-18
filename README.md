@@ -1,19 +1,31 @@
-# Omavoi — Omarchy shell plugin
+# Omavoi
 
 ![Omavoi: hold a key, talk, and the text lands where you were typing](preview.png)
 
-The desktop half of [Omavoi](https://github.com/BlackKingBarOrg/omavoi): voice
-dictation for Omarchy and Hyprland. Hold a key, talk, and the text lands in
-whatever window you were already typing into. Speech runs on your own GPU
-through whisper.cpp; audio never leaves the machine.
+Voice dictation for [Omarchy](https://omarchy.org) and Hyprland. Hold a key,
+talk, and the text lands in whatever window you were already typing into.
+Speech runs on your own GPU through whisper.cpp; audio never leaves the
+machine.
 
-This repository is the recording HUD, the bar module, and the five-tab console.
-It is what you install.
+```
+                 hold RIGHTALT ─────────────────────────┐
+                                                        ▼
+  ring buffer ──▶ speech model ──▶ rules ──▶ LLM (opt) ──▶ your window
+   (pre-roll)      whisper.cpp     dictionary,  per mode      wtype or
+                   on Vulkan       names, …                   paste
+```
+
+This repository is what you install: the recording HUD, the bar module and
+the five-tab console. The model, the microphone and the hotkey live in a
+daemon of their own, [omavoi-daemon][daemon], which the first-run screen
+installs for you at a pinned commit.
+
+[daemon]: https://github.com/BlackKingBarOrg/omavoi-daemon
 
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/BlackKingBarOrg/omavoi-shell-plugin --enable --yes
+omarchy plugin add https://github.com/BlackKingBarOrg/omavoi --enable --yes
 ```
 
 Then open the console — click the Omavoi module in the bar; `SUPER + ALT + V`
@@ -61,7 +73,7 @@ dropdown in the top bar:
 |---|---|
 | ![The Modes tab in Simplified Chinese](docs/img/console-modes-zh.webp) | ![The Modes tab in Thai](docs/img/console-modes-th.webp) |
 
-## Why this is a separate repository
+## Why the daemon is a separate repository
 
 `omarchy-shell` is a single Quickshell process that also draws your bar, your
 notifications and your lock screen. A plugin is QML running *inside* it, and
@@ -71,9 +83,8 @@ pre-roll ring buffer that keeps the first syllable, and a push-to-talk key read
 below xkb so a modifier works at all, both need a process of their own.
 
 So the model, the microphone and the hotkey live in a daemon, and this plugin
-talks to it over a Unix socket. The daemon is a Python package in the
-[main repository](https://github.com/BlackKingBarOrg/omavoi); the first-run
-screen installs it for you.
+talks to it over a Unix socket. The daemon is a Python package in [its own
+repository][daemon]; the first-run screen installs it for you.
 
 That split has one more benefit worth naming: the daemon survives
 `omarchy-restart-shell`. Change your theme and dictation keeps working, with
@@ -88,7 +99,7 @@ trusted directory and is not itself trusted — so the screen asks instead.
 | | needs root |
 |---|---|
 | system packages: `uv`, `whisper-cpp`, `ggml`, `ggml-vulkan`, `llama-cpp`, `xdotool`, and adding you to the `input` group | yes — one `pkexec` prompt, drawn by Omarchy's own polkit agent |
-| the daemon — `uv tool install` of the main repository, pinned to one commit | no |
+| the daemon — `uv tool install` of the daemon repository, pinned to one commit | no |
 | the speech model, if you do not already have usable weights on disk | no |
 | the systemd user unit, the `SUPER + ALT + V` keybinding, the Omarchy menu entry | no |
 
@@ -97,7 +108,7 @@ if another tool already put a 3 GB model on this machine, that step is free.
 
 The daemon is installed at the exact commit named in `DaemonSource.qml`, so
 what a given plugin commit installs is itself fixed. Bumping it is
-`python3 tools/check_pin.py --sync` against a checkout of the main repository.
+`python3 tools/check_pin.py --sync` against a checkout of the daemon repository.
 
 ### The `input` group
 
@@ -121,7 +132,7 @@ Everything outside this repository, and where it comes from:
 | llama.cpp | `llama-cpp` (Arch extra) | modes with a local LLM step; optional in practice |
 | xdotool | `xdotool` (Arch extra) | typing into XWayland windows — WeChat, Feishu, Steam |
 | uv | `uv` (Arch extra) | installs the daemon |
-| the daemon | [BlackKingBarOrg/omavoi](https://github.com/BlackKingBarOrg/omavoi), MIT, pinned commit | the model, the microphone, the hotkey |
+| the daemon | [BlackKingBarOrg/omavoi-daemon](https://github.com/BlackKingBarOrg/omavoi-daemon), MIT, pinned commit | the model, the microphone, the hotkey |
 | model weights | downloaded on request from Hugging Face; never bundled | 0.5–3 GB depending on the model |
 
 The plugin itself is QML only and ships no binaries. It never runs anything
@@ -138,8 +149,8 @@ omarchy plugin remove ai.bkblab.omavoi
 The first line takes out the systemd unit, the keybinding, the menu entry and
 its icon, and the runtime `newgrp` override if one was written; `bindings.lua`
 is edited between markers, so it removes exactly what was added and leaves the
-rest of the file byte for byte as it was. The daemon,
-your config and any downloaded weights are left alone — see the main
-repository to remove those too.
+rest of the file byte for byte as it was. The daemon, your config and any
+downloaded weights are left alone — see the [daemon repository][daemon] to
+remove those too.
 
 MIT.
