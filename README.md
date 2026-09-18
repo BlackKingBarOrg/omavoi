@@ -4,6 +4,8 @@
 
 ![Omavoi: hold a key, talk, and the text lands where you were typing](preview.png)
 
+## Features
+
 - **An omarchy-shell plugin, not an app in a window.** The bar module, the
   recording overlay and the five-tab console are drawn by the shell itself,
   from its own QML kit in your own theme. Switch theme and they switch with it.
@@ -36,6 +38,8 @@
   and a take is yours to delete, recording and all. Point a mode at a remote
   speech endpoint or a remote LLM and that stops being true; the console says
   so, on the screen where you choose it, and only where it is true.
+
+## Compared with Voxtype
 
 Omarchy already has dictation, and it is worth knowing what you are choosing
 between. `omarchy-voxtype-install` puts Voxtype behind F9: a 150 MB `base.en`
