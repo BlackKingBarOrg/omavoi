@@ -13,7 +13,8 @@ It is what you install.
 omarchy plugin add https://github.com/BlackKingBarOrg/omavoi-shell-plugin --enable --yes
 ```
 
-Then open the console — `SUPER + ALT + V`, or click the bar module — and the
+Then open the console — click the Omavoi module in the bar; `SUPER + ALT + V`
+is bound by setup's last step, so it works from then on — and the
 first-run screen takes it from there: it asks which language you want the
 interface in and which speech model to use, then does the rest itself. Its
 last step adds the three things a plugin cannot add for itself — the systemd

@@ -25,6 +25,10 @@ APPS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 # $HOME/.local/share/icons by basename, at any depth, preferring SVG -- so
 # `Icon=ai.bkblab.omavoi` resolves to exactly this file and nothing else.
 ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps"
+# Runtime-only by design: logind clears this directory when the last session
+# ends, which is exactly when the override stops being needed. See step 1b.
+DROPIN_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/systemd/user/omavoid.service.d"
+DROPIN="10-input-group.conf"
 BEGIN="-- >>> omavoi"
 END="-- <<< omavoi"
 REMOVE=0
@@ -97,6 +101,11 @@ if (( REMOVE )); then
       say "removed $f"
     fi
   done
+  if [[ -e "$DROPIN_DIR/$DROPIN" ]]; then
+    rm -f "$DROPIN_DIR/$DROPIN"
+    rmdir "$DROPIN_DIR" 2>/dev/null || true
+    say "removed the newgrp override"
+  fi
   systemctl --user daemon-reload
   echo "Done. The plugin itself is still installed; remove it with:"
   echo "  omarchy plugin remove $PLUGIN_ID"
@@ -109,10 +118,56 @@ echo "Installing Omavoi shortcuts"
 mkdir -p "$UNIT_DIR"
 install -m 0644 "$HERE/omavoid.service" "$UNIT_DIR/omavoid.service"
 say "installed $UNIT_DIR/omavoid.service"
+
+# 1b. The input group, for the login that does not have it yet.
+#
+# /dev/input/event* is crw-rw---- root input, and a group is granted at
+# login: a session that predates `usermod -aG input` cannot see it, and
+# neither can anything systemd --user starts -- the daemon included. That is
+# every first install, because the usermod ran one step before this. Logging
+# out is the ordinary fix, and it was also the first thing a new user was
+# told to do, one line after being told setup was complete.
+#
+# newgrp is setuid root and re-reads /etc/group, so a process started through
+# it has the group now, with no new login and no password (the user is a
+# member on file). systemd hands it the one line it needs on stdin; newgrp
+# execs the login shell, which execs the daemon -- no shell of ours, no
+# pipeline, no fork. The daemon is the unit's MainPID exactly as it is
+# without this, so stop, restart and reload all still reach it.
+#
+# Written only when the login lacks the group and /etc/group has the user.
+# A login that already has it gets no override, and one left from an earlier
+# session is removed -- by then it is noise at best.
+user="${USER:-$(id -un)}"
+if getent group input | cut -d: -f4 | tr ',' '\n' | grep -qx -- "$user" \
+   && ! id -nG | tr ' ' '\n' | grep -qx input; then
+  mkdir -p "$DROPIN_DIR"
+  cat > "$DROPIN_DIR/$DROPIN" <<CONF
+# Written by $PLUGIN_ID/install.sh. Runtime-only: this login started before
+# $user joined the input group, so nothing systemd --user starts can open a
+# keyboard. newgrp is setuid root and re-reads /etc/group; started through
+# it, the daemon has the group now. Gone at the next login, which has it.
+[Service]
+ExecStart=
+ExecStart=/usr/bin/newgrp input
+StandardInput=data
+StandardInputText=exec $HOME/.local/bin/omavoi daemon
+CONF
+  say "this login predates your input-group membership; the daemon starts through newgrp until you next log in"
+elif [[ -e "$DROPIN_DIR/$DROPIN" ]]; then
+  rm -f "$DROPIN_DIR/$DROPIN"
+  rmdir "$DROPIN_DIR" 2>/dev/null || true
+  say "removed the newgrp override; this login has the input group"
+fi
 systemctl --user daemon-reload
 
 if command -v omavoi >/dev/null; then
-  systemctl --user enable --now omavoid.service && say "started omavoid.service"
+  # enable, then restart -- not --now. --now leaves a daemon that is already
+  # running on the definition it started with, which is the one without the
+  # override written a moment ago, and the key would stay dead until a
+  # restart nobody was told to do.
+  systemctl --user enable omavoid.service >/dev/null 2>&1 || true
+  systemctl --user restart omavoid.service && say "started omavoid.service"
 else
   say "omavoi is not on PATH yet -- install it, then: systemctl --user enable --now omavoid"
 fi

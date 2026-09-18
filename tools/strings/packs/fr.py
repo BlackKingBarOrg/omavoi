@@ -23,7 +23,7 @@ PACK = {
  "first.pick.hotkey": 'Touche pour parler',
  "first.hotkey.other": 'une autre touche, p. ex. F9',
  "first.hotkey.note": "Lue sous votre disposition de clavier et jamais accaparée : la touche continue de faire ce qu'elle fait d'habitude. Sur beaucoup de dispositions hors États-Unis, Alt droite est AltGr et sert à taper des caractères — choisissez Ctrl droite ou Arrêt défil si c'est votre cas.",
- "first.group.needed": "Tu n'es pas encore dans le groupe input, donc aucune touche ne peut être lue. L'étape ci-dessous s'en charge, et cela prend effet à ta prochaine connexion — d'ici là, dicte depuis le module de la barre.",
+ "first.group.needed": "Tu n'es pas encore dans le groupe input, donc aucune touche ne peut être lue. L'étape ci-dessous s'en charge, et le démon est lancé de façon à obtenir le groupe immédiatement — pas besoin de te déconnecter.",
  "first.step.hotkey": 'raccourci',
  "first.step.packages": 'paquets système',
  "first.step.daemon": 'le démon',
@@ -283,13 +283,13 @@ PACK = {
  "set.key.badname": "%1 n'est pas une touche que cette machine possède — appuie plutôt sur une touche",
  "set.key.nogroup": "Tu n'es pas dans le groupe `input`, donc aucun clavier ne peut être ouvert — "
                     "la touche est lue directement sur le périphérique, sous le bureau",
- "set.key.relogin": 'Tu es dans le groupe `input`, mais cette session a commencé avant — '
-                    'déconnecte-toi et reconnecte-toi',
+ "set.key.relogin": 'Tu es dans le groupe `input`, mais cette session a commencé avant — le démon peut être lancé avec le groupe maintenant, sans te déconnecter',
  "set.key.nodevice": 'Aucun clavier ici ne signale %1 — appuie sur une autre touche',
  "set.key.stopped": "Le service en arrière-plan ne tourne pas, donc rien n'écoute",
  "set.key.stale": "Le service écoute encore sur %1 — il n'a jamais pris en compte le changement",
  "set.key.off": 'Le raccourci est désactivé',
  "set.key.fix.restart": 'Le redémarrer',
+ "set.key.fix.regroup": 'Le lancer avec le groupe',
  "set.key.fix.group": "M'ajouter à `input`",
  "set.hotkeynote": "Lue depuis evdev, sous xkb, pour que la touche reste là où elle est "
                    "physiquement même si ta disposition la remappe. Impossible d'associer "

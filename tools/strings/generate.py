@@ -138,13 +138,17 @@ section("firstrun", {
                        "อ่านต่ำกว่าเลย์เอาต์คีย์บอร์ดและไม่ยึดปุ่มไป ปุ่มจึงยังทำงานเดิมของมันต่อไป "
                        "บนเลย์เอาต์ที่ไม่ใช่ของสหรัฐหลายแบบ Alt ขวาคือ AltGr และใช้พิมพ์อักขระได้ — "
                        "ถ้าของคุณเป็นแบบนั้น ให้เลือก Ctrl ขวา หรือ Scroll Lock"),
+ # No longer "takes effect at your next login": install.sh starts the daemon
+ # through newgrp when the login predates the group, so the key works the
+ # moment setup finishes. That sentence used to be the first thing a new
+ # user read after being told setup was complete.
  "first.group.needed": ("You are not in the input group yet, so no key can be read. Adding "
-                        "you is part of the step below, and it takes effect at your next "
-                        "login — until then, dictation works from the bar module.",
+                        "you is part of the step below, and the daemon is started in a way "
+                        "that picks the group up at once — there is nothing to log out of.",
                         "你还不在 input 组里,所以任何键都读不到。下面那一步会把你加进去,"
-                        "但要到你下次登录才生效 —— 在那之前可以用 bar 上的模块来听写。",
+                        "而且 daemon 会以当场就能拿到组权限的方式启动 —— 不需要重新登录。",
                         "คุณยังไม่อยู่ในกลุ่ม input จึงอ่านปุ่มใดไม่ได้ ขั้นด้านล่างจะเพิ่มคุณเข้าไป "
-                        "และจะมีผลเมื่อคุณเข้าสู่ระบบครั้งถัดไป — ก่อนหน้านั้นใช้โมดูลบนแถบได้"),
+                        "และเดมอนจะเริ่มในแบบที่รับสิทธิ์กลุ่มได้ทันที — ไม่ต้องออกจากระบบ"),
  "first.step.hotkey": ("hotkey", "快捷键", "ปุ่มลัด"),
  "first.step.packages": ("system packages", "系统软件包", "แพ็กเกจของระบบ"),
  "first.step.daemon":   ("the daemon", "守护进程", "เดมอน"),
@@ -604,10 +608,13 @@ section("dictionary", {
                      "按键是直接从设备读的，在桌面之下",
                      "คุณไม่ได้อยู่ในกลุ่ม `input` จึงเปิดคีย์บอร์ดไม่ได้เลย — "
                      "ปุ่มถูกอ่านจากอุปกรณ์โดยตรง ใต้ระดับเดสก์ท็อป"),
+ # The button beside this runs install.sh, which starts the daemon through
+ # newgrp; "log out and back in" was the only advice for as long as nothing
+ # could do that for you.
  "set.key.relogin": ("you are in the `input` group, but this session started before that — "
-                     "log out and back in",
-                     "你已经在 `input` 组里了，但这次登录发生在加入之前 —— 注销后重新登录",
-                     "คุณอยู่ในกลุ่ม `input` แล้ว แต่เซสชันนี้เริ่มก่อนหน้านั้น — ออกแล้วเข้าใหม่"),
+                     "the daemon can be started with the group now, no logout needed",
+                     "你已经在 `input` 组里了，但这次登录发生在加入之前 —— 可以让 daemon 当场带着组权限启动，不用重新登录",
+                     "คุณอยู่ในกลุ่ม `input` แล้ว แต่เซสชันนี้เริ่มก่อนหน้านั้น — เริ่มเดมอนพร้อมสิทธิ์กลุ่มได้เลย ไม่ต้องออกจากระบบ"),
  "set.key.nodevice": ("no keyboard here reports %1 — press a different key",
                       "这里没有键盘会报出 %1 —— 换一个键按",
                       "ไม่มีคีย์บอร์ดที่นี่รายงาน %1 — กดปุ่มอื่น"),
@@ -620,6 +627,7 @@ section("dictionary", {
  "set.key.off":     ("the hotkey is switched off",
                      "快捷键被关掉了", "ปุ่มลัดถูกปิดอยู่"),
  "set.key.fix.restart": ("Restart it", "重启它", "รีสตาร์ต"),
+ "set.key.fix.regroup": ("Start it with the group", "带上组权限启动", "เริ่มพร้อมสิทธิ์กลุ่ม"),
  "set.key.fix.group":   ("Add me to `input`", "把我加进 `input`", "เพิ่มฉันเข้า `input`"),
  "set.hotkeynote": ("Read from evdev, below xkb, so the key stays where it physically is even "
                     "if your layout remaps it. A modifier cannot be bound in Hyprland instead: "

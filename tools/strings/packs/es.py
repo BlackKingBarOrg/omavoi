@@ -23,7 +23,7 @@ PACK = {
  "first.pick.hotkey": 'Tecla para hablar',
  "first.hotkey.other": 'otra tecla, p. ej. F9',
  "first.hotkey.note": "Se lee por debajo de tu distribución de teclado y nunca se apropia de la tecla, así que sigue haciendo lo de siempre. En muchas distribuciones no estadounidenses Alt derecha es AltGr y sirve para escribir caracteres: elige Ctrl derecha o Bloq Despl si es tu caso.",
- "first.group.needed": 'Todavía no estás en el grupo input, así que no se puede leer ninguna tecla. El paso de abajo te añade, y surte efecto en tu próximo inicio de sesión — hasta entonces, dicta desde el módulo de la barra.',
+ "first.group.needed": 'Todavía no estás en el grupo input, así que no se puede leer ninguna tecla. El paso de abajo te añade, y el demonio arranca de un modo que obtiene el grupo al instante — no hace falta cerrar sesión.',
  "first.step.hotkey": 'atajo',
  "first.step.packages": 'paquetes del sistema',
  "first.step.daemon": 'el demonio',
@@ -282,13 +282,13 @@ PACK = {
  "set.key.badname": '%1 no es una tecla que tenga esta máquina — pulsa una tecla en su lugar',
  "set.key.nogroup": 'No estás en el grupo `input`, así que no se puede abrir ni un teclado — '
                     'la tecla se lee directamente del dispositivo, por debajo del escritorio',
- "set.key.relogin": 'Estás en el grupo `input`, pero esta sesión empezó antes — '
-                    'cierra la sesión y vuelve a entrar',
+ "set.key.relogin": 'Estás en el grupo `input`, pero esta sesión empezó antes — el demonio puede arrancar con el grupo ahora, sin cerrar sesión',
  "set.key.nodevice": 'Ningún teclado aquí informa de %1 — pulsa otra tecla',
  "set.key.stopped": 'El servicio en segundo plano no está corriendo, así que nada escucha',
  "set.key.stale": 'El servicio sigue escuchando en %1 — nunca recogió el cambio',
  "set.key.off": 'El atajo está desactivado',
  "set.key.fix.restart": 'Reiniciarlo',
+ "set.key.fix.regroup": 'Arrancarlo con el grupo',
  "set.key.fix.group": 'Añadirme a `input`',
  "set.hotkeynote": "Se lee desde evdev, por debajo de xkb, así que la tecla se queda donde "
                    "está físicamente aunque tu distribución la remapee. No se puede asignar "

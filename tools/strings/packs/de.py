@@ -23,7 +23,7 @@ PACK = {
  "first.pick.hotkey": 'Taste zum Sprechen',
  "first.hotkey.other": 'andere Taste, z. B. F9',
  "first.hotkey.note": "Wird unterhalb deines Tastaturlayouts gelesen und nie übernommen, die Taste macht also weiter, was sie sonst macht. Auf vielen Layouts außerhalb der USA ist die rechte Alt-Taste AltGr und tippt dort Zeichen — nimm die rechte Strg-Taste oder Rollen, wenn das bei dir so ist.",
- "first.group.needed": 'Du bist noch nicht in der Gruppe input, also kann keine Taste gelesen werden. Das erledigt der Schritt unten, wirksam beim nächsten Anmelden — bis dahin diktierst du über das Bar-Modul.',
+ "first.group.needed": 'Du bist noch nicht in der Gruppe input, also kann keine Taste gelesen werden. Das erledigt der Schritt unten, und der Daemon wird so gestartet, dass er die Gruppe sofort bekommt — kein Ab- und Anmelden nötig.',
  "first.step.hotkey": 'Tastenkürzel',
  "first.step.packages": 'Systempakete',
  "first.step.daemon": 'der Dienst',
@@ -287,13 +287,13 @@ PACK = {
  "set.key.badname": '%1 ist keine Taste, die dieser Rechner hat — drücke stattdessen eine Taste',
  "set.key.nogroup": 'Du bist nicht in der Gruppe `input`, also lässt sich keine einzige Tastatur '
                     'öffnen — die Taste wird direkt vom Gerät gelesen, unterhalb des Desktops',
- "set.key.relogin": 'Du bist in der Gruppe `input`, aber diese Sitzung begann davor — '
-                    'melde dich ab und wieder an',
+ "set.key.relogin": 'Du bist in der Gruppe `input`, aber diese Sitzung begann davor — der Daemon kann jetzt mit der Gruppe gestartet werden, kein Abmelden nötig',
  "set.key.nodevice": 'Keine Tastatur hier meldet %1 — drücke eine andere Taste',
  "set.key.stopped": 'Der Hintergrunddienst läuft nicht, also hört nichts zu',
  "set.key.stale": 'Der Dienst hört noch auf %1 — er hat die Änderung nie übernommen',
  "set.key.off": 'Das Tastenkürzel ist abgeschaltet',
  "set.key.fix.restart": 'Neu starten',
+ "set.key.fix.regroup": 'Mit der Gruppe starten',
  "set.key.fix.group": 'Mich zu `input` hinzufügen',
  "set.hotkeynote": "Direkt von evdev gelesen, unterhalb von xkb, damit die Taste "
                    "physisch dort bleibt, wo sie ist, auch wenn dein Layout sie "

@@ -77,6 +77,17 @@ Flickable {
     command: ["systemctl", "--user", "restart", "omavoid"]
     onExited: function (code, status) { checkAgain.restart() }
   }
+  // For the login that predates its own group membership. A plain restart
+  // would not help: systemd --user has no more groups than the session it
+  // belongs to. install.sh writes a runtime override that starts the daemon
+  // through newgrp -- setuid root, re-reads /etc/group -- and restarts it,
+  // so the key works now instead of after a logout nobody was told about
+  // until they had finished setting up.
+  Process {
+    id: regrouper
+    command: [Quickshell.env("HOME") + "/.config/omarchy/plugins/ai.bkblab.omavoi/install.sh"]
+    onExited: function (code, status) { checkAgain.restart() }
+  }
   // The one fix that needs root. Same command the first-run wizard folds in,
   // and it leaves the relogin message behind on purpose: being added to a
   // group does not add you to a session that already started.
@@ -114,17 +125,19 @@ Flickable {
     if (h.devices_problem) return root.tf("set.key.nodevice", h.configured)
     return root.t("set.key.stopped")
   }
-  // What the button next to the message does, or "" for the two that no
-  // button can do: pressing a key, and logging out.
+  // What the button next to the message does, or "" for the one thing no
+  // button can do: pressing a key. Logging out used to be the other -- it is
+  // not any more, because starting the daemon through newgrp does what the
+  // logout was for.
   readonly property string remedy: {
     var h = root.health
     if (root.ill === "" || !h) return ""
     if (h.enabled === false || h.name_ok === false) return ""
-    // A working daemon needs no remedy, and the two the user cannot click —
-    // press a key, log out — offer none.
+    // A working daemon needs no remedy, and the one thing the user cannot
+    // click — press a key — offers none.
     if (h.listener) return h.matches ? "" : "restart"
     if (!h.group_listed) return "group"
-    if (!h.group_held) return ""
+    if (!h.group_held) return "regroup"
     if (h.devices_problem) return ""
     return "restart"
   }
@@ -192,9 +205,11 @@ Flickable {
         Button {
           visible: root.remedy !== ""
           text: root.remedy === "group" ? root.t("set.key.fix.group")
-                                        : root.t("set.key.fix.restart")
+              : root.remedy === "regroup" ? root.t("set.key.fix.regroup")
+              : root.t("set.key.fix.restart")
           onClicked: {
             if (root.remedy === "group") grouper.running = true
+            else if (root.remedy === "regroup") regrouper.running = true
             else restarter.running = true
           }
         }

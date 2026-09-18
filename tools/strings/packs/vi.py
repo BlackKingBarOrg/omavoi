@@ -23,7 +23,7 @@ PACK = {
  "first.pick.hotkey": 'Phím giữ để nói',
  "first.hotkey.other": 'phím khác, ví dụ F9',
  "first.hotkey.note": "Được đọc bên dưới sơ đồ bàn phím và không bao giờ bị chiếm, nên phím vẫn làm việc của nó. Trên nhiều sơ đồ ngoài Mỹ, Alt phải là AltGr và dùng để gõ ký tự — hãy chọn Ctrl phải hoặc Scroll Lock nếu bàn phím của bạn như vậy.",
- "first.group.needed": 'Bạn chưa thuộc nhóm input, nên không đọc được phím nào. Bước bên dưới sẽ thêm bạn vào, và chỉ có hiệu lực từ lần đăng nhập kế tiếp — trước đó hãy dùng module trên thanh bar.',
+ "first.group.needed": 'Bạn chưa thuộc nhóm input, nên không đọc được phím nào. Bước bên dưới sẽ thêm bạn vào, và daemon được khởi động theo cách nhận quyền nhóm ngay lập tức — không cần đăng xuất.',
  "first.step.hotkey": 'phím tắt',
  "first.step.packages": 'gói hệ thống',
  "first.step.daemon": 'dịch vụ',
@@ -277,13 +277,13 @@ PACK = {
  "set.key.badname": '%1 không phải là phím máy này có — hãy bấm một phím thay vì vậy',
  "set.key.nogroup": 'Bạn không ở trong nhóm `input`, nên không mở được bàn phím nào — '
                     'phím được đọc trực tiếp từ thiết bị, bên dưới màn hình nền',
- "set.key.relogin": 'Bạn đã ở trong nhóm `input`, nhưng phiên này bắt đầu trước đó — '
-                    'hãy đăng xuất rồi đăng nhập lại',
+ "set.key.relogin": 'Bạn đã ở trong nhóm `input`, nhưng phiên này bắt đầu trước đó — daemon có thể khởi động cùng nhóm ngay bây giờ, không cần đăng xuất',
  "set.key.nodevice": 'Không bàn phím nào ở đây báo %1 — hãy bấm một phím khác',
  "set.key.stopped": 'Dịch vụ nền không chạy, nên không có gì đang nghe',
  "set.key.stale": 'Dịch vụ vẫn đang nghe trên %1 — nó chưa nhận thay đổi này',
  "set.key.off": 'Phím tắt đang bị tắt',
  "set.key.fix.restart": 'Khởi động lại',
+ "set.key.fix.regroup": 'Khởi động cùng nhóm',
  "set.key.fix.group": 'Thêm tôi vào `input`',
  "set.hotkeynote": "Đọc trực tiếp từ evdev, nằm dưới xkb, nên phím vẫn ở đúng vị trí vật lý "
                    "của nó dù bố cục bàn phím có gán lại. Không thể gán một phím modifier "
