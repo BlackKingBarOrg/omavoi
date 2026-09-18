@@ -439,13 +439,23 @@ Item {
               // Same row as the tabs, because it is the same kind of choice:
               // which view of the program you are looking at.
               Dropdown {
+                id: languagePicker
                 Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: Style.space(150)
                 visible: root.ready
                 showLabel: false
                 // The code is the value, so what comes back from `changed`
                 // is what goes into the config unmapped.
-                value: strings.active
+                //
+                // Through a Binding element rather than `value: strings.active`.
+                // Omarchy's Dropdown assigns `root.value = v` when a row is
+                // picked, and an assignment to a bound property removes the
+                // binding -- so after one pick the label was frozen on that
+                // pick for the life of the console, while everything else
+                // followed the config: a screen in English under a picker that
+                // said 简体中文. A Binding element re-asserts itself whenever
+                // its source changes, imperative writes notwithstanding.
+                Binding on value { value: strings.active }
                 options: {
                   var out = []
                   for (var i = 0; i < strings.languages.length; i++)
