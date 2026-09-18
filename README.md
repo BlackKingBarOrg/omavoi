@@ -2,7 +2,7 @@
 
 ![Omavoi: hold a key, talk, and the text lands where you were typing](preview.png)
 
-The desktop half of [Omavoi](https://github.com/BlackKingBarOrg/omavoi): voice
+The desktop half of [Omavoi](https://github.com/BlackKingBarOrg/omavoi-daemon): voice
 dictation for Omarchy and Hyprland. Hold a key, talk, and the text lands in
 whatever window you were already typing into. Speech runs on your own GPU
 through whisper.cpp; audio never leaves the machine.
@@ -13,7 +13,7 @@ It is what you install.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/BlackKingBarOrg/omavoi-shell-plugin --enable --yes
+omarchy plugin add https://github.com/BlackKingBarOrg/omavoi --enable --yes
 ```
 
 Then open the console — click the Omavoi module in the bar; `SUPER + ALT + V`
@@ -68,7 +68,7 @@ below xkb so a modifier works at all, both need a process of their own.
 
 So the model, the microphone and the hotkey live in a daemon, and this plugin
 talks to it over a Unix socket. The daemon is a Python package in the
-[main repository](https://github.com/BlackKingBarOrg/omavoi); the first-run
+[main repository](https://github.com/BlackKingBarOrg/omavoi-daemon); the first-run
 screen installs it for you.
 
 That split has one more benefit worth naming: the daemon survives
@@ -117,7 +117,7 @@ Everything outside this repository, and where it comes from:
 | llama.cpp | `llama-cpp` (Arch extra) | modes with a local LLM step; optional in practice |
 | xdotool | `xdotool` (Arch extra) | typing into XWayland windows — WeChat, Feishu, Steam |
 | uv | `uv` (Arch extra) | installs the daemon |
-| the daemon | [BlackKingBarOrg/omavoi](https://github.com/BlackKingBarOrg/omavoi), MIT, pinned commit | the model, the microphone, the hotkey |
+| the daemon | [BlackKingBarOrg/omavoi-daemon](https://github.com/BlackKingBarOrg/omavoi-daemon), MIT, pinned commit | the model, the microphone, the hotkey |
 | model weights | downloaded on request from Hugging Face; never bundled | 0.5–3 GB depending on the model |
 
 The plugin itself is QML only and ships no binaries. It never runs anything

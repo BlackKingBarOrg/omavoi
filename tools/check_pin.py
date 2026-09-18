@@ -2,7 +2,7 @@
 """The daemon pin in DaemonSource.qml: exactly one, a full commit, and current.
 
 `check_pin.py` fails unless the pinned value is a 40-hex commit. With a sibling
-checkout of the daemon at ../Omavoi it also fails when that checkout's HEAD is
+checkout of the daemon at ../../omavoi-daemon it also fails when that checkout's HEAD is
 a different commit that is already on its origin/master -- i.e. when the daemon
 moved and the plugin did not. `--sync` rewrites the pin to that HEAD.
 
@@ -13,7 +13,7 @@ import os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 QML = os.path.join(HERE, "..", "DaemonSource.qml")
-DAEMON = os.path.join(HERE, "..", "..", "Omavoi")
+DAEMON = os.path.join(HERE, "..", "..", "omavoi-daemon")
 PIN = re.compile(r'readonly property string sha: "([0-9a-f]*)"')
 
 def current():
@@ -39,7 +39,7 @@ if not re.fullmatch(r"[0-9a-f]{40}", sha):
 head = daemon_head()
 if "--sync" in sys.argv:
     if head is None:
-        sys.exit("--sync: no sibling daemon checkout at ../Omavoi with a published HEAD")
+        sys.exit("--sync: no sibling daemon checkout at ../../omavoi-daemon with a published HEAD")
     if head != sha:
         open(QML, "w", encoding="utf-8").write(s.replace(sha, head))
         print(f"pin: {sha[:7]} -> {head[:7]}")
