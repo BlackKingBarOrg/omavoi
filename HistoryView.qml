@@ -358,6 +358,10 @@ Item {
           Repeater {
             model: (view.take && view.take.asr) ? view.take.asr.segments : []
             RowLayout {
+              id: segmentRow
+              readonly property bool hasConfidence: typeof modelData.avg_logprob === "number"
+                                                    && isFinite(modelData.avg_logprob)
+              readonly property real logProbability: hasConfidence ? modelData.avg_logprob : 0
               Layout.fillWidth: true
               spacing: Style.space(12)
               OmText {
@@ -370,15 +374,16 @@ Item {
                 Layout.preferredHeight: 5
                 color: Qt.darker(Color.muted, 1.5)
                 Rectangle {
+                  visible: segmentRow.hasConfidence
                   width: parent.width * Math.max(0, Math.min(1,
-                         1 + (modelData.avg_logprob || 0) / 1.5))
+                         1 + segmentRow.logProbability / 1.5))
                   height: parent.height
-                  color: (modelData.avg_logprob || 0) < -1.0 ? "#e0af68" : "#9ece6a"
+                  color: segmentRow.logProbability < -1.0 ? "#e0af68" : "#9ece6a"
                 }
               }
               OmText {
                 Layout.preferredWidth: Style.space(52)
-                text: (modelData.avg_logprob || 0).toFixed(2)
+                text: segmentRow.hasConfidence ? segmentRow.logProbability.toFixed(2) : "—"
                 color: Color.muted
               }
               OmText {
