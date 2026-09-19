@@ -298,8 +298,10 @@ chip 叫"自动"，说明里叫 "auto"。`modes.injecthint` 的中译保留了�
 
 **我的倾向**：说明里改成"自动"。
 
-- [ ] 改
-- [ ] 不改，理由：
+> 2026-09-19：已在 UX-20 里一并改掉。`injecthint` 整句重写成"自动模式会像键盘一样
+> 把文字打出来"，不再以英文值名开头；`wtype` 这个程序名从 chip 上移进了说明的括号里。
+
+- [x] 已改
 
 ---
 
@@ -328,8 +330,90 @@ text: root.capturing ? root.t("set.key.press") : root.t("set.key.rebind")
 
 **我的倾向**：统一成名词（"幻觉"），CJK 那条改成"CJK 间距"或"中日韩间距"。
 
-- [ ] 改
-- [ ] 不改，理由：
+> 2026-09-19：已在 UX-20 里一并改掉——`hallucinations` 全语言改成"编出来的句子"
+> 一类的名词，CJK 那条改成"中西文间距 / spacing between scripts"。
+
+- [x] 已改
+
+---
+
+### UX-20 · Modes 右栏的标签用的是零件名，不是用户的词 —— **已改**
+
+这一条是过 UX-01 时从"介绍一下 Modes 页在做什么"引出来的：解释这一页需要先解释
+weights、decoder、inject 各是什么，而**需要先解释才能用的界面，就是这一条要说的问题**。
+
+毛病可以归成三类：
+
+1. **用零件名当标签**：`weights`、`decoder hint`、`inject`、`CJK`、`hallucinations`、`LLM`
+   —— 系统内部有那么个东西，界面上就叫那个名字。用户不知道系统内部有这些零件。
+2. **副标题在描述系统属性**：`deterministic · no latency` 是工程指标；用户想知道的是
+   "会不会慢、会不会乱改"。
+3. **解释从实现视角写**：`injecthint` 在讲"wtype 合成的键码传到那些程序里会变成数字"
+   ——那是一条 debug 笔记，不是说明。
+
+作为参照查了 superwhisper 的 mode 设计。六个概念一一对应，一个不多一个不少：
+
+| 概念 | superwhisper | omavoi（改之前） |
+|---|---|---|
+| 语音识别模型 | **Voice Model** | weights / 权重 |
+| 后处理 LLM | **Language Model** | LLM + weights |
+| 喂给识别模型的词 | **Vocabulary words** | decoder hint / 解码提示词 |
+| 转写后硬替换 | **Replacements** | dictionary / 词典 |
+| 给 LLM 的指令 | **Prompt** | 步骤提示词 |
+| 按应用自动切换 | **Activate for apps** | 窗口匹配（现已隐藏） |
+
+设计是一样的，差的只是命名口径：这边每一处都挑了实现层的词。另外值得记一笔——
+superwhisper 明明有真的 prompt 字段，也没把 vocabulary 那个框叫 "instructions"。
+
+**改了什么**（27 个 key 改写 + 2 个新增，八个语言包同步）：
+
+| 位置 | 改前 | 改后（EN / ZH） |
+|---|---|---|
+| 段落 1 标题 | `1 SPEECH` | `1 VOICE` / 语音 |
+| 段落 1 副标题 | what the model is told before it decodes | how your voice is turned into text / 你的声音是怎么变成文字的 |
+| 语音模型那行 | weights / 权重 | voice model / 语音模型 |
+| 无覆盖时那个 chip | whatever is loaded / 沿用已加载的 | use the default (large-v3-turbo) / 用默认的（large-v3-turbo） |
+| 提示词框标签 | decoder hint / 解码提示词 | vocabulary / 词汇 |
+| 提示词框占位符 | Seeded into the model… | 改成引导填**词**而不是填句子 |
+| 段落 2 标题 | `2 RULES` / 规则 | `2 CLEANUP` / 自动清理 |
+| 段落 2 副标题 | deterministic · no latency | instant, and the same every time / 即时完成，每次结果都一样 |
+| 规则 chip | hallucinations / 幻觉过滤 | made-up phrases / 凭空出现的句子 |
+| 规则 chip | CJK spacing / 中英间距 | spacing between scripts / 中西文间距 |
+| 段落 3 标题 | `3 LLM` | `3 AI REWRITE` / `3 AI 改写` |
+| 步骤里的权重行 | weights / 权重 | model / 模型 |
+| 继承那个 chip | follow the configuration (%1) / 跟随配置 | use the default (%1) / 用默认的（%1） |
+| 段落 4 标题 | `4 INJECT` / 注入 | `4 TYPING` / 输入方式 |
+| 注入方式 chip | `wtype`（程序名） | type it / 逐字输入（程序名移进说明里） |
+| 注入方式 chip | clipboard / 剪贴板 | paste it / 粘贴 |
+| 段落 4 说明 | 讲 wtype 的合成键码 | 讲"哪些程序接不了模拟按键" |
+
+同一个词在别处也一起改了，否则一个东西两个名字：`first.step.weights`、`first.reuse`、
+`models.k.local.sub`、`models.speechapi.cat`、`models.outside`、`models.formathint`。
+
+另外顺手两处：模型 chip 不再显示 `ggml:` / `llm:` 前缀（这是文件格式，不是选择依据；
+LLM 那两行本来就在这么做），标签列从 96 加宽到 124（德语 `Erkennungsmodell`、
+越南语 `mô hình giọng nói` 比 `weights` 长）。
+
+**改动落在 `tools/strings/`，不是 `Strings.qml`**——后者是生成的，直接改会被下一次
+`generate.py` 覆盖。生成器自己的检查（八个包 key 齐平、QML 用到的 key 都在表里、
+表里的 key 都被用到）在改完后仍然通过。
+
+**刻意没改的三处**：
+
+- `VRAM`：`Strings.qml` 开头的规矩把它列为保留原文的产品名词，而且 Models 页有一整条
+  以 VRAM 命名的显存条。只改 `modes.blocked` 一句会造成两个名字。要改就整个 console
+  一起改成"GPU 内存"，那是另一条。
+- **不给 `large-v3-turbo` 起营销名**。superwhisper 把 whisper 档位改名成
+  Fast / Nano / Standard / Pro / Ultra，但他们自己那张表里 **Pro（medium）比
+  Standard（small）更大、慢三倍、错误率还略高**——名字把质量顺序说反了。而且控制台和
+  终端共用一份配置，界面叫 Ultra、命令行要打 `ggml:large-v3-turbo`，等于自己造一层翻译。
+  该解释的是 note 列（那是 UX-03）。
+- README 散文里的 "3 GB of weights" 之类：那是 GitHub 落地页，读者是装它的人，词准确。
+
+**吸收掉的条目**：UX-16（中文说明里出现 "auto"）随 `injecthint` 重写消失；UX-18
+（RULES chip 中文命名不齐）在上面一并改掉。
+
+- [x] 已改
 
 ---
 
