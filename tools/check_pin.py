@@ -43,7 +43,7 @@ def daemon_dir():
     for path, where in ((args[0] if args else None, "argument"),
                         (os.environ.get("OMAVOI_DAEMON"), "$OMAVOI_DAEMON")):
         if path:
-            if not os.path.isdir(os.path.join(path, ".git")):
+            if not os.path.exists(os.path.join(path, ".git")):
                 sys.exit(f"{where}: not a git checkout: {path}")
             return path, f"{where} {path}"
     # Only the daemon's own name. A bare "omavoi" was in this list until the
@@ -52,7 +52,7 @@ def daemon_dir():
     # commit.
     for name in ("omavoi-daemon", "Omavoi-daemon"):
         path = os.path.join(HERE, "..", "..", name)
-        if os.path.isdir(os.path.join(path, ".git")):
+        if os.path.exists(os.path.join(path, ".git")):
             return path, f"sibling ../../{name}"
     return None, "no argument, no $OMAVOI_DAEMON, no sibling omavoi-daemon checkout"
 

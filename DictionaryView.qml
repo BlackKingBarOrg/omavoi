@@ -1,319 +1,422 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
-// Two kinds of entry, because they solve different problems. A rule needs you
-// to know what the model got wrong. A name does not — and for CJK you never
-// will, since the manglings are an open set of homophones — so a name is
-// written once, correctly, and matched by sound.
-Flickable {
+Item {
   id: root
+  property var strings: null
   property var rules: []
   property var names: []
   property string seed: ""
   property int budget: 224
-  // `budget` was here from the start with nothing passing a value in and
-  // nothing reading it. The cap is real — seed_text stops at it — so names
-  // past it were listed on this page as seeded and handed to nothing.
   property int seedChars: 0
   property var dropped: []
-  property int pad: Style.space(22)
-  property string sub: "rules"
-  property var strings: null
-
+  property var cli: ["omavoi"]
+  property var payload: ({ entries: [], modes: [] })
+  property bool loaded: false
+  property bool legacy: false
+  property bool editing: false
+  property bool more: false
+  property bool corrections: false
+  property bool discardPrompt: false
+  property var original: ({})
+  property var selectedModes: []
+  property string draftBaseline: ""
+  property string note: ""
+  property string error: ""
+  property string detail: ""
+  property string previewText: ""
+  property bool pendingActivation: false
+  property var undoEntry: null
+  readonly property bool busy: reader.running || writer.running
+  readonly property int pad: Style.space(22)
+  readonly property var filtered: (payload.entries || []).filter(function(e) {
+    var q = search.text.trim().toLocaleLowerCase()
+    return !q || (e.text + " " + e.aliases.join(" ")).toLocaleLowerCase().indexOf(q) >= 0
+  })
   signal command(string cmd)
-  // Anything carrying user text, which a dictionary key always does.
   signal commandArgs(var argv)
+  signal changed()
+  function t(k) { return strings ? strings.t(k) : k }
+  function tf(k, value) { return strings ? strings.tf(k, value) : k }
+  function refresh() { if (!busy) reader.running = true }
+  function errorText(code) {
+    var keys = {
+      changed_elsewhere: "word.stale", duplicate_word: "word.duplicate",
+      alias_conflict: "word.conflict", target_conflict: "word.conflict",
+      invalid_text: "word.invalid", already_correct: "word.correct",
+      invalid_mode: "word.invalidmode", not_found: "word.missing",
+      restart_required: "word.restart"
+    }
+    return t(keys[code] || "word.failed")
+  }
+  function openEditor(entry) {
+    original = entry ? JSON.parse(JSON.stringify(entry)) : ({})
+    spelling.text = original.text || ""
+    hints.checked = original.recognition_hint !== false
+    casing.checked = original.normalize_case !== false
+    sound.checked = !!(original.phonetic && original.phonetic.enabled)
+    selectedModes = (original.modes || []).slice()
+    aliases.clear()
+    ;(original.aliases || []).forEach(function(a) { aliases.append({value: a}) })
+    corrections = aliases.count > 0
+    more = false
+    error = ""; detail = ""; previewText = ""; sample.text = ""
+    discardPrompt = false
+    editing = true
+    draftBaseline = JSON.stringify(draft())
+    spelling.forceActiveFocus()
+  }
+  function draft() {
+    var values = []
+    for (var i = 0; i < aliases.count; i++) {
+      var value = aliases.get(i).value.trim()
+      if (value) values.push(value)
+    }
+    return { id: original.id || "", text: spelling.text.trim(), aliases: values,
+      enabled: original.enabled !== false, recognition_hint: hints.checked,
+      normalize_case: casing.checked,
+      phonetic: {enabled: sound.checked, method: original.phonetic ? original.phonetic.method : "auto"},
+      modes: selectedModes.slice() }
+  }
+  function closeEditor() {
+    if (busy) return
+    if (JSON.stringify(draft()) !== draftBaseline) { discardPrompt = true; return }
+    editing = false
+  }
+  function send(action, body) {
+    if (busy) return
+    error = ""; detail = ""
+    writer.action = action
+    writer.pending = JSON.stringify(Object.assign({etag: payload.etag}, body || {}))
+    writer.command = cli.concat(["vocabulary", action, "--json-input"])
+    writer.stdinEnabled = true
+    writer.running = true
+  }
+  function save() { if (spelling.text.trim() && !busy) send("save", {entry: draft()}) }
+  function toggleEntry(entry) {
+    var next = JSON.parse(JSON.stringify(entry))
+    next.enabled = !next.enabled
+    send("save", {entry: next})
+  }
+  onSelectedModesChanged: previewText = ""
+  onVisibleChanged: if (visible) refresh()
+  Component.onCompleted: if (visible) refresh()
+  Keys.onEscapePressed: function(event) { if (editing) { closeEditor(); event.accepted = true } }
 
-  // The dry run, read rather than discarded.
-  //
-  // It used to go out through `command`, which runs the thing and throws its
-  // stdout away — so the one button on this page whose entire output *is* the
-  // answer looked inert, while the blurb above it says matching stays off
-  // until a dry run has been looked at. There was nowhere to look. Its own
-  // Process, like the endpoint check in EndpointFields, because what comes
-  // back has to reach the screen.
-  property string dryRun: ""
-  property bool dryRunning: false
-  property bool dryRunDone: false
   Process {
-    id: dryRunner
-    command: ["omavoi", "names", "dryrun"]
-    onRunningChanged: root.dryRunning = dryRunner.running
-    stdout: StdioCollector {
-      onStreamFinished: {
-        root.dryRun = String(text).trim()
-        root.dryRunDone = true
+    id: reader
+    command: root.cli.concat(["vocabulary", "list", "--json"])
+    stdout: StdioCollector { id: readOut }
+    stderr: StdioCollector { id: readErr }
+    onExited: function(code, status) {
+      try {
+        var value = JSON.parse(readOut.text)
+        if (!value.ok) throw new Error(value.detail || "")
+        root.payload = value
+        root.loaded = true
+        root.legacy = (value.migration_issues || []).length > 0
+        root.detail = root.legacy ? value.migration_issues.join("\n") : ""
+        root.error = ""
+      } catch (e) {
+        // An old daemon remains fully usable; other failures are not an empty list.
+        var oldVersion = /invalid choice[^\n]*vocabulary/.test(String(readErr.text))
+        root.legacy = oldVersion
+        root.error = oldVersion ? "" : root.t("word.readfailed")
+        root.detail = String(readErr.text || e)
+      }
+    }
+  }
+  Process {
+    id: writer
+    property string action: ""
+    property string pending: ""
+    stdinEnabled: true
+    stdout: StdioCollector { id: writeOut }
+    stderr: StdioCollector { id: writeErr }
+    onStarted: {
+      write(writer.pending)
+      writer.pending = ""
+      stdinEnabled = false
+    }
+    onExited: function(code, status) {
+      try {
+        var result = JSON.parse(writeOut.text)
+        if (!result.ok) {
+          root.error = root.errorText(result.error)
+          root.detail = result.detail || ""
+          return
+        }
+        if (action === "preview") {
+          root.previewText = result.after
+          return
+        }
+        root.pendingActivation = result.activation === "pending"
+        root.note = root.t(root.pendingActivation ? "word.pending" : action === "remove" ? "word.deleted" : "word.saved")
+        if (result.entries) root.payload = result
+        if (action === "remove") root.undoEntry = result.removed
+        else if (action !== "reload") root.undoEntry = null
+        if (action === "save") {
+          root.editing = false
+          search.text = ""
+        }
+        root.changed()
+      } catch (e) {
+        root.error = root.t("word.failed")
+        root.detail = String(writeErr.text || e)
+      }
+    }
+  }
+  ListModel { id: aliases }
+
+  ColumnLayout {
+    anchors.fill: parent
+    anchors.margins: root.pad
+    spacing: Style.space(12)
+    visible: !root.editing
+    RowLayout {
+      Layout.fillWidth: true
+      OmText { text: root.t("nav.dictionary"); size: "title"; color: Color.foreground }
+      Item { Layout.fillWidth: true }
+      Button {
+        text: root.t("word.add"); bordered: true; focusable: true
+        visible: !root.legacy
+        enabled: root.loaded && !root.busy
+        onClicked: root.openEditor(null)
+      }
+    }
+    OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.intro"); color: Color.muted }
+    OmText {
+      visible: root.legacy
+      Layout.fillWidth: true; wrapMode: Text.Wrap
+      text: root.t("word.legacy"); color: Color.muted
+    }
+    OmText {
+      visible: root.legacy && root.detail !== ""
+      Layout.fillWidth: true; wrapMode: Text.Wrap
+      text: root.detail; color: Color.muted
+    }
+    RowLayout {
+      visible: root.note !== "" && !root.legacy
+      Layout.fillWidth: true
+      OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.note; color: Color.foreground }
+      Button { visible: root.pendingActivation; text: root.t("word.retry"); focusable: true; onClicked: root.send("reload", {}) }
+      Button { visible: !!root.undoEntry; text: root.t("word.undo"); focusable: true; onClicked: root.send("restore", {entry: root.undoEntry}) }
+    }
+    OmText {
+      visible: (root.payload.dropped || []).length > 0 && !root.legacy
+      Layout.fillWidth: true; wrapMode: Text.Wrap
+      text: root.t("word.capacity") + " " + (root.payload.dropped || []).join("、")
+      color: Color.muted
+    }
+    RowLayout {
+      visible: root.error !== ""
+      Layout.fillWidth: true
+      OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.error; color: Color.urgent }
+      Button { text: root.t("word.retry"); focusable: true; onClicked: root.refresh() }
+    }
+    TextField {
+      id: search
+      objectName: "dictionarySearch"
+      visible: !root.legacy
+      Layout.fillWidth: true
+      placeholderText: root.t("word.search")
+    }
+    OmText {
+      visible: !root.legacy && root.loaded && root.filtered.length === 0
+      Layout.fillWidth: true; wrapMode: Text.Wrap
+      text: root.t(search.text ? "word.noresults" : "word.empty"); color: Color.muted
+    }
+    OmText { visible: !root.loaded && !root.legacy && !root.error; text: root.t("word.loading"); color: Color.muted }
+    ListView {
+      id: entries
+      visible: !root.legacy
+      Layout.fillWidth: true; Layout.fillHeight: true
+      clip: true
+      model: root.filtered
+      spacing: Style.space(8)
+      Controls.ScrollBar.vertical: Controls.ScrollBar {}
+      delegate: Rectangle {
+        id: row
+        required property var modelData
+        width: entries.width
+        height: rowContent.implicitHeight + Style.space(20)
+        color: Qt.darker(Color.popups.background, 1.12)
+        border.width: 1
+        border.color: Qt.darker(Color.muted, 2.2)
+        radius: Style.cornerRadius
+        RowLayout {
+          id: rowContent
+          anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+          anchors.margins: Style.space(10)
+          spacing: Style.space(8)
+          ColumnLayout {
+            Layout.fillWidth: true
+            OmText {
+              Layout.fillWidth: true; wrapMode: Text.WrapAnywhere; size: "body"
+              text: row.modelData.text + (row.modelData.enabled ? "" : " · " + root.t("word.paused"))
+              color: row.modelData.enabled ? Color.foreground : Color.muted
+            }
+            OmText {
+              visible: row.modelData.aliases.length > 0
+              Layout.fillWidth: true; wrapMode: Text.WrapAnywhere
+              text: root.t("word.from") + " " + row.modelData.aliases.slice(0, 2).join("、")
+                    + (row.modelData.aliases.length > 2 ? "  +" + (row.modelData.aliases.length - 2) : "")
+              color: Color.muted
+            }
+          }
+          Button { text: root.t("word.edit"); bordered: true; focusable: true; enabled: !root.busy; onClicked: root.openEditor(row.modelData) }
+          Button {
+            text: "⋯"; focusable: true; bordered: true; enabled: !root.busy
+            Accessible.name: root.t("word.more")
+            onClicked: rowMenu.open()
+            Controls.Menu {
+              id: rowMenu
+              Controls.MenuItem { text: root.t(row.modelData.enabled ? "word.pause" : "word.resume"); onTriggered: root.toggleEntry(row.modelData) }
+              Controls.MenuItem { text: root.t("word.delete"); onTriggered: root.send("remove", {id: row.modelData.id}) }
+            }
+          }
+        }
+      }
+    }
+    Loader {
+      visible: root.legacy; active: root.legacy
+      Layout.fillWidth: true; Layout.fillHeight: true
+      sourceComponent: LegacyDictionaryView {
+        strings: root.strings; rules: root.rules; names: root.names
+        seed: root.seed; budget: root.budget; seedChars: root.seedChars; dropped: root.dropped
+        onCommand: function(c) { root.command(c) }
+        onCommandArgs: function(a) { root.commandArgs(a) }
       }
     }
   }
 
-  // `strings` is null for the instant between creation and the Loader setting
-  // it, so the key stands in until then rather than a blank.
-  function t(k) { return root.strings ? root.strings.t(k) : k }
-  function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
-
-  contentHeight: col.implicitHeight + pad * 2
-  clip: true
-
-  ColumnLayout {
-    id: col
-    x: root.pad
-    y: root.pad
-    width: root.width - root.pad * 2
-    spacing: Style.space(12)
-
-    ButtonGroup {
-      options: [{ value: "rules", label: root.t("dict.rules") },
-                { value: "names", label: root.t("dict.names") }]
-      value: root.sub
-      onChanged: function (v) { root.sub = v }
-    }
-
-    // ---- rules -----------------------------------------------------
-    OmText {
-      visible: root.sub === "rules"
-      Layout.fillWidth: true
-      wrapMode: Text.Wrap
-      text: root.t("dict.blurb")
-      color: Color.muted
-    }
-    Repeater {
-      model: root.sub === "rules" ? root.rules : []
-      RowLayout {
-        readonly property var r: modelData
-        Layout.fillWidth: true
-        spacing: Style.space(10)
-        OmText {
-          Layout.preferredWidth: Style.space(180)
-          text: r.heard
-          size: "body"
-          color: Color.foreground
-        }
-        OmText {
-          text: "→"
-          color: Color.muted
-        }
-        OmText {
-          Layout.preferredWidth: Style.space(180)
-          text: r.meant
-          size: "body"
-          color: Color.foreground
-        }
-        OmText {
-          Layout.fillWidth: true
-          visible: r.shadowed_by !== ""
-          text: root.t("dict.shadowed") + "\"" + r.shadowed_by + "\""
-          color: "#e0af68"
-        }
-        Item { Layout.fillWidth: r.shadowed_by === "" }
-        Button {
-          text: root.t("dict.remove")
-          onClicked: root.commandArgs(["omavoi", "dict", "rm", String(r.heard)])
-        }
-      }
-    }
-
-    // ---- names -----------------------------------------------------
-    OmText {
-      visible: root.sub === "names"
-      Layout.fillWidth: true
-      wrapMode: Text.Wrap
-      text: root.t("dict.namesblurb")
-      color: Color.muted
-    }
-    Repeater {
-      model: root.sub === "names" ? root.names : []
-      RowLayout {
-        readonly property var n: modelData
-        Layout.fillWidth: true
-        spacing: Style.space(10)
-        OmText {
-          Layout.preferredWidth: Style.space(150)
-          text: n.name
-          size: "body"
-          color: Color.foreground
-        }
-        OmText {
-          Layout.preferredWidth: Style.space(170)
-          text: n.key
-          color: Color.muted
-        }
-        OmText {
-          Layout.preferredWidth: Style.space(80)
-          text: n.match
-          color: Color.muted
-        }
-        OmText {
-          Layout.preferredWidth: Style.space(110)
-          text: n.enabled ? root.t("dict.matching") : root.t("dict.seedonly")
-          color: n.enabled ? "#9ece6a" : Color.muted
-        }
-        Item { Layout.fillWidth: true }
-        Button {
-          text: root.t("dict.remove")
-          onClicked: root.commandArgs(["omavoi", "names", "rm", String(n.name)])
-        }
-      }
-    }
-    RowLayout {
-      visible: root.sub === "names"
-      Layout.topMargin: Style.space(8)
-      spacing: Style.space(10)
-      Button {
-        text: root.t("dict.dryrun")
-        enabled: !root.dryRunning
-        onClicked: {
-          root.dryRun = ""
-          root.dryRunDone = false
-          dryRunner.running = true
-        }
-      }
-      Button {
-        text: root.t("dict.enable")
-        onClicked: root.command("omavoi names enable")
-      }
-      OmText {
-        Layout.fillWidth: true
-        elide: Text.ElideRight
-        text: root.t("dict.prompt") + (root.seed || root.t("dict.none"))
-        color: Color.muted
-      }
-      OmText {
-        visible: (root.dropped || []).length > 0
-        text: root.tf("dict.overbudget", (root.dropped || []).length)
-        color: "#e0af68"
-      }
-    }
-
-    // What it said. Bordered rather than loose text, because it is output
-    // from a command and not another sentence of ours — and the page is a
-    // Flickable, so a long report scrolls with everything else.
-    Rectangle {
-      visible: root.sub === "names"
-               && (root.dryRunning || root.dryRunDone)
-      Layout.fillWidth: true
-      implicitHeight: dryCol.implicitHeight + Style.space(20)
-      color: Qt.darker(Color.popups.background, 1.35)
-      border.width: 1
-      border.color: Qt.rgba(Color.foreground.r, Color.foreground.g,
-                            Color.foreground.b, 0.25)
-      radius: Style.cornerRadius
-
+  Rectangle {
+    anchors.fill: parent
+    visible: root.editing
+    color: Color.popups.background
+    Flickable {
+      id: editorScroll
+      anchors.fill: parent; anchors.margins: root.pad
+      clip: true; contentHeight: editorColumn.implicitHeight
+      Controls.ScrollBar.vertical: Controls.ScrollBar {}
       ColumnLayout {
-        id: dryCol
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: Style.space(11)
-        spacing: Style.space(6)
-
-        RowLayout {
+        id: editorColumn
+        width: Math.min(editorScroll.width - Style.space(12), Style.space(720))
+        spacing: Style.space(12)
+        OmText { text: root.t(root.original.id ? "word.edit" : "word.add"); size: "title"; color: Color.foreground }
+        OmText { text: root.t("word.spelling"); color: Color.foreground }
+        TextField {
+          id: spelling
+          objectName: "dictionarySpelling"
           Layout.fillWidth: true
+          placeholderText: root.t("word.examples")
+          maximumLength: 400
+          onAccepted: root.save()
+          onTextEdited: root.previewText = ""
+        }
+        OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.spaces"); color: Color.muted }
+        Button {
+          text: (root.corrections ? "▾ " : "▸ ") + root.t("word.wrong")
+          focusable: true
+          onClicked: { root.corrections = !root.corrections; if (root.corrections && !aliases.count) aliases.append({value: ""}) }
+        }
+        ColumnLayout {
+          visible: root.corrections
+          Layout.fillWidth: true
+          OmText { text: root.t("word.heard"); color: Color.foreground }
+          Repeater {
+            model: aliases
+            RowLayout {
+              required property int index
+              required property string value
+              Layout.fillWidth: true
+              TextField {
+                Layout.fillWidth: true; text: value
+                onTextEdited: { aliases.setProperty(index, "value", text); root.previewText = "" }
+                onAccepted: focus = false
+              }
+              Button { text: root.t("word.removealias"); focusable: true; onClicked: aliases.remove(index) }
+            }
+          }
+          Button { text: root.t("word.another"); focusable: true; onClicked: aliases.append({value: ""}) }
           OmText {
-            text: root.dryRunning ? root.t("dict.dryrun.running")
-                                  : root.t("dict.dryrun")
-            font.letterSpacing: 1
-            color: Color.muted
-          }
-          Item { Layout.fillWidth: true }
-          OmChip {
-            visible: !root.dryRunning
-            label: root.t("models.f.close")
-            on: false
-            onClicked: { root.dryRun = ""; root.dryRunDone = false }
+            Layout.fillWidth: true; wrapMode: Text.Wrap
+            text: root.tf("word.replacehelp", spelling.text || "…"); color: Color.muted
           }
         }
-
-        OmText {
-          visible: root.dryRunDone
+        Button { text: (root.more ? "▾ " : "▸ ") + root.t("word.more"); focusable: true; onClicked: root.more = !root.more }
+        ColumnLayout {
+          visible: root.more
           Layout.fillWidth: true
-          wrapMode: Text.Wrap
-          text: root.dryRun !== "" ? root.dryRun : root.t("dict.dryrun.none")
-          color: root.dryRun !== "" ? Color.foreground : Color.muted
+          Controls.CheckBox { id: hints; text: root.t("word.hint"); palette.windowText: Color.foreground }
+          OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.hinthelp"); color: Color.muted }
+          Controls.CheckBox { id: casing; visible: spelling.text.toUpperCase() !== spelling.text.toLowerCase(); onToggled: root.previewText = ""; text: root.t("word.case"); palette.windowText: Color.foreground }
+          Controls.CheckBox { id: sound; onToggled: root.previewText = ""; text: root.t("word.sound"); palette.windowText: Color.foreground }
+          OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.soundhelp"); color: Color.muted }
+          OmText { text: root.t("word.scope"); color: Color.foreground }
+          Controls.CheckBox {
+            text: root.t("word.allmodes"); checked: root.selectedModes.length === 0; palette.windowText: Color.foreground
+            onClicked: root.selectedModes = checked ? [] : [root.payload.active_mode || "default"]
+          }
+          Flow {
+            Layout.fillWidth: true; spacing: Style.space(6)
+            Repeater {
+              model: root.payload.modes || []
+              Controls.CheckBox {
+                required property string modelData
+                text: modelData; palette.windowText: Color.foreground
+                checked: root.selectedModes.indexOf(modelData) >= 0
+                onClicked: {
+                  var next = root.selectedModes.filter(function(m) { return m !== modelData })
+                  if (checked) next.push(modelData)
+                  root.selectedModes = next
+                }
+              }
+            }
+          }
+          OmText { text: root.t("word.previewhelp"); Layout.fillWidth: true; wrapMode: Text.Wrap; color: Color.muted }
+          Controls.TextArea {
+            id: sample
+            onTextChanged: root.previewText = ""
+            objectName: "dictionarySample"
+            Layout.fillWidth: true; Layout.minimumHeight: Style.space(75)
+            placeholderText: root.t("word.sample"); wrapMode: TextEdit.Wrap
+            color: Color.foreground; placeholderTextColor: Color.muted; selectByMouse: true
+            background: Rectangle { color: "transparent"; border.width: 1; border.color: Color.muted }
+          }
+          Button {
+            text: root.t("word.preview"); bordered: true; focusable: true
+            enabled: !root.busy && sample.text.trim() !== "" && spelling.text.trim() !== ""
+            onClicked: root.send("preview", {entry: root.draft(), text: sample.text,
+              mode: root.selectedModes.length ? root.selectedModes[0] : root.payload.active_mode})
+          }
+          OmText { visible: root.previewText !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.previewText; color: Color.foreground }
+        }
+        OmText {
+          visible: casing.checked && /^[A-Z]{1,3}$/.test(spelling.text.trim())
+          Layout.fillWidth: true; wrapMode: Text.Wrap
+          text: root.tf("word.casewarning", spelling.text.toLowerCase() + " → " + spelling.text)
+          color: Color.muted
+        }
+        OmText { visible: root.error !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.error; color: Color.urgent }
+        OmText { visible: root.error !== "" && root.detail !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.detail; color: Color.muted }
+        Button { visible: root.error !== ""; text: root.t("word.refresh"); focusable: true; enabled: !root.busy; onClicked: root.refresh() }
+        RowLayout {
+          visible: !root.discardPrompt
+          Button { text: root.t("word.cancel"); bordered: true; focusable: true; enabled: !root.busy; onClicked: root.closeEditor() }
+          Button { text: root.t("word.save"); bordered: true; focusable: true; enabled: !root.busy && spelling.text.trim() !== ""; onClicked: root.save() }
+        }
+        OmText { visible: root.discardPrompt; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.discardhelp"); color: Color.foreground }
+        RowLayout {
+          visible: root.discardPrompt
+          Button { text: root.t("word.keepediting"); bordered: true; focusable: true; onClicked: root.discardPrompt = false }
+          Button { text: root.t("word.discard"); bordered: true; focusable: true; onClicked: { root.editing = false; root.discardPrompt = false } }
         }
       }
-    }
-
-    // This page could list, remove, dry-run and enable — and not add. The
-    // line that used to sit here told you to open a terminal and run
-    // `omavoi dict add`, which is a page documenting its own hole.
-    //
-    // argv, not a command line: a dictionary key is user text with spaces in
-    // it — "hyper land" is the whole point of the feature — and the rule in
-    // Console.qml is that user text never goes through a shell.
-    RowLayout {
-      visible: root.sub === "rules"
-      Layout.topMargin: Style.space(12)
-      Layout.fillWidth: true
-      spacing: Style.space(8)
-      OmText { text: root.t("dict.heard"); color: Color.muted }
-      TextField {
-        id: heardField
-        Layout.preferredWidth: Style.space(180)
-        placeholderText: root.t("dict.heardph")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
-        onAccepted: addRule.go()
-      }
-      OmText { text: root.t("dict.meant"); color: Color.muted }
-      TextField {
-        id: meantField
-        Layout.preferredWidth: Style.space(180)
-        placeholderText: root.t("dict.meantph")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
-        onAccepted: addRule.go()
-      }
-      Button {
-        id: addRule
-        enabled: heardField.text.trim() !== "" && meantField.text.trim() !== ""
-        text: root.t("dict.add")
-        function go() {
-          if (!enabled) return
-          root.commandArgs(["omavoi", "dict", "add",
-                            heardField.text.trim(), meantField.text.trim()])
-          heardField.text = ""
-          meantField.text = ""
-        }
-        onClicked: go()
-      }
-      Item { Layout.fillWidth: true }
-    }
-
-    RowLayout {
-      visible: root.sub === "names"
-      Layout.topMargin: Style.space(12)
-      Layout.fillWidth: true
-      spacing: Style.space(8)
-      TextField {
-        id: nameField
-        Layout.fillWidth: true
-        Layout.maximumWidth: Style.space(430)
-        placeholderText: root.t("dict.nameph")
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
-        onAccepted: addNames.go()
-      }
-      Button {
-        id: addNames
-        enabled: nameField.text.trim() !== ""
-        text: root.t("dict.add")
-        function go() {
-          if (!enabled) return
-          // `names add` takes several and the placeholder says so, so the
-          // field is split rather than sent as one improbable name.
-          var parts = nameField.text.trim().split(/\s+/)
-          if (!parts.length) return
-          root.commandArgs(["omavoi", "names", "add"].concat(parts))
-          nameField.text = ""
-        }
-        onClicked: go()
-      }
-      Item { Layout.fillWidth: true }
     }
   }
 }

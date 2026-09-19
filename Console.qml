@@ -624,6 +624,7 @@ Item {
           }
 
           DictionaryView {
+            onChanged: root.refresh()
             strings: strings
             visible: root.ready && root.tab === "dictionary"
             Layout.fillWidth: true

@@ -558,8 +558,7 @@ Item {
               model: [
                 { k: "hallucinations", label: root.t("modes.r.hallucinations") },
                 { k: "fillers", label: root.t("modes.r.fillers") },
-                { k: "dictionary", label: root.t("modes.r.dictionary") },
-                { k: "names", label: root.t("modes.r.names") },
+
                 { k: "cjk_spacing", label: root.t("modes.r.cjk") }
               ]
               OmChip {
@@ -570,6 +569,29 @@ Item {
                   ["omavoi", "config", "set",
                    "modes." + root.current + ".rules." + rule.k,
                    on ? "false" : "true"])
+              }
+            }
+            OmChip {
+              readonly property var flags: (root.mode && root.mode.rules) || ({})
+              readonly property bool hasUnified: flags.vocabulary !== undefined
+              readonly property bool correctionsOn: hasUnified ? flags.vocabulary : flags.dictionary !== false && root.payload.post_enabled !== false
+              readonly property bool namesOn: hasUnified ? flags.vocabulary : flags.names !== false
+              visible: root.payload.vocabulary_supported === true
+              label: root.t("word.use") + (correctionsOn !== namesOn ? " · " + root.t("word.partial") : "")
+              on: correctionsOn && namesOn
+              onClicked: root.commandArgs(["omavoi", "mode", "set", root.current, "rules.vocabulary",
+                                           correctionsOn && namesOn ? "false" : "true"])
+            }
+            Repeater {
+              model: root.payload.vocabulary_supported ? [] : [
+                {k: "dictionary", label: root.t("modes.r.dictionary")},
+                {k: "names", label: root.t("modes.r.names")}
+              ]
+              OmChip {
+                readonly property var rule: modelData
+                label: rule.label
+                on: root.mode && root.mode.rules ? root.mode.rules[rule.k] !== false : true
+                onClicked: root.commandArgs(["omavoi", "config", "set", "modes." + root.current + ".rules." + rule.k, on ? "false" : "true"])
               }
             }
             Rectangle {
