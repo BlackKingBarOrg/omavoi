@@ -428,10 +428,11 @@ Item {
       // answering a question nobody could see.
       Keys.onPressed: function (event) {
         if (confirmClear.handleKey(event)) { event.accepted = true; return }
-        if (event.key === Qt.Key_Escape && historyView.dismissMenu())
+        if (event.key === Qt.Key_Escape) {
+          if (!historyView.dismissMenu()) root.close()
           event.accepted = true
+        }
       }
-      Keys.onEscapePressed: root.close()
 
       MouseArea {
         anchors.fill: parent

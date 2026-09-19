@@ -105,7 +105,12 @@ Item {
   onSelectedModesChanged: previewText = ""
   onVisibleChanged: if (visible) refresh()
   Component.onCompleted: if (visible) refresh()
-  Keys.onEscapePressed: function(event) { if (editing) { closeEditor(); event.accepted = true } }
+  Keys.onEscapePressed: function(event) {
+    // Specific Keys handlers accept the event by default. Let the console
+    // receive Escape when there is no editor to dismiss.
+    event.accepted = editing
+    if (editing) closeEditor()
+  }
 
   Process {
     id: reader
