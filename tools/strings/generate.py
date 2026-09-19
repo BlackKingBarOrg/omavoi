@@ -70,16 +70,18 @@ def section(name, entries):
 
 section("firstrun", {
  "first.title":     ("Set up Omavoi", "设置 Omavoi", "ตั้งค่า Omavoi"),
- "first.blurb":     ("Two questions, then one button. Nothing runs until you press it, and "
-                     "every command is shown first.",
-                     "两个问题,然后一个按钮。你按下之前什么都不会执行,而且每条命令都会先显示出来。",
-                     "สองคำถาม แล้วปุ่มเดียว ไม่มีอะไรทำงานจนกว่าคุณจะกด และทุกคำสั่งจะแสดงให้ดูก่อน"),
+ # Three, not two: the push-to-talk key was added as a third question and
+ # this sentence stayed behind, in all eight languages.
+ "first.blurb":     ("Three questions, then one button. Nothing runs until you press it, "
+                     "and every command is shown first.",
+                     "三个问题，然后一个按钮。你按下之前什么都不会执行，而且每条命令都会先显示出来。",
+                     "สามคำถาม แล้วปุ่มเดียว ไม่มีอะไรทำงานจนกว่าคุณจะกด และทุกคำสั่งจะแสดงให้ดูก่อน"),
  "first.pick.language": ("Interface language", "界面语言", "ภาษาของหน้าจอ"),
  "first.pick.model":    ("Speech model", "语音模型", "โมเดลเสียงพูด"),
- "first.reuse":     ("weights another tool already put on this machine — used where they "
-                     "lie, nothing to download",
-                     "这台机器上已有的权重(别的工具下载的)—— 就地使用,无需下载",
-                     "น้ำหนักที่เครื่องนี้มีอยู่แล้วจากเครื่องมืออื่น — ใช้ตามที่อยู่เดิม ไม่ต้องดาวน์โหลด"),
+ "first.reuse":     ("weights already on this machine — used where they lie, nothing "
+                     "to download",
+                     "这台机器上已有的权重 —— 就地使用，无需下载",
+                     "น้ำหนักที่มีอยู่แล้วบนเครื่องนี้ — ใช้ตามที่อยู่เดิม ไม่ต้องดาวน์โหลด"),
  "first.reuse.label": ("use what is here", "用已有的", "ใช้ของที่มีอยู่"),
  # Not "the only one": there are non-turbo models this screen does not
  # offer, and a claim that is only true of the three listed here is the
@@ -101,26 +103,36 @@ section("firstrun", {
  "first.failed":    ("%1 failed — see below", "%1 失败 —— 见下方说明",
                      "%1 ล้มเหลว — ดูด้านล่าง"),
  "first.cancelled": ("the password prompt was cancelled, so nothing was installed",
-                     "密码框被取消了,所以什么都没有安装",
+                     "密码框被取消了，所以什么都没有安装",
                      "กล่องรหัสผ่านถูกยกเลิก จึงไม่มีอะไรถูกติดตั้ง"),
  "first.done":      ("Ready — hold your key and talk", "完成 —— 按住热键说话",
                      "พร้อมแล้ว — กดปุ่มค้างไว้แล้วพูด"),
- "first.dbstale":   ("Your package database is %1 days old. Installing anything now fails "
-                    "with 404: the versions it lists are no longer on the mirrors. Arch "
-                    "needs a system update before new packages either way.",
-                    "你的软件包数据库是 %1 天前的。现在装任何东西都会 404 失败 —— 它记录的版本"
-                    "在镜像上已经不存在了。Arch 在装新包之前本来就需要先更新系统。",
-                    "ฐานข้อมูลแพ็กเกจของคุณเก่า %1 วัน การติดตั้งตอนนี้จะล้มเหลวด้วย 404 "
-                    "เพราะเวอร์ชันที่ระบุไว้ไม่มีบนมิเรอร์แล้ว Arch ต้องอัปเดตระบบก่อนติดตั้งแพ็กเกจใหม่อยู่ดี"),
+ # Split in two so the count sits in a sentence of its own. It used to be
+ # one string with "%1 days old" in it, and a database exactly one day old —
+ # which is every machine that has not synced today, because the threshold is
+ # a day — was told it was "1 days old".
+ "first.dbstale.age": ("Your package database is %1 days old.",
+                    "你的软件包数据库是 %1 天前的。",
+                    "ฐานข้อมูลแพ็กเกจของคุณเก่า %1 วัน"),
+ "first.dbstale.age1": ("Your package database is a day old.",
+                    "你的软件包数据库是一天前的。",
+                    "ฐานข้อมูลแพ็กเกจของคุณเก่าหนึ่งวัน"),
+ "first.dbstale":   ("Installing anything now fails with 404: the versions it lists are no "
+                    "longer on the mirrors. Arch needs a system update before new packages "
+                    "either way.",
+                    "现在装任何东西都会 404 失败 —— 它记录的版本在镜像上已经不存在了。"
+                    "Arch 在装新包之前本来就需要先更新系统。",
+                    "การติดตั้งตอนนี้จะล้มเหลวด้วย 404 เพราะเวอร์ชันที่ระบุไว้ไม่มีบนมิเรอร์แล้ว "
+                    "Arch ต้องอัปเดตระบบก่อนติดตั้งแพ็กเกจใหม่อยู่ดี"),
  "first.updatebtn": ("Update system packages", "更新系统软件包", "อัปเดตแพ็กเกจของระบบ"),
  "first.pacman404": ("The package database is out of date, so the mirrors no longer have the "
                      "versions it lists. Update the system above, then try again.",
-                     "软件包数据库过期了,镜像上已经没有它记录的那些版本。先用上面那个按钮更新系统,"
+                     "软件包数据库过期了，镜像上已经没有它记录的那些版本。先用上面那个按钮更新系统，"
                      "再重试。",
                      "ฐานข้อมูลแพ็กเกจล้าสมัย มิเรอร์จึงไม่มีเวอร์ชันที่ระบุไว้อีกแล้ว "
                      "อัปเดตระบบด้านบนแล้วลองอีกครั้ง"),
  "first.pick.hotkey": ("Push-to-talk key", "按住说话的键", "ปุ่มกดค้างเพื่อพูด"),
- "first.hotkey.other": ("another key, e.g. F9", "其他键,例如 F9", "ปุ่มอื่น เช่น F9"),
+ "first.hotkey.other": ("another key, e.g. F9", "其他键，例如 F9", "ปุ่มอื่น เช่น F9"),
  # "these four normally do nothing on their own" was written on a US
  # layout, where Right Alt is exactly that. On German, French, Spanish,
  # Polish, Nordic and many other layouts it is AltGr and types characters
@@ -145,7 +157,7 @@ section("firstrun", {
  "first.group.needed": ("You are not in the input group yet, so no key can be read. Adding "
                         "you is part of the step below, and the daemon is started in a way "
                         "that picks the group up at once — there is nothing to log out of.",
-                        "你还不在 input 组里,所以任何键都读不到。下面那一步会把你加进去,"
+                        "你还不在 input 组里，所以任何键都读不到。下面那一步会把你加进去，"
                         "而且 daemon 会以当场就能拿到组权限的方式启动 —— 不需要重新登录。",
                         "คุณยังไม่อยู่ในกลุ่ม input จึงอ่านปุ่มใดไม่ได้ ขั้นด้านล่างจะเพิ่มคุณเข้าไป "
                         "และเดมอนจะเริ่มในแบบที่รับสิทธิ์กลุ่มได้ทันที — ไม่ต้องออกจากระบบ"),
@@ -188,7 +200,7 @@ section("update", {
  "up.dirty":     ("The installed plugin has local changes, so it cannot fast-forward. "
                   "Reinstall it: omarchy plugin remove ai.bkblab.omavoi --yes && "
                   "omarchy plugin add %1 --enable --yes",
-                  "已安装的插件里有本地改动,所以无法 fast-forward。重新安装它:"
+                  "已安装的插件里有本地改动，所以无法 fast-forward。重新安装它："
                   "omarchy plugin remove ai.bkblab.omavoi --yes && "
                   "omarchy plugin add %1 --enable --yes",
                   "ปลั๊กอินที่ติดตั้งมีการเปลี่ยนแปลงในเครื่อง จึง fast-forward ไม่ได้ ติดตั้งใหม่: "
@@ -205,9 +217,43 @@ section("update", {
 })
 
 section("shared-and-setup", {
- "nav.setup": ("Setup", "安装", "ตั้งค่า"),
+ # Not "ตั้งค่า": that is nav.settings, and the two tabs sit side by side
+ # while an install is unfinished.
+ "nav.setup": ("Setup", "安装", "การติดตั้ง"),
  "setup.rootblurb": ("The steps above that need root can be done here, in one password prompt — polkit treats pacman as auth_admin, so asking in two calls means being asked twice. The daemon is restarted afterwards: it remembers a missing engine for the life of the process, so installing the binary alone would leave it still saying the engine is not there.", "上面需要 root 的步骤可以在这里一次做完，只弹一次密码框 —— polkit 把 pacman 当作 auth_admin，分两次调用就会问两次密码。装完会重启守护进程：它对「引擎未安装」的判断在进程存活期间是缓存的，只装二进制的话它仍会说引擎不在。", "ขั้นตอนด้านบนที่ต้องใช้ root ทำได้จากที่นี่ในการถามรหัสผ่านครั้งเดียว — polkit ถือว่า pacman เป็น auth_admin ถ้าเรียกสองครั้งก็จะถูกถามสองครั้ง หลังจากนั้นจะรีสตาร์ตเดมอน เพราะมันจำว่าเอนจินไม่มีอยู่ไปตลอดอายุโปรเซส การติดตั้งไบนารีอย่างเดียวจึงยังทำให้มันบอกว่าไม่มีเอนจิน"),
  "setup.rootrun": ("Install these", "一次装好", "ติดตั้งทั้งหมดนี้"),
+ "setup.optional": ("optional", "可选", "ไม่บังคับ"),
+ # OmTextArea, which is every decoder hint and every LLM prompt on the Modes
+ # tab — the three words a person editing one looks at most.
+ "edit.unsaved":  ("unsaved", "未保存", "ยังไม่บันทึก"),
+ "edit.revert":   ("Revert", "还原", "ย้อนกลับ"),
+ "edit.save":     ("Save", "保存", "บันทึก"),
+})
+
+# The bar module. Seven sentences were compiled into BarWidget.qml in
+# English, on the one surface that is on screen whatever else is.
+section("bar", {
+ "bar.stopped":          ("stopped", "已停止", "หยุดอยู่"),
+ "bar.tip.notinstalled": ("Omavoi — not installed yet. Click to set it up.",
+                          "Omavoi —— 还没有安装。点击开始设置。",
+                          "Omavoi — ยังไม่ได้ติดตั้ง คลิกเพื่อตั้งค่า"),
+ "bar.tip.stopped":      ("Omavoi — the background service is not running. "
+                          "Click to open the console.",
+                          "Omavoi —— 后台服务没有在运行。点击打开控制台。",
+                          "Omavoi — บริการเบื้องหลังไม่ได้ทำงาน คลิกเพื่อเปิดคอนโซล"),
+ "bar.tip.recording":    ("Recording · release the key to transcribe",
+                          "录音中 · 松开按键开始转写",
+                          "กำลังอัด · ปล่อยปุ่มเพื่อถอดเสียง"),
+ "bar.tip.transcribing": ("Transcribing…", "转写中……", "กำลังถอดเสียง…"),
+ "bar.tip.unfinished":   ("Omavoi — setup unfinished (%1)",
+                          "Omavoi —— 安装还没完成（%1）",
+                          "Omavoi — ตั้งค่ายังไม่เสร็จ (%1)"),
+ "bar.tip.ready":        ("Omavoi — ready", "Omavoi —— 就绪", "Omavoi — พร้อมแล้ว"),
+ # Right-click starts and stops a take by hand, and this is the only place
+ # that says so.
+ "bar.tip.rightclick":   ("Right-click to start or stop a take",
+                          "右键开始或停止一次录音",
+                          "คลิกขวาเพื่อเริ่มหรือหยุดการอัด"),
 })
 
 section("nav", {
@@ -263,7 +309,7 @@ section("setup", {
 section("history", {
  "hist.problems":   ("WHAT WENT WRONG", "出了什么问题", "เกิดอะไรผิดพลาด"),
  "hist.steps":      ("LLM STEPS", "LLM 步骤", "ขั้น LLM"),
- "hist.fellthrough": ("fell through, kept the previous text", "已回落,保留了上一步的文本",
+ "hist.fellthrough": ("fell through, kept the previous text", "已回落，保留了上一步的文本",
                       "ล้มเหลว จึงคงข้อความก่อนหน้าไว้"),
  "hist.none":      ("no takes yet — hold %1 and talk", "还没有记录 —— 按住 %1 说话",
                     "ยังไม่มีรายการ — กด %1 ค้างไว้แล้วพูด"),
@@ -297,11 +343,19 @@ section("modes", {
                        "tab has the rest — a smaller one is worth having for modes where "
                        "speed matters more than accuracy.",
                        "这个引擎目前只下载了一套权重。其余的在「模型」页 —— "
-                       "对速度比准确率更重要的模式,值得备一个小的。",
+                       "对速度比准确率更重要的模式，值得备一个小的。",
                        "เอนจินนี้ดาวน์โหลดน้ำหนักไว้ชุดเดียว ที่เหลืออยู่ในแท็บโมเดล — "
                        "ตัวเล็กกว่าคุ้มที่จะมีไว้สำหรับโหมดที่เน้นความเร็วมากกว่าความแม่น"),
+ "modes.speechnone": ("No weights are downloaded for this engine yet. The Models tab is "
+                      "where they come from.",
+                      "这个引擎还没有下载任何权重。到「模型」页去下载。",
+                      "ยังไม่ได้ดาวน์โหลดน้ำหนักสำหรับเอนจินนี้ ดาวน์โหลดได้ที่แท็บโมเดล"),
  "modes.newname":    ("new mode name", "新模式名称", "ชื่อโหมดใหม่"),
- "modes.here":       ("here", "当前", "ที่นี่"),
+ # Window matching is switched off (ModesView's showWindowMatch), so a mode
+ # is global: "here" and "active in this window" were describing a scope the
+ # console no longer has.
+ "modes.chainspeech": ("speech", "语音", "เสียงพูด"),
+ "modes.here":       ("in use", "使用中", "ใช้อยู่"),
  "modes.fallback":   ("fallback", "兜底", "สำรอง"),
  "modes.followwin":  ("The mode follows the focused window", "模式跟随当前焦点窗口",
                       "โหมดจะตามหน้าต่างที่โฟกัส"),
@@ -323,7 +377,7 @@ section("modes", {
                      "โหมดที่ใช้จริง ปิดด้วย `omavoi mode auto off`"),
  "modes.following":  ("following the window", "跟随窗口", "ตามหน้าต่าง"),
  "modes.fixed":      ("fixed", "固定", "คงที่"),
- "modes.activehere": ("active in this window", "在当前窗口生效", "ทำงานในหน้าต่างนี้"),
+ "modes.activehere": ("the mode in use", "当前使用的模式", "โหมดที่ใช้อยู่"),
  "modes.delete":     ("Delete mode", "删除模式", "ลบโหมด"),
  "modes.opens":      ("OPENS ON", "触发窗口", "เปิดเมื่อ"),
  "modes.notinuse":   ("not in use while the mode is fixed", "模式固定时这里不生效",
@@ -382,7 +436,6 @@ section("modes", {
                       "ยังไม่ได้ตั้งค่า LLM — ดูที่แท็บโมเดล"),
  "modes.inject.auto":      ("auto", "自动", "อัตโนมัติ"),
  "modes.inject.clipboard": ("clipboard", "剪贴板", "คลิปบอร์ด"),
- "modes.inject.xdotool": ("xdotool", "xdotool", "xdotool"),
  "modes.langauto":         ("auto", "自动", "อัตโนมัติ"),
  "modes.s4":         ("4  INJECT", "4  注入", "4  การป้อนข้อความ"),
  "modes.injecthint": ("auto types with wtype, except in XWayland clients and known Electron "
@@ -439,7 +492,7 @@ section("models", {
  "models.f.testing":   ("asking the endpoint for its models…", "正在向端点索取模型列表…",
                         "กำลังขอรายการโมเดลจากปลายทาง…"),
  "models.f.testok":    ("answered, %1 models — pick one below",
-                        "有响应,%1 个模型 —— 在下面选一个",
+                        "有响应，%1 个模型 —— 在下面选一个",
                         "ตอบกลับแล้ว %1 โมเดล — เลือกด้านล่าง"),
  "models.f.key.have": ("a key is stored", "已存有密钥", "มีคีย์เก็บไว้แล้ว"),
  "models.f.key.fromenv": ("in use from %1 in the environment — it wins over "
@@ -452,9 +505,12 @@ section("models", {
                            "เก็บไว้ใน secrets.toml"),
  "models.f.testfail": ("it did not answer", "它没有回应", "ไม่มีการตอบกลับ"),
  "models.speechapi": ("REMOTE SPEECH ENDPOINT", "远程语音接入点", "ปลายทางเสียงระยะไกล"),
- "models.speechapi.sub": ("Audio leaves this machine. Selected above under 远程 API.",
+ # Each language names the card as that language labels it. The Chinese
+ # cell's "远程 API" had been pasted into the English and Thai cells, so both
+ # pointed at a control neither of them shows.
+ "models.speechapi.sub": ("Audio leaves this machine. Selected above under Remote API.",
                           "音频会离开本机。在上面的「远程 API」里选中它才会生效。",
-                          "เสียงจะออกจากเครื่องนี้ เลือก \"远程 API\" ด้านบนเพื่อใช้งาน"),
+                          "เสียงจะออกจากเครื่องนี้ เลือก \"API ระยะไกล\" ด้านบนเพื่อใช้งาน"),
  "models.speechapi.cat": ("The list below is the local engine's weights and is "
                           "not used while the remote engine is selected.",
                           "下面的列表是本地引擎的权重，选中远程引擎时不会用到。",
@@ -476,14 +532,14 @@ section("models", {
  # program reads API keys from stdin for exactly that reason.
  "models.k.agent.argv": ("· the transcript goes in this agent's command line, "
                          "which /proc shows to anything running as you",
-                         "· 这个 agent 的调用会把转写文本放进命令行,"
+                         "· 这个 agent 的调用会把转写文本放进命令行，"
                          "同一用户下的任何进程都能从 /proc 看到",
                          "· การเรียกเอเจนต์นี้จะใส่ข้อความถอดเสียงไว้ในบรรทัดคำสั่ง "
                          "ซึ่งโปรเซสใด ๆ ของผู้ใช้คนนี้อ่านได้จาก /proc"),
  "models.k.local":     ("Local model", "本地模型", "โมเดลในเครื่อง"),
  "models.k.local.sub": ("llama.cpp, started and owned here; a step can name its own "
                         "weights from the catalogue below",
-                        "llama.cpp,由本程序启动和管理;步骤可以从下面的目录里指定自己的权重",
+                        "llama.cpp，由本程序启动和管理；步骤可以从下面的目录里指定自己的权重",
                         "llama.cpp ที่โปรแกรมนี้เริ่มและดูแลเอง; แต่ละขั้นเลือกน้ำหนักของตัวเอง "
                         "จากรายการด้านล่างได้"),
  "models.k.api":       ("Remote API", "远程 API", "API ระยะไกล"),
@@ -519,6 +575,9 @@ section("models", {
                       "文本 → 文本 · 可配多个，由模式按名字引用",
                       "ข้อความ → ข้อความ · มีได้หลายตัว โหมดเรียกตามชื่อ"),
  "models.nokey":     ("no key", "缺密钥", "ไม่มีคีย์"),
+ # For the other reasons an entry cannot run — weights never downloaded, most
+ # often. "no key" stood for all of them, on a local llama.cpp that wants none.
+ "models.notready":  ("not ready", "未就绪", "ยังไม่พร้อม"),
  "models.endpointnote":("Endpoints live under [llm.<name>] — omavoi config edit. A key never "
                       "goes in the config: set its environment variable, or put it in "
                       "secrets.toml.",
@@ -578,6 +637,8 @@ section("dictionary", {
  "dict.matching":  ("matching", "匹配中", "จับคู่อยู่"),
  "dict.seedonly":  ("seed only", "仅提示", "ป้อนพรอมป์ตเท่านั้น"),
  "dict.dryrun":    ("Dry run", "试运行", "ทดลองรัน"),
+ "dict.dryrun.running": ("Dry run · running…", "试运行 · 运行中……", "ทดลองรัน · กำลังรัน…"),
+ "dict.dryrun.none": ("Nothing would change.", "没有任何内容会被改动。", "จะไม่มีอะไรเปลี่ยน"),
  "dict.enable":    ("Enable matching", "开启匹配", "เปิดการจับคู่"),
  "dict.prompt":    ("prompt: ", "提示词： ", "พรอมป์ต: "),
  "dict.none":      ("(none)", "（无）", "(ไม่มี)"),
@@ -772,7 +833,10 @@ for code, pack in EXTRA.items():
 # And the other direction: a key the interface asks for and the table has not
 # got renders as the identifier itself, silently.
 _ROOT = os.path.join(_HERE, "..", "..")
-DYNAMIC = {f"modes.inject.{v}" for v in ("auto", "clipboard", "xdotool")} | {
+# The routes `omavoi inject --method` actually takes are "", wtype and
+# clipboard; xdotool is a --paste-via choice, not a route, and the chip for it
+# was a string nothing could ever reach.
+DYNAMIC = {f"modes.inject.{v}" for v in ("auto", "clipboard")} | {
     f"state.{v}" for v in ("idle", "recording", "transcribing", "stopped")} | {
     f"hud.stage.{v}" for v in ("decoding", "llm", "injecting")}
 # Conservative on purpose. An earlier version of this check looked only for

@@ -392,15 +392,10 @@ Item {
           }
         }
 
-        Repeater {
-          model: view.take ? (view.take.warnings || []) : []
-          OmText {
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: "! " + modelData
-            color: "#e0af68"
-          }
-        }
+        // The warnings used to be repeated here as well, under no heading and
+        // with a different bullet, half a page below the "what went wrong"
+        // block that already lists them. That block is the one with the
+        // heading, so this one goes.
 
         RowLayout {
           Layout.topMargin: Style.space(6)

@@ -97,8 +97,10 @@ ColumnLayout {
         try { r = JSON.parse(text) } catch (e) { r = ({ ok: false, error: text }) }
         fields.checkOk = r.ok === true
         fields.checkModels = r.ok === true ? (r.models || []) : []
+        // tf, not t: the string carries a %1 for the count, and plain t left
+        // the placeholder on screen with the number stuck on after it.
         fields.checkNote = r.ok === true
-          ? fields.t("models.f.testok") + (r.models ? "  " + r.models.length : "")
+          ? fields.tf("models.f.testok", (r.models || []).length)
           : String(r.error || fields.t("models.f.testfail"))
       }
     }

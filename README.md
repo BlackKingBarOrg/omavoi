@@ -68,7 +68,8 @@ omarchy plugin add https://github.com/bkblab/omavoi --enable --yes
 Then open the console — click the Omavoi module in the bar; `SUPER + ALT + V`
 is bound by setup's last step, so it works from then on — and the
 first-run screen takes it from there: it asks which language you want the
-interface in and which speech model to use, then does the rest itself. Its
+interface in, which speech model to use and which key to hold, then does the
+rest itself. Its
 last step adds the three things a plugin cannot add for itself — the systemd
 unit, the keybinding, and an Omavoi row in the Omarchy menu under
 `SUPER + SPACE`.
@@ -167,7 +168,7 @@ Everything outside this repository, and where it comes from:
 |---|---|---|
 | whisper.cpp | `whisper-cpp`, `ggml`, `ggml-vulkan` (Arch extra) | the speech model, on any GPU through Vulkan |
 | llama.cpp | `llama-cpp` (Arch extra) | modes with a local LLM step; optional in practice |
-| xdotool | `xdotool` (Arch extra) | typing into XWayland windows — WeChat, Feishu, Steam |
+| xdotool | `xdotool` (Arch extra) | sending the paste keystroke in XWayland clients — WeChat, Feishu, Steam |
 | uv | `uv` (Arch extra) | installs the daemon |
 | the daemon | [bkblab/omavoi-daemon](https://github.com/bkblab/omavoi-daemon), MIT, pinned commit | the model, the microphone, the hotkey |
 | model weights | downloaded on request from Hugging Face; never bundled | 0.5–3 GB depending on the model |

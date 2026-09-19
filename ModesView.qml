@@ -101,10 +101,14 @@ Item {
     return null
   }
 
+  // The same words the detail pane uses. This listed the raw config
+  // identifiers -- "speech → agent" beside a pane calling the same thing
+  // "System agent", and still English in a Chinese console.
   function chainOf(m) {
-    var names = ["speech"]
+    var names = [root.t("modes.chainspeech")]
     var steps = (m && m.steps) || []
-    for (var i = 0; i < steps.length; i++) names.push(steps[i].llm)
+    for (var i = 0; i < steps.length; i++)
+      names.push(root.llmLabel(steps[i].llm, false))
     return names.join(" → ")
   }
 
@@ -503,11 +507,14 @@ Item {
               }
             }
           }
+          // Two different facts, and `<= 1` reported the first one for both:
+          // "only one set is downloaded" over a machine with none.
           OmText {
             visible: root.speechChoices.length <= 1
             Layout.fillWidth: true
             wrapMode: Text.Wrap
-            text: root.t("modes.speechonly1")
+            text: root.speechChoices.length === 0 ? root.t("modes.speechnone")
+                                                  : root.t("modes.speechonly1")
             color: Qt.darker(Color.muted, 1.1)
           }
 
@@ -517,6 +524,7 @@ Item {
           }
           OmTextArea {
             Layout.fillWidth: true
+            strings: root.strings
             minLines: 2
             key: root.current
             text: (root.mode && root.mode.prompt) || ""
@@ -684,6 +692,7 @@ Item {
 
                 OmTextArea {
                   Layout.fillWidth: true
+                  strings: root.strings
                   minLines: 3
                   key: root.current + "#" + idx
                   text: step.prompt || ""

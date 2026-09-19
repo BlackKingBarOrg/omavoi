@@ -220,7 +220,16 @@ ColumnLayout {
       text: plan.done ? root.t("up.again")
             : plan.failure !== "" ? root.t("first.retry")
             : root.t("up.run")
-      onClicked: { plan.reset(); plan.begin() }
+      // "Check again" used to re-run the whole plan -- reinstall the plugin,
+      // reinstall the daemon, re-run install.sh, restart the unit -- behind a
+      // label that promises a question. After a finished update the only
+      // honest thing that button can do is ask the question again: reset the
+      // runner back to its idle shape and re-probe. The Update button comes
+      // back with it, so running it twice is still one click away.
+      onClicked: {
+        if (plan.done) { plan.reset(); root.refresh() }
+        else { plan.reset(); plan.begin() }
+      }
     }
     OmText {
       visible: plan.running

@@ -257,8 +257,14 @@ Item {
           color: root.phase === "done" ? Color.foreground : Color.muted
           elide: Text.ElideRight
           width: Math.min(implicitWidth, Style.space(Math.round(420 * root.sizeScale)))
+          // The reason, when the daemon gave one. This was hardcoded to
+          // "no speech" for every rejection -- so a take dropped because
+          // nothing survived post-processing was reported as one the
+          // microphone never heard, which sends you to the wrong end of the
+          // pipeline. The fallback stays for a rejection with no reason.
           text: root.phase === "done" ? root.doneText
-                                      : strings.t("hud.nospeech")
+                : root.rejectedWhy !== "" ? root.rejectedWhy
+                : strings.t("hud.nospeech")
         }
 
         // How many rules touched the text. Which ones is a console question;
@@ -268,15 +274,6 @@ Item {
           anchors.verticalCenter: parent.verticalCenter
           color: Color.accent
           text: "·" + root.doneChanges
-        }
-
-        OmText {
-          visible: root.phase === "rejected"
-          anchors.verticalCenter: parent.verticalCenter
-          color: Color.muted
-          elide: Text.ElideRight
-          width: Math.min(implicitWidth, Style.space(260))
-          text: root.rejectedWhy
         }
 
         OmText {
