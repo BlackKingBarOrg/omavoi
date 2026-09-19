@@ -196,7 +196,7 @@ ColumnLayout {
     // anyway: it restores modified files and leaves untracked ones behind,
     // which still blocks the fast-forward.
     text: root.tf("up.dirty",
-                  "https://github.com/bkblab/omavoi")
+                  "https://github.com/BlackKingBarOrg/omavoi")
     color: Color.urgent
   }
 

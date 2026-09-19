@@ -47,7 +47,7 @@ model, `language = "en"`, a TOML file to edit and one shell command to pipe
 the text through. That is less to install than this, and enough if you dictate
 English and nothing else. Omavoi is the other end of that trade.
 
-[daemon]: https://github.com/bkblab/omavoi-daemon
+[daemon]: https://github.com/BlackKingBarOrg/omavoi-daemon
 
 ## How it works
 
@@ -62,7 +62,7 @@ English and nothing else. Omavoi is the other end of that trade.
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/bkblab/omavoi --enable --yes
+omarchy plugin add https://github.com/BlackKingBarOrg/omavoi --enable --yes
 ```
 
 Then open the console — click the Omavoi module in the bar; `SUPER + ALT + V`
@@ -170,7 +170,7 @@ Everything outside this repository, and where it comes from:
 | llama.cpp | `llama-cpp` (Arch extra) | modes with a local LLM step; optional in practice |
 | xdotool | `xdotool` (Arch extra) | sending the paste keystroke in XWayland clients — WeChat, Feishu, Steam |
 | uv | `uv` (Arch extra) | installs the daemon |
-| the daemon | [bkblab/omavoi-daemon](https://github.com/bkblab/omavoi-daemon), MIT, pinned commit | the model, the microphone, the hotkey |
+| the daemon | [BlackKingBarOrg/omavoi-daemon](https://github.com/BlackKingBarOrg/omavoi-daemon), MIT, pinned commit | the model, the microphone, the hotkey |
 | model weights | downloaded on request from Hugging Face; never bundled | 0.5–3 GB depending on the model |
 
 The plugin itself is QML only and ships no binaries. It never runs anything

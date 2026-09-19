@@ -18,7 +18,7 @@ import QtQuick
 // checkout's HEAD; `tools/check_pin.py` alone refuses anything that is not a
 // full 40-hex commit.
 QtObject {
-  readonly property string repo: "https://github.com/bkblab/omavoi-daemon"
+  readonly property string repo: "https://github.com/BlackKingBarOrg/omavoi-daemon"
   readonly property string sha: "946260bfab6d9fa1b3e4dd2ee0a9f1486c72c0ee"
   readonly property string spec: "git+" + repo + "@" + sha
 }
