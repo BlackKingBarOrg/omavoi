@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
@@ -26,6 +27,29 @@ Flickable {
   signal command(string cmd)
   // Anything carrying user text, which a dictionary key always does.
   signal commandArgs(var argv)
+
+  // The dry run, read rather than discarded.
+  //
+  // It used to go out through `command`, which runs the thing and throws its
+  // stdout away — so the one button on this page whose entire output *is* the
+  // answer looked inert, while the blurb above it says matching stays off
+  // until a dry run has been looked at. There was nowhere to look. Its own
+  // Process, like the endpoint check in EndpointFields, because what comes
+  // back has to reach the screen.
+  property string dryRun: ""
+  property bool dryRunning: false
+  property bool dryRunDone: false
+  Process {
+    id: dryRunner
+    command: ["omavoi", "names", "dryrun"]
+    onRunningChanged: root.dryRunning = dryRunner.running
+    stdout: StdioCollector {
+      onStreamFinished: {
+        root.dryRun = String(text).trim()
+        root.dryRunDone = true
+      }
+    }
+  }
 
   // `strings` is null for the instant between creation and the Loader setting
   // it, so the key stands in until then rather than a blank.
@@ -139,7 +163,15 @@ Flickable {
       visible: root.sub === "names"
       Layout.topMargin: Style.space(8)
       spacing: Style.space(10)
-      Button { text: root.t("dict.dryrun"); onClicked: root.command("omavoi names dryrun") }
+      Button {
+        text: root.t("dict.dryrun")
+        enabled: !root.dryRunning
+        onClicked: {
+          root.dryRun = ""
+          root.dryRunDone = false
+          dryRunner.running = true
+        }
+      }
       Button {
         text: root.t("dict.enable")
         onClicked: root.command("omavoi names enable")
@@ -154,6 +186,55 @@ Flickable {
         visible: (root.dropped || []).length > 0
         text: root.tf("dict.overbudget", (root.dropped || []).length)
         color: "#e0af68"
+      }
+    }
+
+    // What it said. Bordered rather than loose text, because it is output
+    // from a command and not another sentence of ours — and the page is a
+    // Flickable, so a long report scrolls with everything else.
+    Rectangle {
+      visible: root.sub === "names"
+               && (root.dryRunning || root.dryRunDone)
+      Layout.fillWidth: true
+      implicitHeight: dryCol.implicitHeight + Style.space(20)
+      color: Qt.darker(Color.popups.background, 1.35)
+      border.width: 1
+      border.color: Qt.rgba(Color.foreground.r, Color.foreground.g,
+                            Color.foreground.b, 0.25)
+      radius: Style.cornerRadius
+
+      ColumnLayout {
+        id: dryCol
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: Style.space(11)
+        spacing: Style.space(6)
+
+        RowLayout {
+          Layout.fillWidth: true
+          OmText {
+            text: root.dryRunning ? root.t("dict.dryrun.running")
+                                  : root.t("dict.dryrun")
+            font.letterSpacing: 1
+            color: Color.muted
+          }
+          Item { Layout.fillWidth: true }
+          OmChip {
+            visible: !root.dryRunning
+            label: root.t("models.f.close")
+            on: false
+            onClicked: { root.dryRun = ""; root.dryRunDone = false }
+          }
+        }
+
+        OmText {
+          visible: root.dryRunDone
+          Layout.fillWidth: true
+          wrapMode: Text.Wrap
+          text: root.dryRun !== "" ? root.dryRun : root.t("dict.dryrun.none")
+          color: root.dryRun !== "" ? Color.foreground : Color.muted
+        }
       }
     }
 

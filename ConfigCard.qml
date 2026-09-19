@@ -125,14 +125,18 @@ Rectangle {
       text: card.status
       color: card.statusColor
     }
-    // Wide enough for the longest note either column has — "约 2.2 GB 的
-    // wheel 包" — because it was eliding to "约 2.2 GB 的 wh…". Fixed rather
-    // than content-sized so the status column beside it lands in the same
-    // place on every card.
+    // Fixed width rather than content-sized, so the status column beside it
+    // lands in the same place on every card — but wrapping rather than
+    // eliding, because one of the notes this carries is "audio leaves this
+    // machine" and it was reaching the screen as "audio leaves this ma…".
+    // A privacy claim is not a thing to cut off mid-word to keep a column
+    // straight.
     OmText {
       Layout.alignment: Qt.AlignVCenter
-      Layout.preferredWidth: Style.space(132)
+      Layout.preferredWidth: Style.space(150)
       horizontalAlignment: Text.AlignRight
+      wrapMode: Text.Wrap
+      maximumLineCount: 2
       elide: Text.ElideRight
       text: card.note
       color: card.noteColor

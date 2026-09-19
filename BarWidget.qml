@@ -22,11 +22,44 @@ BarWidget {
   property int setupDone: 0
   property int setupTotal: 5
 
+  // Whether the command exists, asked once. `link.state === "stopped"` only
+  // means nothing is answering the socket, which is equally true of a daemon
+  // that is restarting -- and reading that as "not installed" put "Setup" on
+  // the bar of a working machine every time the unit bounced.
+  property bool installed: true
+  property bool installedKnown: false
+  Process {
+    id: probeInstalled
+    // The exit code, not the output: a login shell prints a profile's worth
+    // of noise around the answer.
+    command: ["sh", "-c", "command -v omavoi"]
+    onExited: function (code, status) {
+      root.installed = code === 0
+      root.installedKnown = true
+    }
+  }
+
   readonly property bool recording: link.state === "recording"
   readonly property bool working: link.state === "transcribing"
-  readonly property bool missing: link.state === "stopped"
-  readonly property bool needsSetup: setupKnown && !setupReady
-                                     && !recording && !working
+  // Three states, not one. Order matters: with nothing installed the socket
+  // is dead too, so that has to be answered first.
+  readonly property bool missing: installedKnown && !installed
+  readonly property bool serviceDown: installedKnown && installed
+                                      && link.state === "stopped"
+  readonly property bool needsSetup: installed && setupKnown && !setupReady
+                                     && !recording && !working && !serviceDown
+
+  // The bar's own table. It followed Qt.locale() by having no table at all:
+  // seven English sentences compiled in, on the one surface that is on screen
+  // whatever else is. `uiLang` is the configured answer rather than the
+  // locale's guess, and it arrives in the daemon's status snapshot -- empty,
+  // before the daemon is up, still means "follow the locale".
+  Strings {
+    id: strings
+    lang: link.uiLang
+  }
+  function t(k) { return strings.t(k) }
+  function tf(k, a) { return strings.tf(k, a) }
 
   implicitWidth: reading.visible ? reading.implicitWidth : button.implicitWidth
   implicitHeight: button.implicitHeight
@@ -37,6 +70,8 @@ BarWidget {
   }
 
   IpcLink { id: link }
+
+  Component.onCompleted: probeInstalled.running = true
 
   // Setup state is asked for, not pushed: it changes only when the user acts,
   // and a 15 s check costs nothing next to a subscription that would have to
@@ -106,19 +141,24 @@ BarWidget {
     // among seven other icons — indistinguishable from a system downloads
     // indicator, at the one moment the module is the only way in. It is the
     // state that most needs a word next to it, so it gets one.
-    visible: root.recording || root.missing || root.needsSetup
+    visible: root.recording || root.missing || root.serviceDown
+             || root.needsSetup
     anchors.fill: parent
     bar: root.bar
     fontSize: Style.font.bodySmall
     text: root.recording ? "󰑊  " + root._clock(link.seconds)
-          : root.missing ? "󰍬  Setup"
+          : root.missing ? "󰍬  " + root.t("nav.setup")
+          : root.serviceDown ? "󰍬  " + root.t("bar.stopped")
           : "󰍬  " + root.setupDone + "/" + root.setupTotal
     active: root.recording
     tooltipText: root.recording
-                 ? "Recording · release the key to transcribe"
+                 ? root.t("bar.tip.recording")
                  : root.missing
-                   ? "Omavoi — not set up yet. Click to start."
-                   : "Omavoi — setup unfinished"
+                   ? root.t("bar.tip.notinstalled")
+                   : root.serviceDown
+                     ? root.t("bar.tip.stopped")
+                     : root.tf("bar.tip.unfinished",
+                               root.setupDone + "/" + root.setupTotal)
     onPressed: function (b) { root.handle(b) }
   }
 
@@ -127,21 +167,18 @@ BarWidget {
     visible: !reading.visible
     anchors.fill: parent
     bar: root.bar
-    text: {
-      if (root.working) return "󰑫"
-      if (root.missing) return "󰇚"
-      return "󰍬"
-    }
+    // Every state that needs a word beside the glyph is handled by the
+    // button above, so this one is the working machine: idle, or mid-take.
+    text: root.working ? "󰑫" : "󰍬"
     // `active` is the bar's own attention colour, which this theme already
     // reserves for recording modules.
     active: root.recording
     tooltipText: {
-      if (root.missing) return "Omavoi — not installed yet. Click to set it up."
-      if (root.recording) return "Recording · release the key to transcribe"
-      if (root.working) return "Transcribing…"
-      if (root.needsSetup)
-        return "Omavoi — setup unfinished (" + root.setupDone + "/" + root.setupTotal + ")"
-      return link.backend || "Omavoi — ready"
+      if (root.working) return root.t("bar.tip.transcribing")
+      // Right-click starts and stops a take by hand. It is the way in when
+      // the key is not working yet, and it was written down nowhere.
+      return (link.backend || root.t("bar.tip.ready"))
+             + (root.setupReady ? "\n" + root.t("bar.tip.rightclick") : "")
     }
     onPressed: function (b) { root.handle(b) }
   }

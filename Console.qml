@@ -225,12 +225,18 @@ Item {
 
   // ggml weights another tool already downloaded. Found rather than fetched:
   // three gigabytes is not worth having twice.
+  //
+  // Several candidates, not one. `head -1` returned whatever sorted first —
+  // which the second glob makes any .bin in our own store, `ggml-base.bin`
+  // included — and the first-run screen then offered "use what is here" and
+  // selected large-v3-turbo regardless. The screen picks the first line it
+  // recognises now, so what it offers is what it found.
   property string foundWeights: ""
   Process {
     id: probeWeights
     command: ["sh", "-lc",
               "ls -1 \"$HOME\"/.local/share/*/models/ggml-large-v3*.bin " +
-              "\"$HOME\"/.local/share/omavoi/models/ggml/*.bin 2>/dev/null | head -1"]
+              "\"$HOME\"/.local/share/omavoi/models/ggml/*.bin 2>/dev/null | head -8"]
     stdout: StdioCollector {
       onStreamFinished: root.foundWeights = text.trim()
     }

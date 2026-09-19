@@ -82,7 +82,7 @@ Item {
             }
             OmText {
               visible: modelData.optional && !modelData.done
-              text: "optional"
+              text: view.strings.t("setup.optional")
               color: Color.muted
             }
           }

@@ -23,8 +23,37 @@ Flickable {
 
   property var strings: null
   property bool daemonPresent: false
-  // Weights another tool already put on this machine. Reused, never moved.
+  // Candidate weights already on this machine, newline separated. Reused,
+  // never moved.
   property string foundWeights: ""
+
+  // The catalogue's speech keys, written out because this screen runs before
+  // `omavoi` exists and cannot ask for them.
+  //
+  // "Use what is here" has to name a key that `omavoi model use` will accept,
+  // and it has to be the key for the file that was actually found. It used to
+  // run `model use ggml:large-v3-turbo` whatever the probe turned up, so a
+  // machine carrying any other weights was left pointing at a model that had
+  // never been downloaded.
+  readonly property var catalogue: ["large-v3", "large-v3-turbo",
+                                    "large-v3-q5_0", "large-v3-turbo-q5_0",
+                                    "medium", "small", "base"]
+
+  // The first candidate whose filename maps onto one of those, as
+  // { key, file }. Empty key means there is nothing to reuse and the option
+  // is not offered.
+  readonly property var reuse: {
+    var lines = String(root.foundWeights).split("\n")
+    for (var i = 0; i < lines.length; i++) {
+      var p = lines[i].trim()
+      if (p === "") continue
+      var file = p.substring(p.lastIndexOf("/") + 1)
+      var m = file.match(/^ggml-(.+)\.bin$/)
+      if (m && root.catalogue.indexOf(m[1]) >= 0)
+        return ({ key: "ggml:" + m[1], file: file })
+    }
+    return ({ key: "", file: "" })
+  }
 
   readonly property int pad: Style.space(24)
 
@@ -78,8 +107,11 @@ Flickable {
 
   readonly property var modelChoices: {
     var out = []
-    if (root.foundWeights !== "")
-      out.push({ key: "reuse", size: "", note: root.t("first.reuse") })
+    // Named, not merely offered: "use what is here" with no statement of
+    // what is here is a choice you cannot check.
+    if (root.reuse.key !== "")
+      out.push({ key: "reuse", size: root.reuse.file,
+                 note: root.t("first.reuse") })
     // The default first, and the sizes are the catalogue's real ones — this
     // screen runs before omavoi is installed, so it cannot ask, and 3.0G was
     // a decimal-megabyte figure for a 2.9 GiB file.
@@ -112,7 +144,7 @@ Flickable {
                                    "llama-cpp", "xdotool"]
 
   readonly property var steps: {
-    var chosen = (root.model === "reuse") ? "ggml:large-v3-turbo" : root.model
+    var chosen = (root.model === "reuse") ? root.reuse.key : root.model
     // One pkexec, because polkit prompts for every call. When the input group
     // is also needed it joins the same shell line rather than asking twice —
     // and the line is printed in full below before anything runs.
@@ -381,7 +413,13 @@ Flickable {
         OmText {
           Layout.fillWidth: true
           wrapMode: Text.Wrap
-          text: root.tf("first.dbstale", Math.round(root.dbAgeDays))
+          // The age is its own sentence so the singular can be its own
+          // string: the count reads "%1 days" in the languages that inflect,
+          // and a database exactly one day old was told it was "1 days old".
+          text: (Math.round(root.dbAgeDays) === 1
+                 ? root.t("first.dbstale.age1")
+                 : root.tf("first.dbstale.age", Math.round(root.dbAgeDays)))
+                + " " + root.t("first.dbstale")
           color: "#e0af68"
         }
         Button {

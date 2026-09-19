@@ -572,7 +572,9 @@ Flickable {
     RowLayout {
       Layout.topMargin: Style.space(6)
       spacing: Style.space(8)
-      Button { text: root.t("set.editconfig"); onClicked: root.command("omavoi config path") }
+      // `config edit`, not `config path`. The latter prints the path to stdout,
+      // which this console throws away -- so the button did nothing at all.
+      Button { text: root.t("set.editconfig"); onClicked: root.command("omavoi config edit") }
       Button {
         text: root.t("set.restart")
         onClicked: root.command("systemctl --user restart omavoid")

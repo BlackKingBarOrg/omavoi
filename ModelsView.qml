@@ -50,8 +50,13 @@ Item {
   // which configurations are usable; what they cannot say is what is actually
   // loaded and holding memory, which is the whole of what the speech column's
   // matching line is for.
+  //
+  // `live`, without a pid test. An agent is a command we shell out to: it
+  // is live and it has no pid of ours, so requiring one put "none loaded"
+  // directly above a card of the same agent marked running. The pid and the
+  // url are printed below only where there is one.
   readonly property var llmResident: (engines.llm || []).filter(function (l) {
-    return l.live === true && (l.pid || 0) > 0
+    return l.live === true
   })
   readonly property bool daemonUp: payload.daemon === true
   readonly property bool speechLive: root.speechNow.live === true
@@ -460,7 +465,9 @@ Item {
                   color: Color.foreground
                 }
                 OmText {
-                  text: root.hostport(l.url) + "  pid " + l.pid
+                  visible: text !== ""
+                  text: root.hostport(l.url)
+                        + ((l.pid || 0) > 0 ? "  pid " + l.pid : "")
                   color: Qt.darker(Color.muted, 1.1)
                 }
               }
@@ -502,8 +509,16 @@ Item {
             // non-interactive mode has nowhere else to take a prompt.
             detail: kind.detail + (l && l.transcript_in_argv === true
                                    ? "  " + root.t("models.k.agent.argv") : "")
+            // "no key" only where a key is the thing missing. It used to
+            // stand for any live_problem at all, and the commonest one on
+            // the local row is weights that were never downloaded --
+            // llama.cpp wants no key, so the card was sending people to
+            // look for a field that does not exist. The reason itself is
+            // printed in full under the catalogue below either way.
             status: !l ? root.t("models.k.unset")
-                    : l.live_problem ? root.t("models.nokey")
+                    : l.live_problem
+                      ? (l.remote === true && l.has_key !== true
+                         ? root.t("models.nokey") : root.t("models.notready"))
                     : l.live_running === true ? root.t("models.running")
                     : (l.remote ? root.t("models.ready") : root.t("models.coldshort"))
             statusColor: !l ? Qt.darker(Color.muted, 1.2)

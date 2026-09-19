@@ -10,6 +10,11 @@ import qs.Commons
 // that per character would be absurd.
 Rectangle {
   id: root
+  // Handed down like every other view's, because this control has three
+  // words of its own and they were the only English left on a Chinese
+  // Modes tab.
+  property var strings: null
+  function t(k) { return root.strings ? root.strings.t(k) : k }
   property string text: ""
   property string placeholder: ""
   property int minLines: 2
@@ -76,16 +81,17 @@ Rectangle {
 
     OmText {
       anchors.verticalCenter: parent.verticalCenter
-      text: "unsaved"
+      text: root.t("edit.unsaved")
       color: Color.urgent
     }
     OmChip {
-      label: "Revert"
+      label: root.t("edit.revert")
       on: false
       onClicked: area.text = root.text
     }
     OmChip {
-      label: "Save  ⌃⏎"
+      // The shortcut is not translated: ⌃⏎ is the key, not a word.
+      label: root.t("edit.save") + "  ⌃⏎"
       on: true
       onClicked: root.commit()
     }
