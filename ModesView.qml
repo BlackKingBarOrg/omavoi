@@ -26,6 +26,22 @@ Item {
   readonly property var speechChoices: (catalogue.models || []).filter(function (m) {
     return m.kind === "speech" && m.downloaded && m.fmt === "ggml"
   })
+  // A catalogue key without its format prefix. `ggml:large-v3-turbo` is how
+  // the CLI names the file and what is written to the config; the half after
+  // the colon is the part someone is choosing between, and `ggml` is a file
+  // format nobody picks a model by. The LLM rows below already did this.
+  function plain(key) {
+    return String(key || "").replace("ggml:", "").replace("llm:", "")
+  }
+  // Which model the global setting points at, so the chip that means "no
+  // override" can name it rather than only say that it follows something.
+  readonly property string defaultSpeech: {
+    var all = catalogue.models || []
+    for (var i = 0; i < all.length; i++)
+      if (all[i].kind === "speech" && all[i].active === true)
+        return root.plain(all[i].key)
+    return ""
+  }
   // `withModel` is false wherever a weights row sits directly underneath: the
   // model shown here comes from the *configuration*, so a step pinned to
   // other weights was labelled with the ones it is not going to run — the
@@ -40,7 +56,7 @@ Item {
     // The model only where it is a choice: the local weights, or an endpoint
     // whose model the user set. An agent uses its own default.
     if (withModel !== false && m !== "" && name !== "agent")
-      return kind + "  " + m.replace("llm:", "")
+      return kind + "  " + root.plain(m)
     return kind
   }
   // Weights a step can be pointed at: the LLM catalogue, downloaded only. A
@@ -456,7 +472,7 @@ Item {
             Layout.fillWidth: true
             spacing: Style.space(9)
             OmText {
-              Layout.preferredWidth: Style.space(96)
+              Layout.preferredWidth: Style.space(124)
               text: root.t("modes.language")
               color: Color.muted
             }
@@ -482,15 +498,20 @@ Item {
             Layout.fillWidth: true
             spacing: Style.space(9)
             OmText {
-              Layout.preferredWidth: Style.space(96)
+              Layout.preferredWidth: Style.space(124)
               text: root.t("modes.speechmodel")
               color: Color.muted
             }
             Flow {
               Layout.fillWidth: true
               spacing: Style.space(6)
+              // The absence of an override, saying what it will follow —
+              // the same shape as the LLM step's inherit chip below, which
+              // had it first. "whatever is loaded" named no model at all.
               OmChip {
-                label: root.t("modes.speechglobal")
+                label: root.defaultSpeech === ""
+                       ? root.t("modes.speechglobal")
+                       : root.tf("modes.speechglobalnamed", root.defaultSpeech)
                 on: !(root.mode && root.mode.speech_model)
                 onClicked: root.commandArgs(
                   ["omavoi", "mode", "set", root.current, "speech_model", ""])
@@ -499,7 +520,7 @@ Item {
                 model: root.speechChoices
                 OmChip {
                   readonly property var entry: modelData
-                  label: entry.key
+                  label: root.plain(entry.key)
                   on: root.mode && String(root.mode.speech_model) === String(entry.key)
                   onClicked: root.commandArgs(
                     ["omavoi", "mode", "set", root.current, "speech_model", entry.key])
@@ -670,7 +691,7 @@ Item {
                   // it will follow rather than only that it follows.
                   OmChip {
                     label: root.tf("modes.inherit",
-                                   root.llmModelOf(step.llm).replace("llm:", ""))
+                                   root.plain(root.llmModelOf(step.llm)))
                     on: String(step.model || "") === ""
                     onClicked: if (!on) root.commandArgs(
                       ["omavoi", "mode", "step", root.current, "model",
@@ -680,7 +701,7 @@ Item {
                     model: root.weightChoices
                     OmChip {
                       readonly property string wkey: modelData.key
-                      label: wkey.replace("llm:", "")
+                      label: root.plain(wkey)
                       on: String(step.model || "") === wkey
                       onClicked: if (!on) root.commandArgs(
                         ["omavoi", "mode", "step", root.current, "model",
@@ -757,8 +778,13 @@ Item {
               model: ["auto", "wtype", "clipboard"]
               OmChip {
                 readonly property string how: modelData
-                // wtype is a program name, so it is not translated.
-                label: how === "wtype" ? how : root.t("modes.inject." + how)
+                // The value written to the config is still `wtype`; the chip
+                // says what it does. A program name is the right word in a
+                // terminal and in the note below, and the wrong one on a
+                // choice between three things — nobody picks "wtype" over
+                // "clipboard" by knowing what wtype is.
+                label: root.t(how === "wtype" ? "modes.inject.type"
+                                              : "modes.inject." + how)
                 on: ((root.mode && root.mode.inject) || "auto") === how
                 onClicked: if (!on) root.commandArgs(
                   ["omavoi", "mode", "set", root.current, "inject", how])

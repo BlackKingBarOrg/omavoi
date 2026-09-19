@@ -78,10 +78,10 @@ section("firstrun", {
                      "สามคำถาม แล้วปุ่มเดียว ไม่มีอะไรทำงานจนกว่าคุณจะกด และทุกคำสั่งจะแสดงให้ดูก่อน"),
  "first.pick.language": ("Interface language", "界面语言", "ภาษาของหน้าจอ"),
  "first.pick.model":    ("Speech model", "语音模型", "โมเดลเสียงพูด"),
- "first.reuse":     ("weights already on this machine — used where they lie, nothing "
-                     "to download",
-                     "这台机器上已有的权重 —— 就地使用，无需下载",
-                     "น้ำหนักที่มีอยู่แล้วบนเครื่องนี้ — ใช้ตามที่อยู่เดิม ไม่ต้องดาวน์โหลด"),
+ "first.reuse":     ("a voice model already on this machine — used where it lies, nothing to "
+                     "download",
+                     "这台机器上已有的语音模型 —— 就地使用，无需下载",
+                     "โมเดลเสียงที่มีอยู่แล้วบนเครื่องนี้ — ใช้ตามที่อยู่เดิม ไม่ต้องดาวน์โหลด"),
  "first.reuse.label": ("use what is here", "用已有的", "ใช้ของที่มีอยู่"),
  # Not "the only one": there are non-turbo models this screen does not
  # offer, and a claim that is only true of the three listed here is the
@@ -165,7 +165,7 @@ section("firstrun", {
  "first.step.packages": ("system packages", "系统软件包", "แพ็กเกจของระบบ"),
  "first.step.daemon":   ("the daemon", "守护进程", "เดมอน"),
  "first.step.language": ("language", "语言", "ภาษา"),
- "first.step.weights":  ("model weights", "模型权重", "น้ำหนักโมเดล"),
+ "first.step.weights":  ("voice model", "语音模型", "โมเดลเสียง"),
  "first.step.use":      ("select the model", "选用模型", "เลือกโมเดล"),
  "first.step.mode":     ("default mode", "默认模式", "โหมดเริ่มต้น"),
  "first.step.service":  ("unit, keybinding and menu entry", "服务、快捷键与菜单项",
@@ -337,19 +337,18 @@ section("modes", {
  "modes.blocked":    ("not switched — this mode's model will not fit in VRAM right now",
                       "未切换 —— 这个模式的模型现在装不进显存",
                       "ไม่ได้สลับ — โมเดลของโหมดนี้ใส่ใน VRAM ตอนนี้ไม่พอ"),
- "modes.speechmodel": ("weights", "权重", "น้ำหนัก"),
- "modes.speechglobal": ("whatever is loaded", "沿用已加载的", "ใช้ตัวที่โหลดอยู่"),
- "modes.speechonly1": ("Only one set of weights is downloaded for this engine. The Models "
-                       "tab has the rest — a smaller one is worth having for modes where "
-                       "speed matters more than accuracy.",
-                       "这个引擎目前只下载了一套权重。其余的在「模型」页 —— "
-                       "对速度比准确率更重要的模式，值得备一个小的。",
-                       "เอนจินนี้ดาวน์โหลดน้ำหนักไว้ชุดเดียว ที่เหลืออยู่ในแท็บโมเดล — "
-                       "ตัวเล็กกว่าคุ้มที่จะมีไว้สำหรับโหมดที่เน้นความเร็วมากกว่าความแม่น"),
- "modes.speechnone": ("No weights are downloaded for this engine yet. The Models tab is "
+ "modes.speechmodel": ("voice model", "语音模型", "โมเดลเสียง"),
+ "modes.speechglobal": ("use the default", "用默认的", "ใช้ค่าเริ่มต้น"),
+ "modes.speechglobalnamed": ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
+ "modes.speechonly1": ("Only one voice model is downloaded for this engine. The Models tab has "
+                       "the rest — a smaller one is worth having for modes where speed matters "
+                       "more than accuracy.",
+                       "这个引擎目前只下载了一个语音模型。其余的在「模型」页 —— 对速度比准确率更重要的模式，值得备一个小的。",
+                       "เอนจินนี้ดาวน์โหลดโมเดลเสียงไว้ตัวเดียว ที่เหลืออยู่ในแท็บโมเดล — ตัวเล็กกว่าคุ้มที่จะมีไว้สำหรับโหมดที่เน้นความเร็วมากกว่าความแม่น"),
+ "modes.speechnone": ("No voice model is downloaded for this engine yet. The Models tab is "
                       "where they come from.",
-                      "这个引擎还没有下载任何权重。到「模型」页去下载。",
-                      "ยังไม่ได้ดาวน์โหลดน้ำหนักสำหรับเอนจินนี้ ดาวน์โหลดได้ที่แท็บโมเดล"),
+                      "这个引擎还没有下载任何语音模型。到「模型」页去下载。",
+                      "ยังไม่ได้ดาวน์โหลดโมเดลเสียงสำหรับเอนจินนี้ ดาวน์โหลดได้ที่แท็บโมเดล"),
  "modes.newname":    ("new mode name", "新模式名称", "ชื่อโหมดใหม่"),
  # Window matching is switched off (ModesView's showWindowMatch), so a mode
  # is global: "here" and "active in this window" were describing a scope the
@@ -391,31 +390,35 @@ section("modes", {
  "modes.matchhint":  ("Matched against the Hyprland class and title. The longest match wins.",
                       "与 Hyprland 的 class 和 title 做匹配，最长的匹配胜出。",
                       "เทียบกับ class และ title ของ Hyprland กฎที่ตรงยาวที่สุดชนะ"),
- "modes.s1":         ("1  SPEECH", "1  语音", "1  เสียงพูด"),
- "modes.speechsub":  ("what the model is told before it decodes", "解码之前告诉模型的内容",
-                      "สิ่งที่บอกโมเดลก่อนเริ่มถอดเสียง"),
+ "modes.s1":         ("1  VOICE", "1  语音", "1  เสียงพูด"),
+ "modes.speechsub":  ("how your voice is turned into text",
+                      "你的声音是怎么变成文字的",
+                      "เสียงของคุณกลายเป็นข้อความได้อย่างไร"),
  "modes.language":   ("language", "语言", "ภาษา"),
- "modes.langhint":   ("empty detects it per take; a code like en or zh is faster and steadier",
-                      "留空则每次自动检测；填 en、zh 这样的代码更快也更稳",
-                      "ปล่อยว่างจะตรวจทุกครั้ง ใส่รหัสอย่าง en หรือ zh จะเร็วและนิ่งกว่า"),
- "modes.decoderhint":("decoder hint", "解码提示词", "คำใบ้ให้ตัวถอดเสียง"),
- "modes.promptph":   ("Seeded into the model. Good for jargon it keeps mangling — a hint, "
-                      "not a guarantee; the dictionary is the guarantee.",
-                      "会喂给模型。适合它总认错的专有名词 —— 这只是提示，不是保证；保证靠词典。",
-                      "ถูกป้อนเข้าโมเดล เหมาะกับศัพท์เฉพาะที่มันเพี้ยนบ่อย — เป็นคำใบ้ ไม่ใช่การรับประกัน "
-                      "ตัวที่รับประกันคือพจนานุกรม"),
- "modes.s2":         ("2  RULES", "2  规则", "2  กฎ"),
- "modes.rulessub":   ("deterministic · no latency", "确定性 · 零延迟", "แน่นอน · ไม่มีดีเลย์"),
- "modes.r.hallucinations": ("hallucinations", "幻觉过滤", "การหลอน"),
- "modes.r.fillers":  ("fillers", "语气词", "คำเติม"),
+ "modes.langhint":   ("leave it empty and it works the language out each time; naming one — en, "
+                      "zh — is faster and steadier",
+                      "留空就每次自动判断；指定一个（en、zh）更快也更稳",
+                      "ปล่อยว่างจะเดาให้ทุกครั้ง ระบุสักภาษา (en, zh) จะเร็วและนิ่งกว่า"),
+ "modes.decoderhint": ("vocabulary", "词汇", "คำศัพท์"),
+ "modes.promptph":   ("Words and names it keeps getting wrong, commas between them. A hint, not "
+                      "a guarantee — the dictionary is the guarantee.",
+                      "它老是认错的词和人名，用逗号隔开。这只是提示，不是保证 —— 保证靠词典。",
+                      "คำและชื่อที่มันมักฟังผิด คั่นด้วยจุลภาค เป็นคำใบ้ ไม่ใช่การรับประกัน — ตัวที่รับประกันคือพจนานุกรม"),
+ "modes.s2":         ("2  CLEANUP", "2  自动清理", "2  จัดข้อความ"),
+ "modes.rulessub":   ("instant, and the same every time",
+                      "即时完成，每次结果都一样",
+                      "ทำทันที และได้ผลเหมือนกันทุกครั้ง"),
+ "modes.r.hallucinations": ("made-up phrases", "凭空出现的句子", "ประโยคที่มันแต่งขึ้น"),
+ "modes.r.fillers":  ("filler words", "语气词", "คำเติม"),
  "modes.r.dictionary":("dictionary", "词典", "พจนานุกรม"),
  "modes.r.names":    ("names", "名称", "ชื่อเฉพาะ"),
- "modes.r.cjk":      ("CJK spacing", "中英间距", "ระยะห่าง CJK"),
+ "modes.r.cjk":      ("spacing between scripts", "中西文间距", "ระยะห่างระหว่างระบบเขียน"),
  "modes.keeppunct":  ("keep end punctuation", "保留句末标点", "คงเครื่องหมายท้ายประโยค"),
- "modes.s3":         ("3  LLM", "3  LLM", "3  LLM"),
- "modes.llmsub":     ("optional · runs in order · a failure keeps the text it was given",
-                      "可选 · 按顺序执行 · 某步失败则保留上一步的文本",
-                      "ไม่บังคับ · ทำตามลำดับ · ถ้าล้มเหลวจะคงข้อความเดิมไว้"),
+ "modes.s3":         ("3  AI REWRITE", "3  AI 改写", "3  AI เขียนใหม่"),
+ "modes.llmsub":     ("optional · each step runs in turn · if one fails, your text is kept as "
+                      "it was",
+                      "可选 · 每一步按顺序执行 · 某一步失败，文字保持原样",
+                      "ไม่บังคับ · แต่ละขั้นทำตามลำดับ · ถ้าขั้นไหนล้มเหลว ข้อความจะคงเดิม"),
  "modes.step":       ("step ", "第 ", "ขั้น "),
  "modes.stepsuffix": ("", " 步", ""),
  "modes.remove":     ("Remove", "移除", "เอาออก"),
@@ -429,22 +432,20 @@ section("modes", {
                       "โหมดนี้ไม่มีขั้น LLM จึงยังไม่มีพรอมป์ตให้เขียน เพิ่มด้านล่างแล้วพรอมป์ตจะปรากฏที่นี่ "
                       "แก้ไขได้ และมีค่าเริ่มต้นที่ใช้งานได้อยู่แล้ว"),
  "modes.addstep":    ("+ add a step", "+ 添加一步", "+ เพิ่มขั้น"),
- "modes.weights":  ("weights", "权重", "น้ำหนักโมเดล"),
- "modes.inherit":  ("follow the configuration (%1)", "跟随配置（%1）",
-                    "ตามการตั้งค่า (%1)"),
+ "modes.weights":  ("model", "模型", "โมเดล"),
+ "modes.inherit":  ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
  "modes.nollm":      ("no LLM is configured — see the Models tab", "还没有配置 LLM —— 去「模型」页",
                       "ยังไม่ได้ตั้งค่า LLM — ดูที่แท็บโมเดล"),
  "modes.inject.auto":      ("auto", "自动", "อัตโนมัติ"),
- "modes.inject.clipboard": ("clipboard", "剪贴板", "คลิปบอร์ด"),
+ "modes.inject.type":      ("type it", "逐字输入", "พิมพ์ทีละตัว"),
+ "modes.inject.clipboard": ("paste it", "粘贴", "วาง"),
  "modes.langauto":         ("auto", "自动", "อัตโนมัติ"),
- "modes.s4":         ("4  INJECT", "4  注入", "4  การป้อนข้อความ"),
- "modes.injecthint": ("auto types with wtype, except in XWayland clients and known Electron "
-                      "apps, where it pastes instead — wtype's synthetic keycodes reach those "
-                      "as digits.",
-                      "auto 默认用 wtype 逐字输入；遇到 XWayland 客户端和已知的 Electron 应用则改为粘贴 —— "
-                      "wtype 合成的键码传到那些程序里会变成数字。",
-                      "auto จะพิมพ์ด้วย wtype ยกเว้นไคลเอนต์ XWayland และแอป Electron ที่รู้จัก "
-                      "ซึ่งจะใช้การวางแทน — คีย์โค้ดสังเคราะห์ของ wtype ไปถึงแอปพวกนั้นเป็นตัวเลข"),
+ "modes.s4":         ("4  TYPING", "4  输入方式", "4  วิธีป้อนข้อความ"),
+ "modes.injecthint": ("Auto types the text out like a keyboard (wtype), and pastes instead in "
+                      "apps that cannot take simulated typing — X11 apps, and Electron ones "
+                      "like VS Code or Slack.",
+                      "自动模式会像键盘一样把文字打出来（wtype）；遇到接不了模拟按键的程序 —— X11 程序，以及 VS Code、Slack 这类 Electron 应用 —— 则改为粘贴。",
+                      "โหมดอัตโนมัติจะพิมพ์ข้อความออกมาเหมือนคีย์บอร์ด (wtype) และเปลี่ยนไปวางแทนในแอปที่รับการพิมพ์จำลองไม่ได้ — แอป X11 และแอป Electron อย่าง VS Code หรือ Slack"),
 })
 
 section("models", {
@@ -511,10 +512,10 @@ section("models", {
  "models.speechapi.sub": ("Audio leaves this machine. Selected above under Remote API.",
                           "音频会离开本机。在上面的「远程 API」里选中它才会生效。",
                           "เสียงจะออกจากเครื่องนี้ เลือก \"API ระยะไกล\" ด้านบนเพื่อใช้งาน"),
- "models.speechapi.cat": ("The list below is the local engine's weights and is "
-                          "not used while the remote engine is selected.",
-                          "下面的列表是本地引擎的权重，选中远程引擎时不会用到。",
-                          "รายการด้านล่างคือน้ำหนักของเอนจินในเครื่อง และไม่ถูกใช้เมื่อเลือกเอนจินระยะไกล"),
+ "models.speechapi.cat": ("The list below is the local engine's voice models and is not used while "
+                          "the remote engine is selected.",
+                          "下面的列表是本地引擎的语音模型，选中远程引擎时不会用到。",
+                          "รายการด้านล่างคือโมเดลเสียงของเอนจินในเครื่อง และไม่ถูกใช้เมื่อเลือกเอนจินระยะไกล"),
  "models.k.agent":     ("System agent", "系统 agent", "เอเจนต์ของระบบ"),
  # "already logged in, no key" implied a cloud without saying the text
  # reaches it. The process is local; the inference is not, which is what
@@ -537,11 +538,10 @@ section("models", {
                          "· การเรียกเอเจนต์นี้จะใส่ข้อความถอดเสียงไว้ในบรรทัดคำสั่ง "
                          "ซึ่งโปรเซสใด ๆ ของผู้ใช้คนนี้อ่านได้จาก /proc"),
  "models.k.local":     ("Local model", "本地模型", "โมเดลในเครื่อง"),
- "models.k.local.sub": ("llama.cpp, started and owned here; a step can name its own "
-                        "weights from the catalogue below",
-                        "llama.cpp，由本程序启动和管理；步骤可以从下面的目录里指定自己的权重",
-                        "llama.cpp ที่โปรแกรมนี้เริ่มและดูแลเอง; แต่ละขั้นเลือกน้ำหนักของตัวเอง "
-                        "จากรายการด้านล่างได้"),
+ "models.k.local.sub": ("llama.cpp, started and owned here; a step can name its own model from "
+                        "the catalogue below",
+                        "llama.cpp，由本程序启动和管理；步骤可以从下面的目录里指定自己的模型",
+                        "llama.cpp ที่โปรแกรมนี้เริ่มและดูแลเอง; แต่ละขั้นเลือกโมเดลของตัวเอง จากรายการด้านล่างได้"),
  "models.k.api":       ("Remote API", "远程 API", "API ระยะไกล"),
  # It was "the only one that sends your words off the machine", which the
  # agent route also does — it runs a CLI that is logged into someone's
@@ -559,17 +559,18 @@ section("models", {
  "models.configured":("configured ", "已配置 ", "ตั้งค่าไว้ "),
  "models.restart":   ("Restart daemon", "重启守护进程", "รีสตาร์ตเดมอน"),
  "models.list":      ("MODELS · ", "模型 · ", "โมเดล · "),
- "models.formathint":("the format this engine runs", "这个引擎使用的权重格式",
-                      "รูปแบบน้ำหนักที่เอนจินนี้ใช้"),
+ "models.formathint": ("the format this engine runs",
+                       "这个引擎使用的模型格式",
+                       "รูปแบบโมเดลที่เอนจินนี้ใช้"),
  "models.ondisk":    ("already on disk", "已在磁盘上", "มีอยู่ในดิสก์แล้ว"),
  "models.downloading":("downloading…", "下载中…", "กำลังดาวน์โหลด…"),
  "models.download":  ("Download", "下载", "ดาวน์โหลด"),
  "models.use":       ("Use", "使用", "ใช้"),
  "models.remove":    ("Remove", "删除", "ลบ"),
  "models.ourstore":  ("our store", "我们的模型目录", "คลังของเรา"),
- "models.outside":   ("Weights found outside %1 are used where they lie and never deleted.",
-                      "在 %1 之外找到的权重会就地使用，永不删除。",
-                      "น้ำหนักที่พบนอก %1 จะถูกใช้ตามที่อยู่เดิมและไม่ถูกลบ"),
+ "models.outside":   ("Models found outside %1 are used where they lie and never deleted.",
+                      "在 %1 之外找到的模型会就地使用，永不删除。",
+                      "โมเดลที่พบนอก %1 จะถูกใช้ตามที่อยู่เดิมและไม่ถูกลบ"),
  "models.llm":       ("LLM", "LLM", "LLM"),
  "models.llmsub":    ("text → text · any number, named by modes",
                       "文本 → 文本 · 可配多个，由模式按名字引用",

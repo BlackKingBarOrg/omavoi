@@ -98,7 +98,7 @@ with the take — and Settings has the button that clears the lot.
 
 | Modes | Models |
 |---|---|
-| ![Modes: speech settings, rules, LLM steps and injection for one mode](docs/img/console-modes.webp) | ![Models: speech engines and weights, LLM configurations, and the VRAM in use](docs/img/console-models.webp) |
+| ![Modes: voice, cleanup, AI rewrite and typing, for one mode](docs/img/console-modes.webp) | ![Models: speech engines and voice models, LLM configurations, and the VRAM in use](docs/img/console-models.webp) |
 
 | Settings | Dictionary |
 |---|---|
