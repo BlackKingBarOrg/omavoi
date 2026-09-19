@@ -127,8 +127,8 @@ PACK = {
  "modes.matchhint": "Đối chiếu với class và title của Hyprland. Mẫu khớp dài nhất thắng.",
  "modes.s1": "1  GIỌNG NÓI",
  "modes.speechsub": "giọng nói của bạn trở thành văn bản như thế nào",
- "modes.language": "ngôn ngữ",
- "modes.langhint": "để trống thì mỗi lần nó tự đoán; ghi rõ một mã (en, zh) sẽ nhanh và ổn định hơn",
+ 'modes.language': 'Ngôn ngữ nhập chính',
+ 'modes.langhint': 'Tự động nhận diện ngôn ngữ mà không đổi dạng chữ. Các lựa chọn tiếng Trung thống nhất dạng chữ trước khi biên tập hoặc dịch.',
  "modes.decoderhint": "từ vựng",
  "modes.promptph": "Những từ và tên nó cứ nghe sai, cách nhau bằng dấu phẩy. Đây là gợi ý, không phải bảo đảm — thứ bảo đảm là từ điển.",
  "modes.s2": "2  DỌN DẸP",
@@ -408,3 +408,5 @@ PACK.update({'word.add': 'Thêm từ',
 PACK.update({'word.deleted': 'Đã xóa từ và các cách sửa.',
  'word.restart': 'Khởi động lại dịch vụ giọng nói để dùng từ điển mới. Các từ hiện có chưa thay '
                  'đổi.'})
+
+PACK.update({'modes.langsearch': 'Tìm ngôn ngữ…', 'modes.langempty': 'Không có ngôn ngữ phù hợp', 'modes.langupgrade': 'Cập nhật dịch vụ giọng nói để chọn ngôn ngữ nhập.'})

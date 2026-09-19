@@ -468,28 +468,36 @@ Item {
               color: Color.muted
             }
           }
-          RowLayout {
+          SearchableDropdown {
+            id: inputLanguagePicker
+            objectName: "inputLanguagePicker"
             Layout.fillWidth: true
-            spacing: Style.space(9)
-            OmText {
-              Layout.preferredWidth: Style.space(124)
-              text: root.t("modes.language")
-              color: Color.muted
+            Layout.alignment: Qt.AlignLeft
+            Layout.preferredWidth: Style.space(280)
+            // Bound to the view, not a RowLayout's implicit width: this also
+            // keeps the popup inside the detail pane on narrow windows.
+            Layout.maximumWidth: Math.max(Style.space(120), Math.min(Style.space(280),
+                                     root.width - Style.space(280) - 1 - root.pad * 2))
+            label: root.t("modes.language")
+            popupRowHeight: Style.space(40)
+            // The shell picker writes value on selection. Binding keeps
+            // external refreshes and mode switches connected afterwards.
+            Binding on value { value: (root.mode && root.mode.language) || "auto" }
+            options: root.mode && root.mode.input_languages ? root.mode.input_languages : []
+            enabled: options.length > 0
+            placeholderText: root.t("modes.langsearch")
+            triggerLabel: root.t("modes.langauto")
+            emptyText: root.t("modes.langempty")
+            onChanged: function(code) {
+              if (root.mode && code !== (root.mode.language || "auto"))
+                root.commandArgs(["omavoi", "mode", "set", root.current, "language", code])
             }
-            TextField {
-              Layout.preferredWidth: Style.space(120)
-              text: (root.mode && root.mode.language) || ""
-              placeholderText: root.t("modes.langauto")
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
-              onEditingFinished: if (root.mode && text !== (root.mode.language || ""))
-                root.commandArgs(["omavoi", "mode", "set", root.current, "language", text])
-            }
-            OmText {
-              Layout.fillWidth: true
-              text: root.t("modes.langhint")
-              color: Qt.darker(Color.muted, 1.1)
-            }
+          }
+          OmText {
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.t(inputLanguagePicker.enabled ? "modes.langhint" : "modes.langupgrade")
+            color: Qt.darker(Color.muted, 1.1)
           }
           // A mode names its own weights, or takes whatever is loaded. The
           // switch costs one reload — measured at 3.7 s for large-v3 — and it

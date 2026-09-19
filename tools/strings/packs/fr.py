@@ -129,8 +129,8 @@ PACK = {
                     "longue gagne.",
  "modes.s1": "1  PAROLE",
  "modes.speechsub": "comment ta voix devient du texte",
- "modes.language": "langue",
- "modes.langhint": "laisse vide et il la trouve à chaque fois ; en indiquer une (en, zh) est plus rapide et plus stable",
+ 'modes.language': 'Langue principale de saisie',
+ 'modes.langhint': 'Le mode automatique détecte la langue sans changer son écriture. Les options chinoises harmonisent la transcription avant la réécriture ou la traduction.',
  "modes.decoderhint": "vocabulaire",
  "modes.promptph": "Les mots et les noms qu'il se trompe toujours, séparés par des virgules. Un indice, pas une garantie — la garantie, c'est le dictionnaire.",
  "modes.s2": "2  NETTOYAGE",
@@ -416,3 +416,5 @@ PACK.update({'word.add': 'Ajouter un mot',
 PACK.update({'word.deleted': 'Mot et corrections supprimés.',
  'word.restart': 'Redémarrez le service vocal pour utiliser le nouveau dictionnaire. Les mots '
                  'existants sont inchangés.'})
+
+PACK.update({'modes.langsearch': 'Rechercher une langue…', 'modes.langempty': 'Aucune langue correspondante', 'modes.langupgrade': 'Mettez à jour le service vocal pour choisir une langue de saisie.'})

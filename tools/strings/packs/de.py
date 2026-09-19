@@ -131,8 +131,8 @@ PACK = {
                     "Übereinstimmung gewinnt.",
  "modes.s1": "1  SPRACHE",
  "modes.speechsub": "wie aus deiner Stimme Text wird",
- "modes.language": "Sprache",
- "modes.langhint": "leer lassen und es erkennt sie jedes Mal selbst; eine Angabe wie en oder zh ist schneller und stabiler",
+ 'modes.language': 'Haupteingabesprache',
+ 'modes.langhint': 'Automatisch erkennt die Sprache ohne Schriftumwandlung. Chinesische Optionen vereinheitlichen die Schrift vor dem Überarbeiten oder Übersetzen.',
  "modes.decoderhint": "Wortschatz",
  "modes.promptph": "Wörter und Namen, die es immer falsch versteht, durch Kommas getrennt. Ein Hinweis, keine Garantie — die Garantie ist das Wörterbuch.",
  "modes.s2": "2  BEREINIGUNG",
@@ -419,3 +419,5 @@ PACK.update({'word.add': 'Wort hinzufügen',
 PACK.update({'word.deleted': 'Wort und seine Korrekturen gelöscht.',
  'word.restart': 'Starte den Sprachdienst neu, um das neue Wörterbuch zu verwenden. Die bisherigen '
                  'Wörter bleiben erhalten.'})
+
+PACK.update({'modes.langsearch': 'Sprachen suchen…', 'modes.langempty': 'Keine passenden Sprachen', 'modes.langupgrade': 'Aktualisiere den Sprachdienst, um eine Eingabesprache auszuwählen.'})

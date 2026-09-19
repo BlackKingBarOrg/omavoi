@@ -59,6 +59,13 @@ English and nothing else. Omavoi is the other end of that trade.
                    on Vulkan       names, …                   paste
 ```
 
+In Modes, **Primary input language** is a searchable dropdown. Leave it on
+Auto to detect each recording without script conversion. Simplified Chinese
+and Traditional Chinese normalize the transcript locally before optional
+rewriting or translation. Search by localized name, English name or language
+code; the choices follow the speech model's language tokens. This requires
+the matching daemon version; older services keep their existing setting.
+
 ## Install
 
 ```sh

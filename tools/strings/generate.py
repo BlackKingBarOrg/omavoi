@@ -394,11 +394,13 @@ section("modes", {
  "modes.speechsub":  ("how your voice is turned into text",
                       "你的声音是怎么变成文字的",
                       "เสียงของคุณกลายเป็นข้อความได้อย่างไร"),
- "modes.language":   ("language", "语言", "ภาษา"),
- "modes.langhint":   ("leave it empty and it works the language out each time; naming one — en, "
-                      "zh — is faster and steadier",
-                      "留空就每次自动判断；指定一个（en、zh）更快也更稳",
-                      "ปล่อยว่างจะเดาให้ทุกครั้ง ระบุสักภาษา (en, zh) จะเร็วและนิ่งกว่า"),
+ "modes.language": ("Primary input language", "主要输入语言", "ภาษาพูดหลัก"),
+ "modes.langhint": ("Auto detects speech without changing its script. Chinese choices normalize the transcript before rewriting or translation.",
+                    "自动识别，不转换文字；选择简繁中文会在润色或翻译前统一转写文字。",
+                    "อัตโนมัติจะตรวจจับภาษาโดยไม่แปลงตัวอักษร ตัวเลือกภาษาจีนจะแปลงบทถอดเสียงก่อนเรียบเรียงหรือแปล"),
+ "modes.langsearch": ("Search languages…", "搜索语言…", "ค้นหาภาษา…"),
+ "modes.langempty": ("No matching languages", "没有匹配的语言", "ไม่พบภาษาที่ตรงกัน"),
+ "modes.langupgrade": ("Update the speech service to choose an input language.", "更新语音服务后可选择输入语言。", "อัปเดตบริการเสียงเพื่อเลือกภาษาพูด"),
  "modes.decoderhint": ("vocabulary", "词汇", "คำศัพท์"),
  "modes.promptph":   ("Words and names it keeps getting wrong, commas between them. A hint, not "
                       "a guarantee — the dictionary is the guarantee.",

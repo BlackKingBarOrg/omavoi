@@ -129,8 +129,8 @@ PACK = {
                     "más larga.",
  "modes.s1": "1  VOZ",
  "modes.speechsub": "cómo tu voz se convierte en texto",
- "modes.language": "idioma",
- "modes.langhint": "déjalo vacío y la averigua cada vez; indicar una (en, zh) es más rápido y más estable",
+ 'modes.language': 'Idioma principal de entrada',
+ 'modes.langhint': 'El modo automático detecta el idioma sin convertir su escritura. Las opciones de chino normalizan la transcripción antes de reescribir o traducir.',
  "modes.decoderhint": "vocabulario",
  "modes.promptph": "Palabras y nombres que siempre entiende mal, separados por comas. Es una pista, no una garantía — la garantía es el diccionario.",
  "modes.s2": "2  LIMPIEZA",
@@ -414,3 +414,5 @@ PACK.update({'word.add': 'Añadir palabra',
 PACK.update({'word.deleted': 'Palabra y correcciones eliminadas.',
  'word.restart': 'Reinicia el servicio de voz para usar el nuevo diccionario. Las palabras '
                  'existentes no han cambiado.'})
+
+PACK.update({'modes.langsearch': 'Buscar idiomas…', 'modes.langempty': 'No hay idiomas coincidentes', 'modes.langupgrade': 'Actualiza el servicio de voz para elegir un idioma de entrada.'})

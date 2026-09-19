@@ -126,8 +126,8 @@ PACK = {
  "modes.matchhint": "Hyprland のクラスとタイトルに照合します。最も長い一致が勝ちます。",
  "modes.s1": "1  音声",
  "modes.speechsub": "声が文字になるまで",
- "modes.language": "言語",
- "modes.langhint": "空欄なら毎回自動で判断します。en や zh のように指定すると速く安定します",
+ 'modes.language': '主な入力言語',
+ 'modes.langhint': '自動では言語を判定し、字体を変換しません。中国語の選択肢では、推敲や翻訳の前に文字起こしの字体を統一します。',
  "modes.decoderhint": "語彙",
  "modes.promptph": "いつも聞き間違える単語や名前を、読点で区切って書きます。これはヒントで保証ではありません —— 保証するのは辞書です。",
  "modes.s2": "2  自動整形",
@@ -402,3 +402,5 @@ PACK.update({'word.add': '単語を追加',
  'word.partial': '一部有効'})
 
 PACK.update({'word.deleted': '単語と修正設定を削除しました。', 'word.restart': '新しい辞書を使うには音声サービスを再起動してください。既存の単語は変更されていません。'})
+
+PACK.update({'modes.langsearch': '言語を検索…', 'modes.langempty': '一致する言語がありません', 'modes.langupgrade': '入力言語を選ぶには音声サービスを更新してください。'})
