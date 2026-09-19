@@ -3,8 +3,34 @@
 2026-09-19 · 范围：五个 tab、first-run、setup 清单、HUD、bar 模块、八个语言包（289 条 × 8）
 标注 **[实测]** 的是实际跑过命令或用最小用例验证过的，其余是读代码 + 看 `docs/img/` 渲染截图得出的。
 
-这份里的每一条，我认为"是错的"没有讨论余地；怎么修可能还有选择。
-需要你拍板的设计/体验问题在 [REVIEW-UX.md](REVIEW-UX.md)。
+这份里的每一条，我认为"是错的"没有讨论余地。
+需要拍板的设计/体验问题在 [REVIEW-UX.md](REVIEW-UX.md)。
+
+## 状态
+
+**22 条已修，1 条部分，1 条未做。** 合并于 `8fab56b`（分支 `fix/review-bugs`，
+单个提交 `1373539`）。每条下方记了实际怎么改的。
+
+| | |
+|---|---|
+| 已修 | BUG-01 … 13、15 … 23 |
+| 部分 | BUG-14（清单正文在 daemon 侧，跨仓库） |
+| 未做 | BUG-24（重拍截图要占用真实桌面） |
+
+正文里的 `文件:行号` 指的是**修改前**的位置——留作记录，现在的行号已经移位了。
+
+### 合并后跑过的检查
+
+| | |
+|---|---|
+| `tools/qmlcheck.py` | 21 个文件全过 |
+| `tools/strings/generate.py` | 307 key × 8 语言，一致性检查零告警 |
+| qmllint（软链出 `qs/` 树，接上真实 import） | 全树对比基线只多 1 条，是 `QProcess::ExitStatus` 那个 Quickshell 类型怪癖，基线里 6 个文件已有 12 处 |
+| `Strings.qml` 运行时断言 | 168 条：19 个新 key × 8 语言可解析、无 tab 同名、非中日包无汉字、`tf` 替换正常、`xdotool` 已消失 |
+| reuse 推导 | 8 个用例，含「认不出就不提供」和 `q5_0` 下划线 |
+
+**没验证的**：插件没有在真实 shell 里加载过。剩余风险集中在两处纯视觉改动——
+`ConfigCard` 的 note 折行、词典页新增的 dry run 面板——两者都沿用了页面里已有的布局写法。
 
 ---
 
@@ -37,8 +63,7 @@ Look these over. `omavoi names enable` turns matching on for all of them.
 
 **修法**：给这个调用单独一个带 `StdioCollector` 的 Process，把结果渲染到页面上（`dryrun --json` 如果 daemon 支持的话更好）。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `DictionaryView.qml` 自带一个带 `StdioCollector` 的 `dryRunner`，报告渲染在页面上的可关闭面板里；运行中显示 `dict.dryrun.running`，无改动时显示 `dict.dryrun.none`。
 
 ---
 
@@ -56,8 +81,7 @@ CLI 里本来就有 `omavoi config edit`（`omavoi config -h` 的子命令列表
 
 **修法**：改成 `omavoi config edit`。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 改成 `omavoi config edit`。
 
 ---
 
@@ -76,8 +100,7 @@ onClicked: { plan.reset(); plan.begin() }   // 四步全跑一遍
 
 **修法**：`up.again` 分支改成只调 `root.refresh()`（重新探测 behind/dirty），或者把标签改成"再更新一次"。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `plan.done` 时按钮只做 `plan.reset() + root.refresh()`；runner 回到 idle 形态，Update 按钮随之回来，想再更新一次仍是一次点击。
 
 ---
 
@@ -108,8 +131,7 @@ onClicked: { plan.reset(); plan.begin() }   // 四步全跑一遍
 
 **修法**：改 `generate.py` 的表，重新生成 `Strings.qml`。顺手把 de 的引号和名字对齐。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 改 `generate.py` 的规范表后重新生成。en 用 `Remote API`，th 用 `API ระยะไกล`；de 改成卡片实际用的 `Remote-API`，引号也从 `„…\"` 改成 `„…“`。
 
 ---
 
@@ -132,8 +154,7 @@ answered, %1 models — pick one below  57
 
 **修法**：`fields.tf("models.f.testok", (r.models || []).length)`。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `t()` → `tf("models.f.testok", (r.models || []).length)`。
 
 ---
 
@@ -154,8 +175,7 @@ status: !l ? root.t("models.k.unset")
 
 **修法**：`live_problem` 时显示一个中性的"有问题"，或者直接显示 `live_problem` 的首句。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 新增 `models.notready`。`live_problem` 只在 `remote === true && has_key !== true` 时才说 "no key"，其余显示"未就绪"——具体原因下面那行红字本来就有。
 
 ---
 
@@ -179,8 +199,7 @@ running: !!(l && l.live_running === true)
 
 **修法**：统一成一个判据，或者让顶部那行的空态文案不否定卡片（例如"没有由本机启动的服务"）。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `llmResident` 去掉 pid 条件，只看 `live`；pid 和 url 仅在有值时才印。顶栏和卡片从此是同一个判据。
 
 ---
 
@@ -192,8 +211,7 @@ running: !!(l && l.live_running === true)
 
 **修法**：删掉 `:395-403` 那一块（后者没有标题，明显是前者提出来之前的遗留）。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 删掉底部那份无标题的重复 Repeater。
 
 ---
 
@@ -207,8 +225,7 @@ running: !!(l && l.live_running === true)
 
 **修法**：八种语言改成"三个问题"。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 八个语言包 + README 都改成三个问题。
 
 ---
 
@@ -223,8 +240,7 @@ running: !!(l && l.live_running === true)
 
 **修法**：th 的 setup 改成"การติดตั้ง"一类，vi 改成"Thiết lập"一类。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · th `การติดตั้ง`，vi `Thiết lập`。八种语言下 `nav.setup` 与 `nav.settings` 均已不同。
 
 ---
 
@@ -245,8 +261,7 @@ readonly property bool showWindowMatch: false
 
 **修法**：改成"当前"/"in use"这种全局口径的说法。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 八语言改成全局口径：`modes.here` → `in use` / `使用中`，`modes.activehere` → `the mode in use` / `当前使用的模式`。
 
 ---
 
@@ -263,8 +278,7 @@ text: root.phase === "done" ? root.doneText
 
 **修法**：`rejectedWhy` 有值时用它，没有才回落到 `hud.nospeech`；rejection 原因在 daemon 侧做成可翻译的 key。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 有 `rejectedWhy` 就显示它，没有才回落到 `hud.nospeech`；原先另起一行重复显示的那个元素一并删掉。（原因文本仍是 daemon 给的英文，要本地化得 daemon 侧出 key。）
 
 ---
 
@@ -294,8 +308,7 @@ text: root.phase === "done" ? root.doneText
 
 **修法**：加一个 `Strings { lang: link.uiLang }`（`IpcLink` 已经在推 `uiLang` 了），七条文案进语言包。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `BarWidget.qml` 加了 `Strings { lang: link.uiLang }`，八条文案进语言包（`bar.stopped` + 七条 tooltip）。顺带删掉了 `BarIconButton` 里那个永远不可见的 `missing` 分支。
 
 ---
 
@@ -317,8 +330,7 @@ first-run 是全中文的（它自带列表，不问 daemon），装完紧接着
 
 **修法**：`"optional"` 进语言包是这边就能修的。正文需要跨仓库决定——daemon 出 key 由插件翻，或者 daemon 自己按 `ui.language` 出文案。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**部分** · `"optional"` 已进语言包（`setup.optional`）。清单正文来自 daemon 的 `setup --json`，仍是英文——那要先定「daemon 出 key 由插件翻」还是「daemon 自己按 `ui.language` 出文案」，是跨仓库的决定。
 
 ---
 
@@ -336,8 +348,7 @@ label: "Save  ⌃⏎"
 
 **修法**：三条进语言包。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `edit.unsaved` / `edit.revert` / `edit.save`；`OmTextArea` 新增 `strings` 属性，`ModesView` 在两个调用点传下去。`⌃⏎` 保留不译。
 
 ---
 
@@ -362,8 +373,7 @@ ja 包 3 条（`up.nofetch`、`up.dirty`、`set.key.type`）。
 
 **修法**：改 `generate.py` 的中日文条目，重新生成。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · zh 12 条、ja 3 条全部改成全角。现在两个包里 CJK 后跟半角标点的条目为 0。
 
 ---
 
@@ -386,8 +396,7 @@ audio leaves this ma…
 
 全页最重要的一句隐私提示断在词中间。（catalogue 表里几乎所有 note 也都被切，那一条归 UX 文档的 UX-04，因为怎么修有选择；这一条我认为不能留。）
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `ConfigCard` 的 note 列从 elide 改为折行（最多两行），宽度 132 → 150。
 
 ---
 
@@ -414,8 +423,7 @@ var chosen = (root.model === "reuse") ? "ggml:large-v3-turbo" : root.model
 
 **修法**：探测结果解析出实际的 model key 带进 `chosen`；chip 旁边显示文件名。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 探测改成 `head -8`；`FirstRun` 从文件名反推 catalogue key，chip 旁显示实际文件名，认不出任何一个候选时就不提供这个选项。8 个用例的运行时测试全过。
 
 ---
 
@@ -426,8 +434,7 @@ var chosen = (root.model === "reuse") ? "ggml:large-v3-turbo" : root.model
 `dbAgeDays` 在 shell 里已经整除过了，`Math.round` 之后正好是 1 的时候显示 `1 days old`。
 （阈值本身该不该是 1 天，见 UX-08。）
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 拆成 `first.dbstale.age`（带 %1）和 `first.dbstale.age1`（无占位符），余下那句不再含计数。（阈值本身没动，见 UX-14。）
 
 ---
 
@@ -441,8 +448,7 @@ visible: root.speechChoices.length <= 1
 
 `<= 1` 把 0 也包进去了，`modes.speechonly1` 写的是"Only one set of weights is downloaded"。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 0 个时显示新增的 `modes.speechnone`，1 个时才是原来那句。
 
 ---
 
@@ -460,8 +466,7 @@ readonly property bool missing: link.state === "stopped"
 
 **修法**：`missing` 用 `setupKnown && !setupReady` 判断，socket 断开单独显示"服务已停止"。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 新增 `command -v omavoi` 探测，区分「没装」「服务停了」「装到一半」三态；探测答复前两态都不声明，避免启动瞬间闪错标签。
 
 ---
 
@@ -478,8 +483,7 @@ speech → local
 
 **修法**：`chainOf` 改用 `llmLabel(name, false)`。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · `chainOf` 改用 `llmLabel(name, false)`，并新增 `modes.chainspeech` 作为首段。
 
 ---
 
@@ -491,8 +495,7 @@ speech → local
 
 两处说法对不上——要么 README 写错了，要么 xdotool 这条路径还在但没暴露。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**已修** · 删掉 `modes.inject.xdotool`（连同 `DYNAMIC` 白名单和五个语言包）。README 依赖表改成「在 XWayland 客户端里发送粘贴按键」——查过 `omavoi inject --help`，`--method` 只有 wtype / clipboard，xdotool 是 `--paste-via` 的选项。
 
 ---
 
@@ -502,8 +505,7 @@ speech → local
 
 README 是项目门面，截图停在几个版本之前。
 
-- [ ] 确认
-- [ ] 不修，理由：
+**未做** · 截图要重拍，而重拍得把已安装的插件临时指到仓库，会动到正在使用的桌面。本轮改动还让它更旧了（`here` → `in use`、中文 `当前` → `使用中`、bar 模块现在是本地化的）。
 
 ---
 

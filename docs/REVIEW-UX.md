@@ -1,6 +1,7 @@
 # 界面 Review — 设计/体验，需要你拍板
 
-2026-09-19 · 和 [REVIEW-BUGS.md](REVIEW-BUGS.md) 配套。
+2026-09-19 · 和 [REVIEW-BUGS.md](REVIEW-BUGS.md) 配套。行号已对 `8fab56b`
+（bug 修复合并之后）重新核过。其中两条被那批修复顺带解决了，标在原位。
 
 这份里的每一条，代码都在按设计跑，是设计本身值不值得改的问题。有些是刻意为之（代码注释里写了理由），我把那些理由也列出来了，方便你判断是当初想清楚了还是当初没想到。
 
@@ -82,6 +83,9 @@ llm:gemma-3-4b           2.3G  Even coverage acro…     broad multilingual
 
 **我的倾向**：note 允许折行。这一列现在等于没有。
 
+> 2026-09-19：引擎卡片上那条（`audio leaves this ma…`）已经在 BUG-17 里修掉了——
+> `ConfigCard` 的 note 改成折行两行。这里说的是 `ModelRow` 的目录表，还没动。
+
 - [ ] 改，方式：
 - [ ] 不改，理由：
 
@@ -102,7 +106,7 @@ llm:gemma-3-4b           2.3G  Even coverage acro…     broad multilingual
 
 ### UX-05 · 词典页的 Remove 离它那一行 1000px 远
 
-`DictionaryView.qml:88`：`Item { Layout.fillWidth: r.shadowed_by === "" }` 把 Remove 顶到最右边。`console-dictionary.webp` 里，规则文字在左边 25%，Remove 在最右缘，中间整片空白。
+`DictionaryView.qml:112`：`Item { Layout.fillWidth: r.shadowed_by === "" }` 把 Remove 顶到最右边。`console-dictionary.webp` 里，规则文字在左边 25%，Remove 在最右缘，中间整片空白。
 
 十几条规则的时候，横穿一整屏去点对的那一行，很容易点错。
 
@@ -121,7 +125,7 @@ llm:gemma-3-4b           2.3G  Even coverage acro…     broad multilingual
 
 README 写"Every take is kept, with the numbers behind it"，但"什么时候说的"是回看列表时最先要的那一列。
 
-同时列表固定只取 40 条（`Console.qml:259` 的 `history -n 40`），没有翻页，而 Settings 里 `keep audio for` 能设到 500。
+同时列表固定只取 40 条（`Console.qml:265` 的 `history -n 40`），没有翻页，而 Settings 里 `keep audio for` 能设到 500。
 
 **我的倾向**：列表加相对时间（"3 分钟前"），详情加绝对时间；40 条那个上限加个"更多"。
 
@@ -132,7 +136,7 @@ README 写"Every take is kept, with the numbers behind it"，但"什么时候说
 
 ### UX-07 · "Enable matching" 只能开不能关
 
-`DictionaryView.qml:143-146` (`dict.enable`, :144) 只有一个 `omavoi names enable`。界面上没有关回去的入口。
+`DictionaryView.qml:166-178`（`dict.enable`，:176）只有一个 `omavoi names enable`。界面上没有关回去的入口。
 
 而这个功能自己的说明（`dict.namesblurb`）写着它"是这里唯一可能把原本正确的文字改坏的"。开了之后发现不对，只能开终端。
 
@@ -147,7 +151,7 @@ README 写"Every take is kept, with the numbers behind it"，但"什么时候说
 
 ### UX-08 · names 表三列没表头
 
-`DictionaryView.qml:98-130` 渲染 `n.name` / `n.key` / `n.match` 三列并排，没有任何列标题。"key" 是什么、"match" 是什么，完全靠猜。rules 那边至少有 `heard → meant` 的 blurb 兜着。
+`DictionaryView.qml:130-160` 渲染 `n.name` / `n.key` / `n.match` 三列并排，没有任何列标题。"key" 是什么、"match" 是什么，完全靠猜。rules 那边至少有 `heard → meant` 的 blurb 兜着。
 
 **我的倾向**：加表头。
 
@@ -158,7 +162,7 @@ README 写"Every take is kept, with the numbers behind it"，但"什么时候说
 
 ### UX-09 · AUDIO 那组只有数字，没有参照
 
-`SettingsView.qml:305-318`：`pre-roll 600ms` / `tail 250ms` / `warn below -45 dBFS` / `max take 300s`。
+`SettingsView.qml:306-320`：`pre-roll 600ms` / `tail 250ms` / `warn below -45 dBFS` / `max take 300s`。
 
 - 没有输入设备选择（用哪个麦克风）
 - 没有电平表——用户没法知道 -45 dBFS 对自己这只麦是什么概念，也没法验证麦克风在工作
@@ -181,12 +185,12 @@ README 写"Every take is kept, with the numbers behind it"，但"什么时候说
 
 | 动作 | 位置 | 代价 |
 |---|---|---|
-| Delete mode | `ModesView.qml:354` | 整个模式，含手写提示词 |
-| Remove（LLM 步骤） | `ModesView.qml:641` | 那一步的提示词 |
-| Remove（模型权重） | `ModelRow.qml:136-140` | 最多 6.8 GB，要重下 |
-| Remove（词典规则/名称） | `DictionaryView.qml:90 / 133` | 一行 |
+| Delete mode | `ModesView.qml:358` | 整个模式，含手写提示词 |
+| Remove（LLM 步骤） | `ModesView.qml:649` | 那一步的提示词 |
+| Remove（模型权重） | `ModelRow.qml:139` | 最多 6.8 GB，要重下 |
+| Remove（词典规则/名称） | `DictionaryView.qml:114 / 157` | 一行 |
 
-`Console.qml:649-653` 的注释解释了为什么不确认：
+`Console.qml:655-659` 的注释解释了为什么不确认：
 
 > Removing a mode, a model or a dictionary rule is one click here and always has been -- each of those can be written again or downloaded again. Every take you have ever dictated cannot.
 
@@ -203,7 +207,7 @@ README 写"Every take is kept, with the numbers behind it"，但"什么时候说
 
 ### UX-11 · UPDATE 埋在 Settings 最底部
 
-`SettingsView.qml:563-570`，要滚到底才看得见。`console-settings.webp` 里刚好卡在折叠线上——只露出 "UPDATE / Up to date" 两行，按钮在屏幕外。
+`SettingsView.qml:564-571`，要滚到底才看得见。`console-settings.webp` 里刚好卡在折叠线上——只露出 "UPDATE / Up to date" 两行，按钮在屏幕外。
 
 更新是个低频但重要的动作，而且 README 专门解释了"daemon 的正确升级命令不是显而易见的那个"——正因为如此才更不该藏。
 
@@ -214,9 +218,9 @@ README 写"Every take is kept, with the numbers behind it"，但"什么时候说
 
 ---
 
-### UX-12 · bar 上右键 = 开始/停止录音，哪都没写
+### UX-12 · bar 上右键 = 开始/停止录音，哪都没写 —— **已在 BUG-13 里一并修掉**
 
-`BarWidget.qml:148-155`：
+`BarWidget.qml:186-193`：
 
 ```qml
 if (b === Qt.RightButton && root.setupReady) link.send("record")
@@ -224,16 +228,16 @@ if (b === Qt.RightButton && root.setupReady) link.send("record")
 
 tooltip 只说了左键（"Click to start"）。这是快捷键没配好时唯一的替代入口，但没有任何地方提到。
 
-**我的倾向**：写进 tooltip。
+> 2026-09-19：修 BUG-13（bar 模块没翻译）时顺手做了——`setupReady` 时
+> tooltip 末尾追加一行 `bar.tip.rightclick`，八种语言都有。无需再决定。
 
-- [ ] 改
-- [ ] 不改，理由：
+- [x] 已改
 
 ---
 
 ### UX-13 · 安装完成没有收尾
 
-`FirstRun.qml:443-447` 的 `first.done`（"Ready — hold your key and talk"）实际上看不到：`onFinished: root.refresh()` → `probeDaemon` 立刻返回 → `daemonPresent = true` → FirstRun 整个 `visible: false`。
+`FirstRun.qml:483-487` 的 `first.done`（"Ready — hold your key and talk"）实际上看不到：`onFinished: root.refresh()` → `probeDaemon` 立刻返回 → `daemonPresent = true` → FirstRun 整个 `visible: false`。
 
 装了好几分钟（含 3GB 下载），结束时直接跳进空的 History 页。空态那句 "no takes yet — hold RIGHTCTRL and talk" 算是接住了，但没有一个"成功了"的时刻。
 
@@ -248,9 +252,9 @@ tooltip 只说了左键（"Click to start"）。这是快捷键没配好时唯�
 
 ### UX-14 · 数据库过期的阈值是 1 天，但话说得很绝对
 
-`FirstRun.qml:65`：`dbStale: root.dbAgeDays >= 1`
+`FirstRun.qml:94`：`dbStale: root.dbAgeDays >= 1`
 
-`first.dbstale`：
+`first.dbstale.age` + `first.dbstale`（BUG-19 之后拆成了两句）：
 
 > Your package database is %1 days old. **Installing anything now fails with 404**: the versions it lists are no longer on the mirrors.
 
@@ -258,7 +262,8 @@ tooltip 只说了左键（"Click to start"）。这是快捷键没配好时唯�
 
 第一屏就吓人一下，而且那个按钮会拉起一个全系统升级的终端。
 
-**我的倾向**：阈值提到 3–5 天，措辞从断言改成"可能"。
+**我的倾向**：阈值提到 3–5 天，措辞从断言改成"可能"。BUG-19 只修了"1 days old"
+的单复数，阈值和这句断言都没动——那是这一条要定的。
 
 - [ ] 改，阈值：
 - [ ] 不改，理由：
@@ -332,7 +337,7 @@ text: root.capturing ? root.t("set.key.press") : root.t("set.key.rebind")
 
 ### UX-19 · HUD 会把刚说的话显示在屏幕正下方
 
-`Hud.qml:256-262`，`done` 状态下把注入的文本原样显示出来，最宽 420×scale，停留 350ms 或 1400ms。
+`Hud.qml:253-271`，`done` 状态下把注入的文本原样显示出来，最宽 420×scale，停留 350ms 或 1400ms。
 
 优点很明显（"看见它打了什么再决定要不要撤"），`set.hudnote` 也解释了为什么默认是 "changed"。
 
