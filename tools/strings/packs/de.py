@@ -114,10 +114,8 @@ PACK = {
  "modes.matchoff": "Fensterabgleich ist aus, die Listen unten sind also "
                    "konfiguriert, aber wirkungslos. Er will pro Anwendung "
                    "eingestellt werden, bevor er sich lohnt.",
- "modes.hiddenauto": 'Fensterabgleich ist eingeschaltet, seine Bedienelemente sind '
-                     'aber ausgeblendet — ein Klick auf einen Modus unten ändert also '
-                     'nicht, welcher tatsächlich benutzt wird. Abschalten mit '
-                     '`omavoi mode auto off`.',
+ "modes.hiddenauto": 'Das fokussierte Fenster wählt den Modus, ein Klick unten öffnet ihn also nur — die Aufnahme nutzt weiterhin den Modus, den das Fenster trifft.',
+ "modes.autohint": 'Jede Aufnahme nutzt den Modus, den du hier wählst. Schalte dies ein, dann wählt ihn das fokussierte Fenster.',
  "modes.following": "folgt dem Fenster",
  "modes.fixed": "fest",
  "modes.activehere": "der benutzte Modus",

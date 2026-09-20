@@ -113,9 +113,8 @@ PACK = {
  "modes.matchoff": "La coincidencia por ventana está desactivada, así que las listas de "
                    "abajo están configuradas pero inertes. Hay que ajustarla aplicación "
                    "por aplicación antes de que valga la pena.",
- "modes.hiddenauto": 'La coincidencia por ventana está activada pero sus controles '
-                     'están ocultos, así que pulsar un modo abajo no cambiará el que '
-                     'se usa de verdad. Desactívala con `omavoi mode auto off`.',
+ "modes.hiddenauto": 'La ventana enfocada elige el modo, así que pulsar uno abajo solo lo abre: la toma sigue usando el que coincida con la ventana.',
+ "modes.autohint": 'Cada toma usa el modo que elijas aquí. Activa esto y lo elegirá la ventana enfocada.',
  "modes.following": "sigue a la ventana",
  "modes.fixed": "fijo",
  "modes.activehere": "el modo en uso",

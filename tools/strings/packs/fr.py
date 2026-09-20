@@ -113,9 +113,8 @@ PACK = {
  "modes.matchoff": "La correspondance de fenêtre est désactivée : les listes ci-dessous "
                    "sont configurées mais inertes. Il faut l'ajuster application par "
                    "application avant qu'elle ne soit rentable.",
- "modes.hiddenauto": "La correspondance de fenêtre est activée mais ses commandes sont "
-                     "masquées : cliquer sur un mode ci-dessous ne changera pas celui "
-                     "qui sert réellement. Désactive-la avec `omavoi mode auto off`.",
+ "modes.hiddenauto": "La fenêtre active choisit le mode : cliquer sur l'un d'eux ci-dessous ne fait que l'ouvrir — la prise utilise toujours celui que la fenêtre fait correspondre.",
+ "modes.autohint": "Chaque prise utilise le mode que tu choisis ici. Active ceci et c'est la fenêtre active qui le choisira.",
  "modes.following": "suit la fenêtre",
  "modes.fixed": "fixe",
  "modes.activehere": "le mode utilisé",

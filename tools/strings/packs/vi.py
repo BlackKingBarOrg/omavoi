@@ -112,9 +112,8 @@ PACK = {
  "modes.matchoff": "Việc khớp theo cửa sổ đang tắt, nên các danh sách bên dưới đã được "
                    "cấu hình nhưng không có tác dụng. Nó cần được tinh chỉnh cho từng "
                    "ứng dụng trước khi đáng dùng.",
- "modes.hiddenauto": 'Khớp theo cửa sổ đang bật nhưng phần điều khiển của nó đã bị ẩn, '
-                     'nên bấm một chế độ bên dưới sẽ không thay đổi chế độ thực sự '
-                     'được dùng. Tắt nó bằng `omavoi mode auto off`.',
+ "modes.hiddenauto": 'Cửa sổ đang focus quyết định chế độ, nên bấm một chế độ bên dưới chỉ mở nó ra — bản ghi vẫn dùng chế độ mà cửa sổ khớp được.',
+ "modes.autohint": 'Mỗi bản ghi dùng chế độ bạn chọn ở đây. Bật cái này lên thì cửa sổ đang focus sẽ chọn thay.',
  "modes.following": "đi theo cửa sổ",
  "modes.fixed": "cố định",
  "modes.activehere": "chế độ đang dùng",

@@ -367,13 +367,20 @@ section("modes", {
                       "窗口匹配已关闭，下面的列表虽已配置但不会生效。它需要为每个应用逐个调过才值得开启。",
                       "การจับคู่หน้าต่างปิดอยู่ รายการด้านล่างจึงถูกตั้งไว้แต่ไม่ทำงาน "
                       "ต้องปรับทีละแอปก่อนจะคุ้มค่าที่จะเปิด"),
- "modes.hiddenauto": ("Window matching is switched on but its controls are hidden, so "
-                     "clicking a mode below will not change which one a take uses. "
-                     "Turn it off with `omavoi mode auto off`.",
-                     "窗口匹配是开着的，但它的控件已被隐藏，所以点击下面的模式不会改变"
-                     "录音实际使用的模式。用 `omavoi mode auto off` 关掉它。",
-                     "การจับคู่หน้าต่างเปิดอยู่แต่ตัวควบคุมถูกซ่อน การคลิกโหมดด้านล่างจึงไม่เปลี่ยน"
-                     "โหมดที่ใช้จริง ปิดด้วย `omavoi mode auto off`"),
+ # Said beside the switch that turns it off, not instead of one. It used to end
+ # "turn it off with `omavoi mode auto off`", which was the only way there was:
+ # the switch itself lives inside the matching controls, and those are hidden.
+ "modes.hiddenauto": ("The focused window picks the mode, so clicking one below "
+                      "only opens it — the take still uses whatever the window "
+                      "matches.",
+                      "由当前焦点窗口决定用哪个模式，所以点击下面的模式只会打开它——"
+                      "录音仍然使用窗口匹配到的那个。",
+                      "หน้าต่างที่โฟกัสเป็นตัวเลือกโหมด การคลิกโหมดด้านล่างจึงเพียงเปิดดู "
+                      "ส่วนการอัดยังใช้โหมดที่หน้าต่างจับคู่ได้"),
+ "modes.autohint":   ("Every take uses the mode you pick here. Switch this on and "
+                      "the focused window picks it instead.",
+                      "每次录音都使用你在这里选的模式。打开这个开关，就改由当前焦点窗口来决定。",
+                      "ทุกครั้งจะใช้โหมดที่คุณเลือกไว้ที่นี่ เปิดสวิตช์นี้แล้วหน้าต่างที่โฟกัสจะเป็นตัวเลือกแทน"),
  "modes.following":  ("following the window", "跟随窗口", "ตามหน้าต่าง"),
  "modes.fixed":      ("fixed", "固定", "คงที่"),
  "modes.activehere": ("the mode in use", "当前使用的模式", "โหมดที่ใช้อยู่"),

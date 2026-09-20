@@ -282,18 +282,35 @@ Item {
         width: parent.width - root.pad * 2
         spacing: Style.space(14)
 
-        // How the mode gets picked at all. Without this the trigger chips below
-        // are a lie: they are configured, but nothing reads them.
-        // Hiding the controls does not switch the feature off, and the click
-        // handler below still refuses to change modes while it is on. That
-        // refusal used to be explained by the banner underneath; with the
-        // banner gone it would be silence, so it is said here instead.
-        OmText {
-          visible: !root.showWindowMatch && root.byWindow
+        // How the mode gets picked at all, and the switch for it.
+        //
+        // The matching controls below are hidden until they are finished, and
+        // the switch was one of them -- so a machine left following the window
+        // had a mode list whose clicks did nothing, a line of orange text
+        // saying so, and no way back except `omavoi mode auto off` at a
+        // terminal. The switch is the one part of that UI that works without
+        // the rest: the match lists are already in the config whether or not
+        // they can be edited here.
+        //
+        // Shown in both states, because "which of these two is deciding" is
+        // the question a mode list cannot answer on its own.
+        RowLayout {
+          visible: !root.showWindowMatch
           Layout.fillWidth: true
-          wrapMode: Text.Wrap
-          text: root.t("modes.hiddenauto")
-          color: "#e0af68"
+          spacing: Style.space(9)
+          OmChip {
+            label: root.byWindow ? root.t("modes.following") : root.t("modes.fixed")
+            on: root.byWindow
+            onClicked: root.commandArgs(
+              ["omavoi", "mode", "auto", root.byWindow ? "off" : "on"])
+          }
+          OmText {
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.byWindow ? root.t("modes.hiddenauto")
+                                : root.t("modes.autohint")
+            color: root.byWindow ? "#e0af68" : Color.muted
+          }
         }
 
         Rectangle {
