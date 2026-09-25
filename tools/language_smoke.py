@@ -88,20 +88,23 @@ Window {
         switch(window.step) {
           case 0:
             check(picker.value === "auto", "Initial choice is not auto")
-            check(picker.options.length === 102, "Wrong language count")
+            check(picker.options.length === 101, "Wrong language count: " + picker.options.length)
+            check(!picker.options.some(function(o) { return o.value === "zh-Hans" || o.value === "zh-Hant" }),
+                  "Scripts are still listed as languages")
             check(picker.mapToItem(window.contentItem, 0, 0).x + picker.width <= window.width, "Popup exceeds window width")
             picker.open()
             break
           case 1:
             check(picker.popupOpen, "Popup did not open")
-            window.contentItem.grabToImage(function(result) { result.saveToFile(__IMAGE__); window.activeFocusItem.text = "简体中文" })
+            window.contentItem.grabToImage(function(result) { result.saveToFile(__IMAGE__); window.activeFocusItem.text = "中文" })
             break
           case 2:
-            check(picker.filtered.length === 1 && picker.filtered[0].value === "zh-Hans", "Chinese search failed")
-            select(picker, "zh-Hans")
+            check(picker.filtered.length === 1 && picker.filtered[0].value === "zh", "Chinese search failed")
+            select(picker, "zh")
             break
           case 3:
-            check(modes.mode.language === "zh-Hans", "Simplified preference was not saved")
+            check(modes.mode.language === "zh", "Chinese was not saved")
+            check((modes.mode.script || "") === "", "Choosing Chinese chose a script as well")
             modes.selected = "prose"
             break
           case 4:
@@ -109,18 +112,18 @@ Window {
             picker.open()
             break
           case 5:
-            window.activeFocusItem.text = "Traditional Chinese"
+            window.activeFocusItem.text = "English"
             break
           case 6:
-            check(picker.filtered.length === 1 && picker.filtered[0].value === "zh-Hant", "English search failed")
-            select(picker, "zh-Hant")
+            check(picker.filtered.length === 1 && picker.filtered[0].value === "en", "English search failed")
+            select(picker, "en")
             break
           case 7:
-            check(modes.mode.language === "zh-Hant", "Traditional preference was not saved")
+            check(modes.mode.language === "en", "English was not saved")
             modes.selected = "default"
             break
           case 8:
-            check(picker.value === "zh-Hans", "First mode lost its saved choice")
+            check(picker.value === "zh", "First mode lost its saved choice")
             select(picker, "auto")
             break
           case 9:
@@ -128,7 +131,7 @@ Window {
             modes.selected = "prose"
             break
           case 10:
-            check(picker.value === "zh-Hant", "Auto reset changed another mode")
+            check(picker.value === "en", "Auto reset changed another mode")
             picker.open()
             break
           case 11:
@@ -137,7 +140,7 @@ Window {
           case 12:
             check(picker.filtered.length === 0, "No-match search failed")
             picker.close()
-            check(picker.value === "zh-Hant", "Searching changed the saved preference")
+            check(picker.value === "en", "Searching changed the saved preference")
             modes.selected = "default"
             break
           case 13:

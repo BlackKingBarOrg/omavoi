@@ -333,28 +333,36 @@ section("history", {
 })
 
 section("modes", {
+ # -- the list ---------------------------------------------------------------
  "modes.wontfit":    ("needs %1 free", "需要 %1 空闲显存", "ต้องมี %1 ว่าง"),
- "modes.blocked":    ("not switched — this mode's model will not fit in VRAM right now",
-                      "未切换 —— 这个模式的模型现在装不进显存",
-                      "ไม่ได้สลับ — โมเดลของโหมดนี้ใส่ใน VRAM ตอนนี้ไม่พอ"),
- "modes.speechmodel": ("voice model", "语音模型", "โมเดลเสียง"),
- "modes.speechglobal": ("use the default", "用默认的", "ใช้ค่าเริ่มต้น"),
- "modes.speechglobalnamed": ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
- "modes.speechonly1": ("Only one voice model is downloaded for this engine. The Models tab has "
-                       "the rest — a smaller one is worth having for modes where speed matters "
-                       "more than accuracy.",
-                       "这个引擎目前只下载了一个语音模型。其余的在「模型」页 —— 对速度比准确率更重要的模式，值得备一个小的。",
-                       "เอนจินนี้ดาวน์โหลดโมเดลเสียงไว้ตัวเดียว ที่เหลืออยู่ในแท็บโมเดล — ตัวเล็กกว่าคุ้มที่จะมีไว้สำหรับโหมดที่เน้นความเร็วมากกว่าความแม่น"),
- "modes.speechnone": ("No voice model is downloaded for this engine yet. The Models tab is "
-                      "where they come from.",
-                      "这个引擎还没有下载任何语音模型。到「模型」页去下载。",
-                      "ยังไม่ได้ดาวน์โหลดโมเดลเสียงสำหรับเอนจินนี้ ดาวน์โหลดได้ที่แท็บโมเดล"),
  "modes.newname":    ("new mode name", "新模式名称", "ชื่อโหมดใหม่"),
  # Window matching is switched off (ModesView's showWindowMatch), so a mode
  # is global: "here" and "active in this window" were describing a scope the
  # console no longer has.
- "modes.chainspeech": ("speech", "语音", "เสียงพูด"),
  "modes.here":       ("in use", "使用中", "ใช้อยู่"),
+ # The line under each mode's name: what sets it apart, not the chain. Every
+ # chain started "speech →", so the old line told code, terminal and default
+ # apart by nothing at all.
+ "modes.sum.ai":     ("AI: %1", "AI：%1", "AI: %1"),
+ "modes.sum.plain":  ("no AI", "不经过 AI", "ไม่ผ่าน AI"),
+ "modes.sum.hans":   ("Simplified Chinese", "简体", "จีนตัวย่อ"),
+ "modes.sum.hant":   ("Traditional Chinese", "繁体", "จีนตัวเต็ม"),
+ "modes.sum.nopunct":("no end punctuation", "不加句末标点", "ไม่มีเครื่องหมายท้ายประโยค"),
+ "modes.sum.paste":  ("pastes", "粘贴", "วาง"),
+ "modes.sum.type":   ("types", "逐字输入", "พิมพ์ทีละตัว"),
+ # Above the list, a choice between two, where it was a chip above the
+ # detail pane whose label was its own state.
+ "modes.pick.title": ("switching", "模式切换", "การสลับโหมด"),
+ "modes.fixed":      ("pick here", "手动选择", "เลือกเอง"),
+ "modes.following":  ("follow the window", "跟随窗口", "ตามหน้าต่าง"),
+ # Said beside the switch that turns it off, not instead of one. It used to end
+ # "turn it off with `omavoi mode auto off`", which was the only way there was:
+ # the switch itself lives inside the matching controls, and those are hidden.
+ # Short, because it wraps inside the 280-pixel list.
+ "modes.hiddenauto": ("The focused window picks the mode, so clicking one below only opens it.",
+                      "由当前焦点窗口决定模式，点下面的模式只会打开它。",
+                      "หน้าต่างที่โฟกัสเป็นตัวเลือกโหมด การคลิกโหมดด้านล่างจึงแค่เปิดดู"),
+ # -- window matching, hidden with it ------------------------------------------
  "modes.fallback":   ("fallback", "兜底", "สำรอง"),
  "modes.followwin":  ("The mode follows the focused window", "模式跟随当前焦点窗口",
                       "โหมดจะตามหน้าต่างที่โฟกัส"),
@@ -367,24 +375,6 @@ section("modes", {
                       "窗口匹配已关闭，下面的列表虽已配置但不会生效。它需要为每个应用逐个调过才值得开启。",
                       "การจับคู่หน้าต่างปิดอยู่ รายการด้านล่างจึงถูกตั้งไว้แต่ไม่ทำงาน "
                       "ต้องปรับทีละแอปก่อนจะคุ้มค่าที่จะเปิด"),
- # Said beside the switch that turns it off, not instead of one. It used to end
- # "turn it off with `omavoi mode auto off`", which was the only way there was:
- # the switch itself lives inside the matching controls, and those are hidden.
- "modes.hiddenauto": ("The focused window picks the mode, so clicking one below "
-                      "only opens it — the take still uses whatever the window "
-                      "matches.",
-                      "由当前焦点窗口决定用哪个模式，所以点击下面的模式只会打开它——"
-                      "录音仍然使用窗口匹配到的那个。",
-                      "หน้าต่างที่โฟกัสเป็นตัวเลือกโหมด การคลิกโหมดด้านล่างจึงเพียงเปิดดู "
-                      "ส่วนการอัดยังใช้โหมดที่หน้าต่างจับคู่ได้"),
- "modes.autohint":   ("Every take uses the mode you pick here. Switch this on and "
-                      "the focused window picks it instead.",
-                      "每次录音都使用你在这里选的模式。打开这个开关，就改由当前焦点窗口来决定。",
-                      "ทุกครั้งจะใช้โหมดที่คุณเลือกไว้ที่นี่ เปิดสวิตช์นี้แล้วหน้าต่างที่โฟกัสจะเป็นตัวเลือกแทน"),
- "modes.following":  ("following the window", "跟随窗口", "ตามหน้าต่าง"),
- "modes.fixed":      ("fixed", "固定", "คงที่"),
- "modes.activehere": ("the mode in use", "当前使用的模式", "โหมดที่ใช้อยู่"),
- "modes.delete":     ("Delete mode", "删除模式", "ลบโหมด"),
  "modes.opens":      ("OPENS ON", "触发窗口", "เปิดเมื่อ"),
  "modes.notinuse":   ("not in use while the mode is fixed", "模式固定时这里不生效",
                       "ไม่ถูกใช้ขณะโหมดถูกตั้งคงที่"),
@@ -397,64 +387,129 @@ section("modes", {
  "modes.matchhint":  ("Matched against the Hyprland class and title. The longest match wins.",
                       "与 Hyprland 的 class 和 title 做匹配，最长的匹配胜出。",
                       "เทียบกับ class และ title ของ Hyprland กฎที่ตรงยาวที่สุดชนะ"),
- "modes.s1":         ("1  VOICE", "1  语音", "1  เสียงพูด"),
- "modes.speechsub":  ("how your voice is turned into text",
-                      "你的声音是怎么变成文字的",
-                      "เสียงของคุณกลายเป็นข้อความได้อย่างไร"),
- "modes.language": ("Primary input language", "主要输入语言", "ภาษาพูดหลัก"),
- "modes.langhint": ("Auto detects speech without changing its script. Chinese choices normalize the transcript before rewriting or translation.",
-                    "自动识别，不转换文字；选择简繁中文会在润色或翻译前统一转写文字。",
-                    "อัตโนมัติจะตรวจจับภาษาโดยไม่แปลงตัวอักษร ตัวเลือกภาษาจีนจะแปลงบทถอดเสียงก่อนเรียบเรียงหรือแปล"),
+ # -- header -------------------------------------------------------------------
+ "modes.blocked":    ("not switched — this mode's model will not fit in VRAM right now",
+                      "未切换 —— 这个模式的模型现在装不进显存",
+                      "ไม่ได้สลับ — โมเดลของโหมดนี้ใส่ใน VRAM ตอนนี้ไม่พอ"),
+ "modes.delete":     ("Delete mode", "删除模式", "ลบโหมด"),
+ # -- voice ----------------------------------------------------------------------
+ # Section titles are capitals in English, like every other tab's, and carry
+ # no number: the fold below mixes stages, so 1-2-3-4 would count wrong.
+ "modes.s1":         ("VOICE", "语音识别", "เสียงพูด"),
+ "modes.language":   ("spoken language", "识别语言", "ภาษาที่พูด"),
  "modes.langsearch": ("Search languages…", "搜索语言…", "ค้นหาภาษา…"),
- "modes.langempty": ("No matching languages", "没有匹配的语言", "ไม่พบภาษาที่ตรงกัน"),
- "modes.langupgrade": ("Update the speech service to choose an input language.", "更新语音服务后可选择输入语言。", "อัปเดตบริการเสียงเพื่อเลือกภาษาพูด"),
- "modes.decoderhint": ("vocabulary", "词汇", "คำศัพท์"),
- "modes.promptph":   ("Words and names it keeps getting wrong, commas between them. A hint, not "
-                      "a guarantee — the dictionary is the guarantee.",
-                      "它老是认错的词和人名，用逗号隔开。这只是提示，不是保证 —— 保证靠词典。",
-                      "คำและชื่อที่มันมักฟังผิด คั่นด้วยจุลภาค เป็นคำใบ้ ไม่ใช่การรับประกัน — ตัวที่รับประกันคือพจนานุกรม"),
- "modes.s2":         ("2  CLEANUP", "2  自动清理", "2  จัดข้อความ"),
- "modes.rulessub":   ("instant, and the same every time",
-                      "即时完成，每次结果都一样",
-                      "ทำทันที และได้ผลเหมือนกันทุกครั้ง"),
- "modes.r.hallucinations": ("made-up phrases", "凭空出现的句子", "ประโยคที่มันแต่งขึ้น"),
- "modes.r.fillers":  ("filler words", "语气词", "คำเติม"),
- "modes.r.dictionary":("dictionary", "词典", "พจนานุกรม"),
- "modes.r.names":    ("names", "名称", "ชื่อเฉพาะ"),
- "modes.r.cjk":      ("spacing between scripts", "中西文间距", "ระยะห่างระหว่างระบบเขียน"),
- "modes.keeppunct":  ("keep end punctuation", "保留句末标点", "คงเครื่องหมายท้ายประโยค"),
- "modes.s3":         ("3  AI REWRITE", "3  AI 改写", "3  AI เขียนใหม่"),
- "modes.llmsub":     ("optional · each step runs in turn · if one fails, your text is kept as "
-                      "it was",
-                      "可选 · 每一步按顺序执行 · 某一步失败，文字保持原样",
-                      "ไม่บังคับ · แต่ละขั้นทำตามลำดับ · ถ้าขั้นไหนล้มเหลว ข้อความจะคงเดิม"),
+ "modes.langempty":  ("No matching languages", "没有匹配的语言", "ไม่พบภาษาที่ตรงกัน"),
+ "modes.langupgrade":("Update the speech service to choose an input language.",
+                      "更新语音服务后可选择输入语言。", "อัปเดตบริการเสียงเพื่อเลือกภาษาพูด"),
+ "modes.langauto":   ("auto", "自动", "อัตโนมัติ"),
+ # Shown only for a pinned language. The note it replaces said auto "detects
+ # speech without changing its script" and left out the cost of the other
+ # choices: every one of them, Chinese included, stops the detection.
+ "modes.langfixed":  ("Listens for this language only: steadier when it is what you speak, but "
+                      "other languages may come out wrong.",
+                      "只按这种语言识别：主要说它时更稳，说其他语言可能会识别错。",
+                      "ฟังเฉพาะภาษานี้ แม่นขึ้นถ้าพูดภาษานี้เป็นหลัก แต่ภาษาอื่นอาจออกมาผิด"),
+ # Its own setting now, beside the language rather than two entries in it —
+ # which is how auto-detection with Simplified output became choosable.
+ "modes.script":     ("Chinese characters", "中文用字", "ตัวอักษรจีน"),
+ "modes.script.none":("as recognized", "不转换", "ไม่แปลง"),
+ "modes.script.hans":("simplified", "简体", "ตัวย่อ"),
+ "modes.script.hant":("traditional", "繁体", "ตัวเต็ม"),
+ # -- cleanup --------------------------------------------------------------------
+ # A chip is a thing that happens when it is lit, so each says what it does.
+ # The punctuation one said "keep", the one chip in the row lit for not acting.
+ "modes.s2":         ("CLEANUP", "整理", "จัดข้อความ"),
+ "modes.rulessub":   ("No AI: instant, and the same every time.",
+                      "不经过 AI，即时完成，每次结果都一样。",
+                      "ไม่ผ่าน AI ทำทันที และได้ผลเหมือนกันทุกครั้ง"),
+ "modes.r.fillers":  ("remove filler words", "去掉语气词", "ตัดคำเติม"),
+ "modes.r.cjk":      ("space between CJK and Latin", "中西文之间加空格", "เว้นวรรคระหว่าง CJK กับละติน"),
+ "modes.droppunct":  ("drop end punctuation", "去掉句末标点", "ตัดเครื่องหมายท้ายประโยค"),
+ # -- ai rewrite -----------------------------------------------------------------
+ "modes.s3":         ("AI REWRITE", "AI 改写", "AI เขียนใหม่"),
+ "modes.llmsub":     ("Optional. Each step adds a few seconds; one that fails passes on the text "
+                      "it was given.",
+                      "可选。每一步都要多等几秒；某一步出错时，把它收到的文字原样往下传。",
+                      "ไม่บังคับ แต่ละขั้นใช้เวลาเพิ่มอีกไม่กี่วินาที ถ้าขั้นไหนล้มเหลว "
+                      "ข้อความที่มันได้รับจะถูกส่งต่อไปตามเดิม"),
  "modes.step":       ("step ", "第 ", "ขั้น "),
  "modes.stepsuffix": ("", " 步", ""),
  "modes.remove":     ("Remove", "移除", "เอาออก"),
  "modes.stepph":     ("Tell it to edit, not to reply.", "让它改写，不要让它回答。",
                       "สั่งให้แก้ข้อความ ไม่ใช่ให้ตอบ"),
- "modes.nostep":     ("This mode has no LLM pass, so there is no prompt to write yet. Add one "
-                      "below and its prompt appears here, editable, with a usable default "
-                      "already in it.",
-                      "这个模式没有 LLM 步骤，所以还没有提示词可写。在下面加一个，它的提示词就会出现在这里，可编辑，"
-                      "并且已经带了一份能直接用的默认内容。",
-                      "โหมดนี้ไม่มีขั้น LLM จึงยังไม่มีพรอมป์ตให้เขียน เพิ่มด้านล่างแล้วพรอมป์ตจะปรากฏที่นี่ "
-                      "แก้ไขได้ และมีค่าเริ่มต้นที่ใช้งานได้อยู่แล้ว"),
- "modes.addstep":    ("+ add a step", "+ 添加一步", "+ เพิ่มขั้น"),
- "modes.weights":  ("model", "模型", "โมเดล"),
- "modes.inherit":  ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
+ # An action that asks which LLM, where it was a row of chips shaped exactly
+ # like the ones that choose a step's LLM.
+ "modes.addstep":    ("+ add a rewrite step", "+ 添加改写步骤", "+ เพิ่มขั้นเขียนใหม่"),
+ "modes.addwhich":   ("rewrite with:", "用哪个改写：", "เขียนใหม่ด้วย:"),
+ "modes.weights":    ("model", "模型", "โมเดล"),
+ "modes.inherit":    ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
  "modes.nollm":      ("no LLM is configured — see the Models tab", "还没有配置 LLM —— 去「模型」页",
                       "ยังไม่ได้ตั้งค่า LLM — ดูที่แท็บโมเดล"),
+ # -- advanced -------------------------------------------------------------------
+ "modes.adv":        ("ADVANCED", "高级", "ขั้นสูง"),
+ # On the closed fold: whatever in it is off its default, so folding a
+ # setting away never hides one somebody changed.
+ "modes.adv.changed":("changed: %1", "已改：%1", "เปลี่ยนแล้ว: %1"),
+ "modes.adv.sep":    (", ", "、", ", "),
+ "modes.adv.kv":     ("%1: %2", "%1：%2", "%1: %2"),
+ "modes.speechmodel": ("voice model", "语音模型", "โมเดลเสียง"),
+ "modes.speechglobal": ("use the default", "用默认的", "ใช้ค่าเริ่มต้น"),
+ "modes.speechglobalnamed": ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
+ "modes.speechonly1": ("Only one voice model is downloaded. The Models tab has smaller ones, for a "
+                       "mode where speed matters more than accuracy.",
+                       "只下载了一个语音模型。「模型」页有更小的，适合速度比准确率更重要的模式。",
+                       "ดาวน์โหลดโมเดลเสียงไว้ตัวเดียว แท็บโมเดลมีตัวที่เล็กกว่า "
+                       "เหมาะกับโหมดที่เน้นความเร็วมากกว่าความแม่น"),
+ "modes.speechnone": ("No voice model is downloaded yet — the Models tab has them.",
+                      "还没有下载语音模型——到「模型」页下载。",
+                      "ยังไม่ได้ดาวน์โหลดโมเดลเสียง — ดาวน์โหลดได้ที่แท็บโมเดล"),
+ "modes.speechreload": ("Switching to this mode loads that model first, which takes a few seconds.",
+                        "切换到这个模式时要先加载这个模型，需要几秒钟。",
+                        "เมื่อสลับมาโหมดนี้ต้องโหลดโมเดลนี้ก่อน ใช้เวลาไม่กี่วินาที"),
+ # The decoder prompt. "vocabulary" asked for a list of words, which is what
+ # My dictionary now feeds the decoder on its own; what is left for this box
+ # is the context a mode is spoken in.
+ "modes.decoderhint": ("recognition hint", "识别提示", "คำใบ้การถอดเสียง"),
+ "modes.promptph":   ("e.g. A meeting about Hyprland, Quickshell and PipeWire.",
+                      "例如：关于 Hyprland、Quickshell 和 PipeWire 的技术讨论。",
+                      "เช่น การประชุมเรื่อง Hyprland, Quickshell และ PipeWire"),
+ "modes.prompthint": ("Read by the recognizer before it listens — a nudge, not a guarantee. Words "
+                      "in My dictionary are added to it on their own.",
+                      "识别模型开始听之前会先读这段话，只是提示，不保证生效。「我的词典」里的词会自动加进来。",
+                      "โมเดลจะอ่านข้อความนี้ก่อนเริ่มฟัง เป็นแค่คำใบ้ ไม่รับประกันผล "
+                      "คำใน พจนานุกรมของฉัน จะถูกเพิ่มเข้าไปเอง"),
+ "modes.promptinherited": ("This mode has no hint of its own, so it uses default's. Saving here "
+                           "gives it one.",
+                           "这个模式没有自己的识别提示，用的是 default 的；在这里保存，就成了它自己的。",
+                           "โหมดนี้ไม่มีคำใบ้ของตัวเอง จึงใช้ของ default บันทึกที่นี่แล้วจะเป็นของโหมดนี้เอง"),
+ "modes.adv.cleanup":("cleanup", "整理", "จัดข้อความ"),
+ # What the flag does: collapse "好的。好的。好的。". It was called "made-up
+ # phrases", and switching it off kept none — a segment measured as silence
+ # is dropped whatever it says.
+ "modes.r.hallucinations": ("collapse repeated sentences", "合并重复的句子", "รวมประโยคที่ซ้ำ"),
+ "modes.r.dictionary":("dictionary", "词典", "พจนานุกรม"),
+ "modes.r.names":    ("names", "名称", "ชื่อเฉพาะ"),
+ "modes.s4":         ("typing", "输入方式", "วิธีป้อนข้อความ"),
  "modes.inject.auto":      ("auto", "自动", "อัตโนมัติ"),
  "modes.inject.type":      ("type it", "逐字输入", "พิมพ์ทีละตัว"),
  "modes.inject.clipboard": ("paste it", "粘贴", "วาง"),
- "modes.langauto":         ("auto", "自动", "อัตโนมัติ"),
- "modes.s4":         ("4  TYPING", "4  输入方式", "4  วิธีป้อนข้อความ"),
- "modes.injecthint": ("Auto types the text out like a keyboard (wtype), and pastes instead in "
-                      "apps that cannot take simulated typing — X11 apps, and Electron ones "
-                      "like VS Code or Slack.",
-                      "自动模式会像键盘一样把文字打出来（wtype）；遇到接不了模拟按键的程序 —— X11 程序，以及 VS Code、Slack 这类 Electron 应用 —— 则改为粘贴。",
-                      "โหมดอัตโนมัติจะพิมพ์ข้อความออกมาเหมือนคีย์บอร์ด (wtype) และเปลี่ยนไปวางแทนในแอปที่รับการพิมพ์จำลองไม่ได้ — แอป X11 และแอป Electron อย่าง VS Code หรือ Slack"),
+ # One per route, describing the one chosen. The note these replace said auto
+ # pastes into X11 apps; it types into them, with xdotool, and pastes into
+ # Electron apps and Chromium browsers — inject.clipboard_classes.
+ "modes.inject.hint.auto": ("Types the text, except in Electron apps such as VS Code and Slack and "
+                            "in Chromium browsers, where it pastes. X11 apps are typed with xdotool.",
+                            "逐字输入；在 VS Code、Slack 这类 Electron 应用和 Chromium 系浏览器里改为粘贴。"
+                            "X11 程序用 xdotool 输入。",
+                            "พิมพ์ทีละตัว ยกเว้นในแอป Electron อย่าง VS Code และ Slack "
+                            "และเบราว์เซอร์ตระกูล Chromium ที่จะวางแทน แอป X11 พิมพ์ด้วย xdotool"),
+ "modes.inject.hint.type": ("Always types, through wtype — except X11 apps, which are typed with "
+                            "xdotool.",
+                            "总是用 wtype 逐字输入；X11 程序例外，改用 xdotool。",
+                            "พิมพ์ทีละตัวด้วย wtype เสมอ ยกเว้นแอป X11 ที่ใช้ xdotool"),
+ "modes.inject.hint.paste": ("Always pastes, then puts your clipboard back — except X11 apps, which "
+                             "are typed with xdotool.",
+                             "总是粘贴，粘贴后恢复你原来的剪贴板；X11 程序例外，改用 xdotool 逐字输入。",
+                             "วางเสมอ แล้วคืนค่าคลิปบอร์ดเดิมให้ ยกเว้นแอป X11 ที่พิมพ์ด้วย xdotool"),
 })
 
 section("models", {
@@ -895,8 +950,8 @@ section("my dictionary", {'word.add': ('Add word', '添加词语', 'เพิ่
                  'of the listed settings is needed for the new editor.',
                  '现有词典仍可在下方使用。使用新编辑方式前，需要更新语音服务，或处理列出的旧设置。',
                  'ยังใช้พจนานุกรมเดิมด้านล่างได้ ต้องอัปเดตบริการเสียงหรือตรวจสอบการตั้งค่าเดิมก่อน'),
- 'word.use': ('Use my dictionary', '使用我的词典', 'ใช้พจนานุกรมของฉัน'),
- 'word.partial': ('Partly enabled', '部分启用', 'เปิดใช้บางส่วน')})
+ 'word.use': ('use My dictionary', '使用我的词典', 'ใช้พจนานุกรมของฉัน'),
+ 'word.partial': ('partly on', '部分启用', 'เปิดใช้บางส่วน')})
 
 section("dictionary feedback", {'word.deleted': ('Word deleted. Its corrections were removed too.',
                   '已删除词语及其纠正写法。',

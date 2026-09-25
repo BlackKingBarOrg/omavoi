@@ -59,12 +59,20 @@ English and nothing else. Omavoi is the other end of that trade.
                    on Vulkan       names, …                   paste
 ```
 
-In Modes, **Primary input language** is a searchable dropdown. Leave it on
-Auto to detect each recording without script conversion. Simplified Chinese
-and Traditional Chinese normalize the transcript locally before optional
-rewriting or translation. Search by localized name, English name or language
-code; the choices follow the speech model's language tokens. This requires
-the matching daemon version; older services keep their existing setting.
+In Modes, **spoken language** is a searchable dropdown: leave it on Auto to
+detect each recording, or pin the language you speak. **Chinese characters**
+sits beside it as its own setting — as recognized, Simplified or Traditional —
+so Auto with Simplified keeps detecting every take and still writes
+Simplified characters. The conversion is local and runs before any AI rewrite.
+Search the languages by localized name, English name or code; the choices
+follow the speech model's language tokens. Both need the matching daemon
+version; older services keep their existing setting.
+
+Each mode shows what changes how it reads — language, cleanup, AI rewrite —
+and folds the rest under **Advanced**: the voice model, the recognition hint,
+the rules that stay on, and how the text is typed. The closed fold names
+anything moved off its default, so a mode that pastes, or sends a hint, says
+so without being opened.
 
 ## Install
 

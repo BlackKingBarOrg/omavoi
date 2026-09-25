@@ -8,6 +8,13 @@ import qs.Ui
 // what it is told, the deterministic rules, then zero or more LLM passes each
 // with its own prompt, then how the text gets into the window.
 //
+// On screen the chain is split in two. What changes how a mode reads — the
+// language, the cleanup you would notice, the AI steps — is always open.
+// What the defaults already get right — the voice model, the recognition
+// hint, the rules nobody turns off, how the text is typed — folds away under
+// Advanced, and the closed fold names anything moved off its default, so a
+// changed setting is never out of sight.
+//
 // Everything here writes through the omavoi command, so the console and the
 // terminal cannot drift apart — the config file is the single record.
 Item {
@@ -15,6 +22,12 @@ Item {
   property var payload: ({ modes: [], active: "", llm: [] })
   property string selected: ""
   readonly property int pad: Style.space(18)
+  // One column for the label of every labelled row, and one measure for
+  // prose. The notes ran the full width of the pane — 190 characters a line
+  // on a wide monitor — and the prompt boxes with them.
+  readonly property int labelWidth: Style.space(150)
+  readonly property int noteWidth: Style.space(680)
+  readonly property int columnWidth: Style.space(880)
 
   property var strings: null
   // `omavoi model list --json`: what is on disk, and which llm entries exist.
@@ -85,6 +98,13 @@ Item {
   // The mode a click just refused to enter, so the reason appears next to the
   // mode rather than only in a log the user will never open.
   property string blocked: ""
+  // Advanced stays open across modes once opened: it is a way of looking at
+  // the page, not a property of one mode.
+  property bool advancedOpen: false
+  // "+ add a rewrite step" has asked which LLM. A pick, Cancel or another
+  // mode closes the question.
+  property bool adding: false
+  onCurrentChanged: root.adding = false
 
   signal command(string cmd)
   signal commandArgs(var argv)
@@ -116,16 +136,99 @@ Item {
     for (var i = 0; i < modes.length; i++) if (modes[i].name === current) return modes[i]
     return null
   }
+  readonly property var rules: (root.mode && root.mode.rules) || ({})
+  readonly property string language: (root.mode && root.mode.language) || "auto"
+  readonly property string inject: (root.mode && root.mode.inject) || "auto"
 
-  // The same words the detail pane uses. This listed the raw config
-  // identifiers -- "speech → agent" beside a pane calling the same thing
-  // "System agent", and still English in a Chinese console.
-  function chainOf(m) {
-    var names = [root.t("modes.chainspeech")]
-    var steps = (m && m.steps) || []
-    for (var i = 0; i < steps.length; i++)
-      names.push(root.llmLabel(steps[i].llm, false))
-    return names.join(" → ")
+  // Which Chinese characters come out is its own setting where the daemon
+  // has it, and only asked where a take can carry Chinese at all: on auto,
+  // or listening for Chinese or Cantonese. A mode pinned to Thai keeps the
+  // value and does not show a question it cannot use.
+  readonly property bool scriptShown: root.payload.script_supported === true
+                                      && ["auto", "zh", "yue"].indexOf(root.language) >= 0
+
+  // My dictionary, for this mode. Two flags before the dictionary was one
+  // list — corrections and names — and a config from then may still have
+  // one on and the other off, which the chip reports rather than flattens.
+  readonly property bool dictCorrections: root.rules.vocabulary !== undefined
+                                          ? root.rules.vocabulary
+                                          : root.rules.dictionary !== false
+                                            && root.payload.post_enabled !== false
+  readonly property bool dictNames: root.rules.vocabulary !== undefined
+                                    ? root.rules.vocabulary : root.rules.names !== false
+  readonly property bool dictOn: root.dictCorrections && root.dictNames
+
+  function injectLabel(how) {
+    return how === "wtype" ? root.t("modes.inject.type")
+         : how === "clipboard" ? root.t("modes.inject.clipboard")
+         : how === "auto" ? root.t("modes.inject.auto")
+         : how
+  }
+  function languageLabel(m, code) {
+    var opts = (m && m.input_languages) || []
+    for (var i = 0; i < opts.length; i++) if (opts[i].value === code) return opts[i].label
+    return code
+  }
+
+  // What sets a mode apart, for the list. The line under each name used to
+  // be the chain, "speech → System agent": every mode starts with speech, so
+  // it said nothing, and code and terminal read the same as default though
+  // one pastes and the other drops the full stop.
+  //
+  // Apart from default, that is. The other modes inherit what they do not
+  // state, so default's Simplified Chinese on every line would be default's
+  // trait printed five times; each line keeps only where its mode differs.
+  // Steps are not inherited and always count.
+  function summaryOf(m) {
+    if (!m) return ""
+    var base = null
+    for (var b = 0; b < root.modes.length; b++)
+      if (root.modes[b].name === "default") base = root.modes[b]
+    function own(value, key) {
+      return m.name === "default" || !base || value !== String(base[key] || "")
+    }
+    var parts = []
+    var steps = m.steps || []
+    if (steps.length) {
+      var names = []
+      for (var i = 0; i < steps.length; i++)
+        names.push(root.llmLabel(steps[i].llm, false))
+      parts.push(root.tf("modes.sum.ai", names.join(" → ")))
+    }
+    var lang = m.language || "auto"
+    if (lang !== "auto" && own(lang, "language")) parts.push(root.languageLabel(m, lang))
+    // Only where a take can carry Chinese, as the row that sets it.
+    var script = ["auto", "zh", "yue"].indexOf(lang) >= 0 ? String(m.script || "") : ""
+    if (script !== "" && own(script, "script"))
+      parts.push(root.t(script === "zh-Hant" ? "modes.sum.hant" : "modes.sum.hans"))
+    var punct = String((m.rules || {}).punctuation || "keep")
+    if (punct === "strip" && (m.name === "default" || !base
+                              || punct !== String((base.rules || {}).punctuation || "keep")))
+      parts.push(root.t("modes.sum.nopunct"))
+    var how = m.inject || "auto"
+    if (how !== "auto" && own(how, "inject"))
+      parts.push(root.t(how === "wtype" ? "modes.sum.type" : "modes.sum.paste"))
+    return parts.length ? parts.join(" · ") : root.t("modes.sum.plain")
+  }
+
+  // The advanced settings this mode has moved off their defaults, for the
+  // closed fold. Folding a setting away is only safe while a changed one
+  // still shows: code pastes and terminal sends default's hint, and a
+  // closed section would otherwise hide both.
+  function advancedChanges() {
+    var m = root.mode
+    if (!m) return []
+    function kv(k, v) { return root.t("modes.adv.kv").replace("%1", k).replace("%2", v) }
+    var out = []
+    if (m.speech_model) out.push(kv(root.t("modes.speechmodel"), root.plain(m.speech_model)))
+    if (m.prompt) out.push(root.t("modes.decoderhint"))
+    if (root.rules.hallucinations === false)
+      out.push(kv(root.t("modes.r.hallucinations"), root.t("set.off")))
+    if (root.payload.vocabulary_supported === true && !root.dictOn)
+      out.push(kv(root.t("word.use"), root.dictCorrections !== root.dictNames
+                                      ? root.t("word.partial") : root.t("set.off")))
+    if (root.inject !== "auto") out.push(kv(root.t("modes.s4"), root.injectLabel(root.inject)))
+    return out
   }
 
   RowLayout {
@@ -141,6 +244,53 @@ Item {
       ColumnLayout {
         anchors.fill: parent
         spacing: 0
+
+        // How the mode gets picked at all, and the switch for it.
+        //
+        // The matching controls are hidden until they are finished, and the
+        // switch was one of them -- so a machine left following the window
+        // had a mode list whose clicks did nothing, a line of orange text
+        // saying so, and no way back except `omavoi mode auto off` at a
+        // terminal. The switch is the one part of that UI that works without
+        // the rest: the match lists are already in the config whether or not
+        // they can be edited here.
+        //
+        // Above the list, because "which of these two is deciding" is the
+        // question a mode list cannot answer on its own. It sat above the
+        // detail pane first, where it read as a setting of whichever mode was
+        // open, and as a chip whose label was its own state.
+        ColumnLayout {
+          Layout.fillWidth: true
+          Layout.margins: Style.space(11)
+          spacing: Style.space(6)
+          OmText {
+            text: root.t("modes.pick.title")
+            color: Color.muted
+          }
+          ButtonGroup {
+            objectName: "switching"
+            options: [{ value: "fixed", label: root.t("modes.fixed") },
+                      { value: "window", label: root.t("modes.following") }]
+            value: root.byWindow ? "window" : "fixed"
+            fontSize: Style.font.caption
+            onChanged: function (v) {
+              root.commandArgs(["omavoi", "mode", "auto", v === "window" ? "on" : "off"])
+            }
+          }
+          OmText {
+            visible: root.byWindow
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.t("modes.hiddenauto")
+            color: "#e0af68"
+          }
+        }
+
+        Rectangle {
+          Layout.fillWidth: true
+          Layout.preferredHeight: 1
+          color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
+        }
 
         ListView {
           Layout.fillWidth: true
@@ -186,7 +336,7 @@ Item {
               OmText {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                text: root.chainOf(m)
+                text: root.summaryOf(m)
                 color: (m.steps || []).length ? Color.accent : Color.muted
               }
               OmText {
@@ -268,7 +418,15 @@ Item {
     }
 
     // ===================== detail =====================
+    //
+    // Four sizes, one job each: the mode's name, a section's title, a row's
+    // label, and everything a row holds or says about itself. Every one of
+    // those was `caption` before, the name aside — which is why a section's
+    // title and the note beside it read as one string — and the section
+    // numbers were three colours, left over from a design that drew each
+    // step as a card and coloured the two that run a model.
     Flickable {
+      id: pane
       Layout.fillWidth: true
       Layout.fillHeight: true
       clip: true
@@ -279,40 +437,40 @@ Item {
         id: detail
         x: root.pad
         y: root.pad
-        width: parent.width - root.pad * 2
-        spacing: Style.space(14)
+        width: Math.min(pane.width - root.pad * 2, root.columnWidth)
+        spacing: Style.space(20)
 
-        // How the mode gets picked at all, and the switch for it.
-        //
-        // The matching controls below are hidden until they are finished, and
-        // the switch was one of them -- so a machine left following the window
-        // had a mode list whose clicks did nothing, a line of orange text
-        // saying so, and no way back except `omavoi mode auto off` at a
-        // terminal. The switch is the one part of that UI that works without
-        // the rest: the match lists are already in the config whether or not
-        // they can be edited here.
-        //
-        // Shown in both states, because "which of these two is deciding" is
-        // the question a mode list cannot answer on its own.
+        // -- header --
         RowLayout {
-          visible: !root.showWindowMatch
           Layout.fillWidth: true
-          spacing: Style.space(9)
-          OmChip {
-            label: root.byWindow ? root.t("modes.following") : root.t("modes.fixed")
-            on: root.byWindow
-            onClicked: root.commandArgs(
-              ["omavoi", "mode", "auto", root.byWindow ? "off" : "on"])
+          spacing: Style.space(10)
+          OmText {
+            text: root.current
+            size: "heading"
+            color: Color.foreground
           }
           OmText {
+            visible: root.mode && root.mode.active === true
+            text: root.t("modes.here")
+            color: Color.accent
+          }
+          OmText {
+            visible: root.blocked !== "" && root.blocked === root.current
             Layout.fillWidth: true
             wrapMode: Text.Wrap
-            text: root.byWindow ? root.t("modes.hiddenauto")
-                                : root.t("modes.autohint")
-            color: root.byWindow ? "#e0af68" : Color.muted
+            text: root.t("modes.blocked")
+            color: Color.urgent
+          }
+          Item { Layout.fillWidth: true }
+          Button {
+            visible: root.current !== "default"
+            text: root.t("modes.delete")
+            onClicked: root.commandArgs(["omavoi", "mode", "rm", root.current])
           }
         }
 
+        // What window matching would say about the mode, once it is shown.
+        // The switch itself lives above the list.
         Rectangle {
           visible: root.showWindowMatch
           Layout.fillWidth: true
@@ -327,69 +485,27 @@ Item {
                                   Color.foreground.b, 0.25)
           radius: Style.cornerRadius
 
-          RowLayout {
+          ColumnLayout {
             id: pick
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             anchors.margins: Style.space(12)
-            spacing: Style.space(12)
-
-            ColumnLayout {
+            spacing: 2
+            OmText {
+              text: root.byWindow
+                    ? root.t("modes.followwin")
+                    : root.t("modes.everytake") + (root.switching.mode || "default")
+              size: "body"
+              color: Color.foreground
+            }
+            OmText {
               Layout.fillWidth: true
-              spacing: 2
-              OmText {
-                text: root.byWindow
-                      ? root.t("modes.followwin")
-                      : root.t("modes.everytake") + (root.switching.mode || "default")
-                size: "body"
-                color: Color.foreground
-              }
-              OmText {
-                Layout.fillWidth: true
-                wrapMode: Text.Wrap
-                text: root.byWindow ? root.t("modes.longestwins")
-                                    : root.t("modes.matchoff")
-                color: Color.muted
-              }
+              wrapMode: Text.Wrap
+              text: root.byWindow ? root.t("modes.longestwins")
+                                  : root.t("modes.matchoff")
+              color: Color.muted
             }
-
-            OmChip {
-              label: root.byWindow ? root.t("modes.following") : root.t("modes.fixed")
-              on: root.byWindow
-              onClicked: root.commandArgs(
-                ["omavoi", "mode", "auto", root.byWindow ? "off" : "on"])
-            }
-
-          }
-        }
-
-        // -- header --
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: Style.space(10)
-          OmText {
-            text: root.current
-            size: "heading"
-            color: Color.foreground
-          }
-          OmText {
-            visible: root.blocked !== "" && root.blocked === root.current
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: root.t("modes.blocked")
-            color: Color.urgent
-          }
-          OmText {
-            visible: root.mode && root.mode.active === true
-            text: root.t("modes.activehere")
-            color: Color.accent
-          }
-          Item { Layout.fillWidth: true }
-          Button {
-            visible: root.current !== "default"
-            text: root.t("modes.delete")
-            onClicked: root.commandArgs(["omavoi", "mode", "rm", root.current])
           }
         }
 
@@ -461,134 +577,124 @@ Item {
           }
         }
 
-        // Separated the triggers from the chain; with them gone it would be a
-        // rule under nothing.
-        Rectangle {
-          visible: root.showWindowMatch
-          Layout.fillWidth: true; Layout.preferredHeight: 1
-          color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.14)
-        }
-
-        // -- 1 speech --
+        // ---- voice ------------------------------------------------------
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Style.space(7)
-          RowLayout {
-            spacing: Style.space(9)
-            OmText {
-              text: root.t("modes.s1")
-              font.letterSpacing: 1
-              color: Color.accent
-            }
-            OmText {
-              text: root.t("modes.speechsub")
-              color: Color.muted
-            }
-          }
-          SearchableDropdown {
-            id: inputLanguagePicker
-            objectName: "inputLanguagePicker"
+          spacing: Style.space(10)
+          Rectangle {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignLeft
-            Layout.preferredWidth: Style.space(280)
-            // Bound to the view, not a RowLayout's implicit width: this also
-            // keeps the popup inside the detail pane on narrow windows.
-            Layout.maximumWidth: Math.max(Style.space(120), Math.min(Style.space(280),
-                                     root.width - Style.space(280) - 1 - root.pad * 2))
-            label: root.t("modes.language")
-            popupRowHeight: Style.space(40)
-            // The shell picker writes value on selection. Binding keeps
-            // external refreshes and mode switches connected afterwards.
-            Binding on value { value: (root.mode && root.mode.language) || "auto" }
-            options: root.mode && root.mode.input_languages ? root.mode.input_languages : []
-            enabled: options.length > 0
-            placeholderText: root.t("modes.langsearch")
-            triggerLabel: root.t("modes.langauto")
-            emptyText: root.t("modes.langempty")
-            onChanged: function(code) {
-              if (root.mode && code !== (root.mode.language || "auto"))
-                root.commandArgs(["omavoi", "mode", "set", root.current, "language", code])
-            }
+            Layout.preferredHeight: 1
+            Layout.bottomMargin: Style.space(8)
+            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
           }
           OmText {
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: root.t(inputLanguagePicker.enabled ? "modes.langhint" : "modes.langupgrade")
-            color: Qt.darker(Color.muted, 1.1)
+            text: root.t("modes.s1")
+            size: "subtitle"
+            font.letterSpacing: 1
+            color: Color.foreground
           }
-          // A mode names its own weights, or takes whatever is loaded. The
-          // switch costs one reload — measured at 3.7 s for large-v3 — and it
-          // is paid when the mode changes, not when you dictate.
           RowLayout {
             Layout.fillWidth: true
-            spacing: Style.space(9)
+            spacing: Style.space(10)
             OmText {
-              Layout.preferredWidth: Style.space(124)
-              text: root.t("modes.speechmodel")
+              Layout.preferredWidth: root.labelWidth
+              wrapMode: Text.Wrap
+              text: root.t("modes.language")
+              size: "body"
+              color: Color.muted
+            }
+            SearchableDropdown {
+              id: inputLanguagePicker
+              objectName: "inputLanguagePicker"
+              Layout.alignment: Qt.AlignLeft
+              Layout.preferredWidth: Style.space(280)
+              // Bound to the column, not a RowLayout's implicit width: this
+              // also keeps the popup inside the detail pane on narrow windows.
+              Layout.maximumWidth: Math.max(Style.space(120), Math.min(Style.space(280),
+                                     detail.width - root.labelWidth - Style.space(10)))
+              // The row has the label; the picker's own sat above it in bold
+              // and title case, the one label on the page that looked like it.
+              showLabel: false
+              popupRowHeight: Style.space(40)
+              // The shell picker writes value on selection. Binding keeps
+              // external refreshes and mode switches connected afterwards.
+              Binding on value { value: root.language }
+              options: root.mode && root.mode.input_languages ? root.mode.input_languages : []
+              enabled: options.length > 0
+              placeholderText: root.t("modes.langsearch")
+              triggerLabel: root.t("modes.langauto")
+              emptyText: root.t("modes.langempty")
+              onChanged: function(code) {
+                if (root.mode && code !== root.language)
+                  root.commandArgs(["omavoi", "mode", "set", root.current, "language", code])
+              }
+            }
+            Item { Layout.fillWidth: true }
+          }
+          // Said only when it is true of the choice: auto needs no note, and
+          // one pinned language has a cost worth knowing before a take in
+          // another one comes out wrong.
+          OmText {
+            visible: text !== ""
+            Layout.leftMargin: root.labelWidth + Style.space(10)
+            Layout.fillWidth: true
+            Layout.maximumWidth: root.noteWidth
+            wrapMode: Text.Wrap
+            text: !inputLanguagePicker.enabled ? root.t("modes.langupgrade")
+                  : root.language !== "auto" ? root.t("modes.langfixed") : ""
+            color: Qt.darker(Color.muted, 1.1)
+          }
+          RowLayout {
+            objectName: "scriptRow"
+            visible: root.scriptShown
+            Layout.fillWidth: true
+            spacing: Style.space(10)
+            OmText {
+              Layout.preferredWidth: root.labelWidth
+              wrapMode: Text.Wrap
+              text: root.t("modes.script")
+              size: "body"
               color: Color.muted
             }
             Flow {
               Layout.fillWidth: true
               spacing: Style.space(6)
-              // The absence of an override, saying what it will follow —
-              // the same shape as the LLM step's inherit chip below, which
-              // had it first. "whatever is loaded" named no model at all.
-              OmChip {
-                label: root.defaultSpeech === ""
-                       ? root.t("modes.speechglobal")
-                       : root.tf("modes.speechglobalnamed", root.defaultSpeech)
-                on: !(root.mode && root.mode.speech_model)
-                onClicked: root.commandArgs(
-                  ["omavoi", "mode", "set", root.current, "speech_model", ""])
-              }
               Repeater {
-                model: root.speechChoices
+                model: [{ v: "", k: "modes.script.none" },
+                        { v: "zh-Hans", k: "modes.script.hans" },
+                        { v: "zh-Hant", k: "modes.script.hant" }]
                 OmChip {
-                  readonly property var entry: modelData
-                  label: root.plain(entry.key)
-                  on: root.mode && String(root.mode.speech_model) === String(entry.key)
-                  onClicked: root.commandArgs(
-                    ["omavoi", "mode", "set", root.current, "speech_model", entry.key])
+                  readonly property var choice: modelData
+                  objectName: "script:" + choice.v
+                  label: root.t(choice.k)
+                  on: ((root.mode && root.mode.script) || "") === choice.v
+                  onClicked: if (!on) root.commandArgs(
+                    ["omavoi", "mode", "set", root.current, "script", choice.v])
                 }
               }
             }
           }
-          // Two different facts, and `<= 1` reported the first one for both:
-          // "only one set is downloaded" over a machine with none.
-          OmText {
-            visible: root.speechChoices.length <= 1
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: root.speechChoices.length === 0 ? root.t("modes.speechnone")
-                                                  : root.t("modes.speechonly1")
-            color: Qt.darker(Color.muted, 1.1)
-          }
-
-          OmText {
-            text: root.t("modes.decoderhint")
-            color: Color.muted
-          }
-          OmTextArea {
-            Layout.fillWidth: true
-            strings: root.strings
-            minLines: 2
-            key: root.current
-            text: (root.mode && root.mode.prompt) || ""
-            placeholder: root.t("modes.promptph")
-            onCommitted: function (v) {
-              root.commandArgs(["omavoi", "mode", "set", root.current, "prompt", v])
-            }
-          }
         }
 
-        // -- 2 rules --
+        // ---- cleanup ----------------------------------------------------
+        //
+        // Every chip is a thing that happens when it is lit. "keep end
+        // punctuation" was the one lit for not doing something, in a row
+        // where the others lit for doing it.
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Style.space(7)
-          RowLayout {
-            spacing: Style.space(9)
+          spacing: Style.space(10)
+          Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            Layout.bottomMargin: Style.space(8)
+            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
+          }
+          ColumnLayout {
+            spacing: Style.space(3)
             OmText {
               text: root.t("modes.s2")
+              size: "subtitle"
               font.letterSpacing: 1
               color: Color.foreground
             }
@@ -602,15 +708,13 @@ Item {
             spacing: Style.space(6)
             Repeater {
               model: [
-                { k: "hallucinations", label: root.t("modes.r.hallucinations") },
                 { k: "fillers", label: root.t("modes.r.fillers") },
-
                 { k: "cjk_spacing", label: root.t("modes.r.cjk") }
               ]
               OmChip {
                 readonly property var rule: modelData
                 label: rule.label
-                on: root.mode && root.mode.rules ? root.mode.rules[rule.k] !== false : true
+                on: root.rules[rule.k] !== false
                 onClicked: root.commandArgs(
                   ["omavoi", "config", "set",
                    "modes." + root.current + ".rules." + rule.k,
@@ -618,56 +722,38 @@ Item {
               }
             }
             OmChip {
-              readonly property var flags: (root.mode && root.mode.rules) || ({})
-              readonly property bool hasUnified: flags.vocabulary !== undefined
-              readonly property bool correctionsOn: hasUnified ? flags.vocabulary : flags.dictionary !== false && root.payload.post_enabled !== false
-              readonly property bool namesOn: hasUnified ? flags.vocabulary : flags.names !== false
-              visible: root.payload.vocabulary_supported === true
-              label: root.t("word.use") + (correctionsOn !== namesOn ? " · " + root.t("word.partial") : "")
-              on: correctionsOn && namesOn
-              onClicked: root.commandArgs(["omavoi", "mode", "set", root.current, "rules.vocabulary",
-                                           correctionsOn && namesOn ? "false" : "true"])
-            }
-            Repeater {
-              model: root.payload.vocabulary_supported ? [] : [
-                {k: "dictionary", label: root.t("modes.r.dictionary")},
-                {k: "names", label: root.t("modes.r.names")}
-              ]
-              OmChip {
-                readonly property var rule: modelData
-                label: rule.label
-                on: root.mode && root.mode.rules ? root.mode.rules[rule.k] !== false : true
-                onClicked: root.commandArgs(["omavoi", "config", "set", "modes." + root.current + ".rules." + rule.k, on ? "false" : "true"])
-              }
-            }
-            Rectangle {
-              width: 1; height: Style.space(18)
-              color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.2)
-            }
-            OmChip {
-              label: root.t("modes.keeppunct")
-              on: !(root.mode && root.mode.rules
-                    && root.mode.rules.punctuation === "strip")
+              label: root.t("modes.droppunct")
+              on: root.rules.punctuation === "strip"
               onClicked: root.commandArgs(
                 ["omavoi", "config", "set",
                  "modes." + root.current + ".rules.punctuation",
-                 on ? "strip" : "keep"])
+                 on ? "keep" : "strip"])
             }
           }
         }
 
-        // -- 3 llm steps --
+        // ---- ai rewrite -------------------------------------------------
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Style.space(7)
-          RowLayout {
-            spacing: Style.space(9)
+          spacing: Style.space(10)
+          Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            Layout.bottomMargin: Style.space(8)
+            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
+          }
+          ColumnLayout {
+            spacing: Style.space(3)
             OmText {
               text: root.t("modes.s3")
+              size: "subtitle"
               font.letterSpacing: 1
-              color: ((root.mode && root.mode.steps) || []).length ? Color.accent : Color.muted
+              color: Color.foreground
             }
             OmText {
+              Layout.fillWidth: true
+              Layout.maximumWidth: root.noteWidth
+              wrapMode: Text.Wrap
               text: root.t("modes.llmsub")
               color: Color.muted
             }
@@ -724,7 +810,9 @@ Item {
                 // appear in the Models tab and nowhere else: a step named a
                 // configuration and inherited whatever that configuration
                 // pointed at, so a second local model had no way of being
-                // reached from a mode at all.
+                // reached from a mode at all. It stays in the card rather
+                // than under Advanced: it is only here for a local step, and
+                // it is a question about this step.
                 RowLayout {
                   visible: root.isLocalLlm(step.llm)
                            && root.weightChoices.length > 0
@@ -774,76 +862,318 @@ Item {
             }
           }
 
-          OmText {
-            visible: !((root.mode && root.mode.steps) || []).length
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: root.t("modes.nostep")
-            color: Qt.darker(Color.muted, 1.1)
-          }
-
+          // An action, and drawn as one. It was a row of chips under a row of
+          // chips: the same three names, the same shape, a hundred pixels
+          // below the ones that choose a step's LLM — and a click on the
+          // wrong row added a step, prompt and all.
           RowLayout {
+            visible: root.llms.length > 0
             Layout.fillWidth: true
-            spacing: Style.space(7)
-            OmText {
+            spacing: Style.space(8)
+            Button {
+              objectName: "addStep"
+              visible: !root.adding
               text: root.t("modes.addstep")
+              bordered: true
+              fontSize: Style.font.caption
+              onClicked: root.adding = true
+            }
+            OmText {
+              visible: root.adding
+              text: root.t("modes.addwhich")
               color: Color.muted
             }
             Repeater {
-              model: root.llms
-              OmChip {
+              model: root.adding ? root.llms : []
+              Button {
                 readonly property string llmName: modelData
-                label: root.llmLabel(llmName)
-                on: false
+                objectName: "addStep:" + llmName
+                text: root.llmLabel(llmName)
+                bordered: true
+                fontSize: Style.font.caption
                 // No prompt here: the command fills its default, so the text
                 // lives in one place instead of drifting between the two.
-                onClicked: root.commandArgs(
-                  ["omavoi", "mode", "step", root.current, "add", llmName])
+                // Closing the question comes last: it empties this Repeater,
+                // and this button with it, handler and all.
+                onClicked: {
+                  root.commandArgs(["omavoi", "mode", "step", root.current, "add", llmName])
+                  root.adding = false
+                }
               }
             }
-            OmText {
-              visible: !root.llms.length
-              text: root.t("modes.nollm")
-              color: Color.muted
+            Button {
+              visible: root.adding
+              text: root.t("word.cancel")
+              fontSize: Style.font.caption
+              onClicked: root.adding = false
             }
             Item { Layout.fillWidth: true }
+          }
+          OmText {
+            visible: !root.llms.length
+            text: root.t("modes.nollm")
+            color: Color.muted
           }
         }
 
-        // -- 4 inject --
+        // ---- advanced ---------------------------------------------------
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Style.space(7)
-          RowLayout {
-            spacing: Style.space(9)
-            OmText {
-              text: root.t("modes.s4")
-              font.letterSpacing: 1
-              color: Color.foreground
+          spacing: Style.space(12)
+          Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            Layout.bottomMargin: Style.space(6)
+            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
+          }
+          Item {
+            id: advHead
+            Layout.fillWidth: true
+            implicitHeight: advTitle.implicitHeight
+            readonly property var changes: root.advancedChanges()
+            RowLayout {
+              id: advTitle
+              width: parent.width
+              spacing: Style.space(12)
+              // The shell's own chevrons, the ones its dropdowns draw.
+              OmText {
+                text: root.advancedOpen ? "󰅀" : "󰅂"
+                size: "subtitle"
+                color: Color.muted
+              }
+              OmText {
+                text: root.t("modes.adv")
+                size: "subtitle"
+                font.letterSpacing: 1
+                color: Color.foreground
+              }
+              OmText {
+                objectName: "advancedSummary"
+                visible: !root.advancedOpen && advHead.changes.length > 0
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+                text: root.tf("modes.adv.changed", advHead.changes.join(root.t("modes.adv.sep")))
+                color: Color.accent
+              }
+              Item { Layout.fillWidth: true }
             }
-            Repeater {
-              model: ["auto", "wtype", "clipboard"]
-              OmChip {
-                readonly property string how: modelData
-                // The value written to the config is still `wtype`; the chip
-                // says what it does. A program name is the right word in a
-                // terminal and in the note below, and the wrong one on a
-                // choice between three things — nobody picks "wtype" over
-                // "clipboard" by knowing what wtype is.
-                label: root.t(how === "wtype" ? "modes.inject.type"
-                                              : "modes.inject." + how)
-                on: ((root.mode && root.mode.inject) || "auto") === how
-                onClicked: if (!on) root.commandArgs(
-                  ["omavoi", "mode", "set", root.current, "inject", how])
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.advancedOpen = !root.advancedOpen
+            }
+          }
+
+          ColumnLayout {
+            objectName: "advancedBody"
+            visible: root.advancedOpen
+            Layout.fillWidth: true
+            spacing: Style.space(12)
+
+            // A mode names its own weights, or takes whatever is loaded. The
+            // switch costs one reload — measured at 3.7 s for large-v3 — and
+            // it is paid when the mode changes, not when you dictate.
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: Style.space(6)
+              RowLayout {
+                Layout.fillWidth: true
+                spacing: Style.space(10)
+                OmText {
+                  Layout.preferredWidth: root.labelWidth
+                  Layout.alignment: Qt.AlignTop
+                  wrapMode: Text.Wrap
+                  text: root.t("modes.speechmodel")
+                  size: "body"
+                  color: Color.muted
+                }
+                Flow {
+                  Layout.fillWidth: true
+                  spacing: Style.space(6)
+                  // The absence of an override, saying what it will follow —
+                  // the same shape as the LLM step's inherit chip, which had
+                  // it first. "whatever is loaded" named no model at all.
+                  OmChip {
+                    label: root.defaultSpeech === ""
+                           ? root.t("modes.speechglobal")
+                           : root.tf("modes.speechglobalnamed", root.defaultSpeech)
+                    on: !(root.mode && root.mode.speech_model)
+                    onClicked: root.commandArgs(
+                      ["omavoi", "mode", "set", root.current, "speech_model", ""])
+                  }
+                  // Not the default's own weights beside the chip that
+                  // already names them — "use the default (large-v3-turbo)"
+                  // next to "large-v3-turbo" read as one model twice. It
+                  // stays for a mode that pinned them.
+                  Repeater {
+                    model: root.speechChoices
+                    OmChip {
+                      readonly property var entry: modelData
+                      visible: on || root.plain(entry.key) !== root.defaultSpeech
+                      label: root.plain(entry.key)
+                      on: root.mode && String(root.mode.speech_model) === String(entry.key)
+                      onClicked: root.commandArgs(
+                        ["omavoi", "mode", "set", root.current, "speech_model", entry.key])
+                    }
+                  }
+                }
+              }
+              // Two different facts, and `<= 1` reported the first one for
+              // both: "only one set is downloaded" over a machine with none.
+              // The third is what choosing one costs.
+              OmText {
+                visible: text !== ""
+                Layout.leftMargin: root.labelWidth + Style.space(10)
+                Layout.fillWidth: true
+                Layout.maximumWidth: root.noteWidth
+                wrapMode: Text.Wrap
+                text: root.speechChoices.length === 0 ? root.t("modes.speechnone")
+                      : root.mode && root.mode.speech_model
+                        && root.plain(root.mode.speech_model) !== root.defaultSpeech
+                        ? root.t("modes.speechreload")
+                      : root.speechChoices.length === 1 ? root.t("modes.speechonly1")
+                      : ""
+                color: Qt.darker(Color.muted, 1.1)
               }
             }
-            Item { Layout.fillWidth: true }
-          }
-          OmText {
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: root.t("modes.injecthint")
-            color: Qt.darker(Color.muted, 1.1)
+
+            // The decoder prompt. A mode that states none sends default's,
+            // and said so nowhere: terminal, code and prose showed an empty
+            // box over a hint they were sending with every take.
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: Style.space(6)
+              RowLayout {
+                Layout.fillWidth: true
+                spacing: Style.space(10)
+                OmText {
+                  Layout.preferredWidth: root.labelWidth
+                  Layout.alignment: Qt.AlignTop
+                  Layout.topMargin: Style.space(6)
+                  wrapMode: Text.Wrap
+                  text: root.t("modes.decoderhint")
+                  size: "body"
+                  color: Color.muted
+                }
+                OmTextArea {
+                  Layout.fillWidth: true
+                  strings: root.strings
+                  minLines: 2
+                  key: root.current
+                  text: (root.mode && root.mode.prompt) || ""
+                  placeholder: root.t("modes.promptph")
+                  onCommitted: function (v) {
+                    root.commandArgs(["omavoi", "mode", "set", root.current, "prompt", v])
+                  }
+                }
+              }
+              OmText {
+                Layout.leftMargin: root.labelWidth + Style.space(10)
+                Layout.fillWidth: true
+                Layout.maximumWidth: root.noteWidth
+                wrapMode: Text.Wrap
+                text: root.mode && root.mode.prompt_inherited === true
+                      ? root.t("modes.promptinherited") : root.t("modes.prompthint")
+                color: Qt.darker(Color.muted, 1.1)
+              }
+            }
+
+            // The rules that stay on: what they catch only ever goes wrong.
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: Style.space(10)
+              OmText {
+                Layout.preferredWidth: root.labelWidth
+                Layout.alignment: Qt.AlignTop
+                wrapMode: Text.Wrap
+                text: root.t("modes.adv.cleanup")
+                size: "body"
+                color: Color.muted
+              }
+              Flow {
+                Layout.fillWidth: true
+                spacing: Style.space(6)
+                // Named for what the flag does. It was "made-up phrases", and
+                // switching it off never kept one: a segment measured as
+                // silence is dropped whatever it says. What the flag decides
+                // is whether "好的。好的。好的。" collapses to one.
+                OmChip {
+                  label: root.t("modes.r.hallucinations")
+                  on: root.rules.hallucinations !== false
+                  onClicked: root.commandArgs(
+                    ["omavoi", "config", "set",
+                     "modes." + root.current + ".rules.hallucinations",
+                     on ? "false" : "true"])
+                }
+                OmChip {
+                  visible: root.payload.vocabulary_supported === true
+                  label: root.t("word.use") + (root.dictCorrections !== root.dictNames
+                                               ? " · " + root.t("word.partial") : "")
+                  on: root.dictOn
+                  onClicked: root.commandArgs(["omavoi", "mode", "set", root.current,
+                                               "rules.vocabulary", root.dictOn ? "false" : "true"])
+                }
+                Repeater {
+                  model: root.payload.vocabulary_supported ? [] : [
+                    { k: "dictionary", label: root.t("modes.r.dictionary") },
+                    { k: "names", label: root.t("modes.r.names") }
+                  ]
+                  OmChip {
+                    readonly property var rule: modelData
+                    label: rule.label
+                    on: root.rules[rule.k] !== false
+                    onClicked: root.commandArgs(["omavoi", "config", "set", "modes." + root.current + ".rules." + rule.k, on ? "false" : "true"])
+                  }
+                }
+              }
+            }
+
+            // How the text reaches the window. Auto is right almost
+            // everywhere, so the note describes whichever route is chosen:
+            // what auto does, or what forcing one gives up.
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: Style.space(6)
+              RowLayout {
+                Layout.fillWidth: true
+                spacing: Style.space(10)
+                OmText {
+                  Layout.preferredWidth: root.labelWidth
+                  wrapMode: Text.Wrap
+                  text: root.t("modes.s4")
+                  size: "body"
+                  color: Color.muted
+                }
+                Repeater {
+                  model: ["auto", "wtype", "clipboard"]
+                  OmChip {
+                    readonly property string how: modelData
+                    // The value written to the config is still `wtype`; the
+                    // chip says what it does. A program name is the right
+                    // word in a terminal and in the note below, and the wrong
+                    // one on a choice between three things — nobody picks
+                    // "wtype" over "clipboard" by knowing what wtype is.
+                    label: root.injectLabel(how)
+                    on: root.inject === how
+                    onClicked: if (!on) root.commandArgs(
+                      ["omavoi", "mode", "set", root.current, "inject", how])
+                  }
+                }
+                Item { Layout.fillWidth: true }
+              }
+              OmText {
+                visible: text !== ""
+                Layout.leftMargin: root.labelWidth + Style.space(10)
+                Layout.fillWidth: true
+                Layout.maximumWidth: root.noteWidth
+                wrapMode: Text.Wrap
+                text: root.inject === "auto" ? root.t("modes.inject.hint.auto")
+                      : root.inject === "wtype" ? root.t("modes.inject.hint.type")
+                      : root.inject === "clipboard" ? root.t("modes.inject.hint.paste")
+                      : ""
+                color: Qt.darker(Color.muted, 1.1)
+              }
+            }
           }
         }
       }
