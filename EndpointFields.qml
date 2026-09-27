@@ -56,6 +56,8 @@ ColumnLayout {
 
   spacing: Style.space(5)
 
+  Tones { id: tones }
+
   property string keyNote: ""
   property string checkNote: ""
   property bool checkOk: false
@@ -162,6 +164,8 @@ ColumnLayout {
     }
     Button {
       enabled: keyField.text !== ""
+      bordered: true
+      fontSize: Style.font.caption
       text: fields.t("models.f.key.save")
       onClicked: keyWriter.send(keyField.text)
     }
@@ -179,7 +183,7 @@ ColumnLayout {
             : (fields.hasKey ? fields.t("models.f.key.have") : "")
       wrapMode: Text.Wrap
       color: fields.keyNote !== "" ? Color.accent
-             : fields.keySource === "env" ? "#e0af68" : Color.muted
+             : fields.keySource === "env" ? tones.warn : Color.muted
     }
   }
 
@@ -190,6 +194,8 @@ ColumnLayout {
     spacing: Style.space(9)
     Button {
       enabled: (fields.checkArgv || []).length > 0
+      bordered: true
+      fontSize: Style.font.caption
       text: fields.t("models.f.test")
       onClicked: { fields.checkNote = fields.t("models.f.testing"); checker.running = true }
     }
@@ -197,7 +203,7 @@ ColumnLayout {
       Layout.fillWidth: true
       wrapMode: Text.Wrap
       text: fields.checkNote
-      color: fields.checkOk ? "#9ece6a" : Color.urgent
+      color: fields.checkOk ? tones.good : Color.urgent
     }
   }
 

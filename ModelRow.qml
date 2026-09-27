@@ -8,15 +8,16 @@ import qs.Ui
 // A speech entry and an LLM entry carry the same fifteen fields and mean the
 // same things by them — key, size, note, tags, downloaded, ours, running,
 // active, fits, needed_mb. The only reason the two tables looked different is
-// that the row was written twice, and then drifted: the name column was 178
-// on one side and 150 on the other, the action column 180 and 240, the
-// won't-fit warning appeared only for LLMs, the on-disk label only for
-// speech, and the recommended highlight only for speech. None of that was a
-// decision.
+// that the row was written twice, and then drifted. So it is written once.
+// `useCommand` is the single real difference: choosing a speech model writes
+// the speech model, choosing LLM weights writes them into the local
+// configuration.
 //
-// So it is written once. `useCommand` is the single real difference: choosing
-// a speech model writes the speech model, choosing LLM weights writes them
-// into the local configuration.
+// Two lines, not one. On one line the note had whatever the name, size,
+// languages and actions left over, and every note in the catalogue arrived
+// cut off mid-word — "Twice the do…", "The strongest Chin…" — though the note
+// is the one thing a person choosing between two models reads (UX-03). The
+// name and size are the first line, the note and the languages wrap under it.
 RowLayout {
   id: row
 
@@ -31,63 +32,71 @@ RowLayout {
   function t(k) { return row.strings ? row.strings.t(k) : k }
 
   Layout.fillWidth: true
+  Layout.topMargin: Style.space(4)
   spacing: Style.space(10)
 
   OmText {
     Layout.preferredWidth: Style.space(12)
+    Layout.alignment: Qt.AlignTop
     // ▶ is loaded right now, ● is chosen but not loaded, ○ is merely on
     // disk. The glyph carries that distinction, so the colour does not have
     // to — the speech table used to paint ● in the urgent colour, which is
     // right for a speech model that was asked for and did not load and wrong
     // for LLM weights, which are cold until a take reaches them.
     text: m.running ? "▶" : (m.active ? "●" : (m.downloaded ? "○" : ""))
+    size: "body"
     color: (m.running || m.active) ? Color.accent : Color.muted
   }
-  OmText {
-    Layout.preferredWidth: Style.space(178)
-    text: m.key
-    size: "body"
-    color: Color.foreground
-  }
-  OmText {
-    Layout.preferredWidth: Style.space(46)
-    horizontalAlignment: Text.AlignRight
-    text: (m.size_mb / 1024).toFixed(1) + "G"
-    color: Color.muted
-  }
-  // Won't-fit is worth saying before the download, not after — and never
-  // about the model that is loaded right now, whose own weights are most of
-  // what the free-VRAM figure is missing.
-  OmText {
-    visible: m.fits === false && m.running !== true
-    text: row.t("models.needs") + " " + (m.needed_mb / 1024).toFixed(1) + "G"
-    color: Color.urgent
-  }
-  OmText {
+
+  ColumnLayout {
     Layout.fillWidth: true
-    Layout.minimumWidth: Style.space(40)
-    elide: Text.ElideRight
-    text: m.note
-    color: (m.tags || []).indexOf("recommended") >= 0 ? Color.foreground
-                                                      : Color.muted
+    spacing: Style.space(2)
+    RowLayout {
+      Layout.fillWidth: true
+      spacing: Style.space(10)
+      // The name a person chooses by. `ggml:` and `llm:` are the file format
+      // and the family, which this table's own heading already says.
+      OmText {
+        text: String(m.key || "").replace("ggml:", "").replace("llm:", "")
+        size: "body"
+        color: Color.foreground
+      }
+      OmText {
+        text: (m.size_mb / 1024).toFixed(1) + " GB"
+        color: Color.muted
+      }
+      // Won't-fit is worth saying before the download, not after — and never
+      // about the model that is loaded right now, whose own weights are most
+      // of what the free-VRAM figure is missing.
+      OmText {
+        visible: m.fits === false && m.running !== true
+        text: row.t("models.needs") + " " + (m.needed_mb / 1024).toFixed(1) + " GB"
+        color: Color.urgent
+      }
+      Item { Layout.fillWidth: true }
+    }
+    OmText {
+      Layout.fillWidth: true
+      wrapMode: Text.Wrap
+      text: m.note || ""
+      color: (m.tags || []).indexOf("recommended") >= 0 ? Color.foreground
+                                                        : Color.muted
+    }
+    // Which languages this one is any good at — the half someone comparing
+    // two models needs, and the one that says the default speech model is a
+    // distillation and is not even across languages.
+    OmText {
+      visible: String(m.languages || "") !== ""
+      Layout.fillWidth: true
+      wrapMode: Text.Wrap
+      text: String(m.languages || "")
+      color: Qt.darker(Color.muted, 1.15)
+    }
   }
-  // Which languages this one is any good at. The field has been on every
-  // catalogue entry since it was written and reached no user — which
-  // mattered most for the thing it would have said, that the default speech
-  // model is a distillation and is not even across languages. Its own
-  // column rather than appended to the note, because the note elides and
-  // this is the half someone comparing two models needs.
-  OmText {
-    Layout.preferredWidth: Style.space(148)
-    visible: String(m.languages || "") !== ""
-    elide: Text.ElideRight
-    text: String(m.languages || "")
-    color: Qt.darker(Color.muted, 1.15)
-  }
+
   RowLayout {
-    Layout.preferredWidth: Style.space(180)
+    Layout.alignment: Qt.AlignTop
     spacing: Style.space(7)
-    Item { Layout.fillWidth: true }
     OmText {
       visible: m.running === true
       text: row.t("models.running")
@@ -104,12 +113,8 @@ RowLayout {
     // until it finished, so a slow mirror and a stalled one looked alike.
     //
     // The percentage is capped below 100 for the last rounded mebibyte —
-    // arriving at 100% while still going is worse than arriving at 99. It
-    // used to be capped for a bigger reason that nobody had found: the
-    // catalogue's ggml and ct2 sizes were quoted in decimal megabytes into a
-    // field read as mebibytes, so every one of them was 5% high and this bar
-    // could only ever reach about 95. tools/check_catalogue.py measures them
-    // now.
+    // arriving at 100% while still going is worse than arriving at 99.
+    // tools/check_catalogue.py measures the sizes it is computed from.
     OmText {
       visible: !m.downloaded && row.pulling[m.key] === true
       text: {
@@ -125,11 +130,15 @@ RowLayout {
     Button {
       visible: !m.downloaded && row.pulling[m.key] !== true
       text: row.t("models.download")
+      bordered: true
+      fontSize: Style.font.caption
       onClicked: row.command("omavoi model pull " + m.key)
     }
     Button {
       visible: m.downloaded && !m.active && row.useCommand !== ""
       text: row.t("models.use")
+      bordered: true
+      fontSize: Style.font.caption
       onClicked: row.command(row.useCommand)
     }
     // Never the weights something is pointing at, and never the ones a
@@ -137,6 +146,8 @@ RowLayout {
     Button {
       visible: m.downloaded && m.ours && !m.active && m.running !== true
       text: row.t("models.remove")
+      foreground: Color.urgent
+      fontSize: Style.font.caption
       onClicked: row.command("omavoi model rm " + m.key)
     }
   }

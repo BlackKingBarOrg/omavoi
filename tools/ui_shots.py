@@ -30,7 +30,7 @@ import time
 VIEWS = ["history", "modes", "models", "dictionary", "settings", "setup", "firstrun"]
 # A view with something done to it first: <view>:<state>.
 STATES = ["history:dropped", "history:quiet", "modes:advanced", "dictionary:edit", "dictionary:editmore",
-          "settings:advanced", "models:api", "history:ai", "history:details"]
+          "settings:advanced", "models:api", "models:advanced", "history:ai", "history:details"]
 
 QML = r'''import QtQuick
 import QtQuick.Window
@@ -132,7 +132,8 @@ Window {
     else if (name === "history:quiet") window.historyPick = 4
     else if (name === "history:ai") window.historyPick = 0
     else if (name === "history:details") { window.historyPick = 0; item.detailsOpen = true }
-    else if (name === "modes:advanced" || name === "settings:advanced") item.advancedOpen = true
+    else if (name === "modes:advanced" || name === "settings:advanced" || name === "models:advanced") item.advancedOpen = true
+    else if (name === "models:api") item.apiOpen = true
     else if (name === "dictionary:edit" || name === "dictionary:editmore") {
       var e = (item.payload.entries || [])
       var pick = null

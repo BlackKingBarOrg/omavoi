@@ -48,6 +48,9 @@ Rectangle {
   property bool selectable: false
   property string actionLabel: ""
   property bool actionOn: false
+  // Hold the action's place on a card that has none, so a group of cards
+  // where only one has a button still lines its columns up.
+  property bool reserveAction: false
 
   signal chosen()
   signal action()
@@ -141,12 +144,20 @@ Rectangle {
       text: card.note
       color: card.noteColor
     }
-    OmChip {
+    Item {
+      visible: card.actionLabel !== "" || card.reserveAction
       Layout.alignment: Qt.AlignVCenter
-      visible: card.actionLabel !== ""
-      label: card.actionLabel
-      on: card.actionOn
-      onClicked: card.action()
+      Layout.preferredWidth: Style.space(64)
+      implicitHeight: actionChip.implicitHeight
+      OmChip {
+        id: actionChip
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        visible: card.actionLabel !== ""
+        label: card.actionLabel
+        on: card.actionOn
+        onClicked: card.action()
+      }
     }
   }
 

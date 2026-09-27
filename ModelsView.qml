@@ -68,8 +68,8 @@ Item {
   // accent equals foreground — not enough to tell two model families apart.
   // These are the two colours this console already uses for local-and-good
   // and for attention, so the bar stays in the same vocabulary as the badges.
-  readonly property color speechColor: "#9ece6a"
-  readonly property color llmColor: "#e0af68"
+  readonly property color speechColor: tones.good
+  readonly property color llmColor: tones.warn
   readonly property color otherColor: Qt.rgba(Color.foreground.r, Color.foreground.g,
                                               Color.foreground.b, 0.28)
 
@@ -84,7 +84,7 @@ Item {
   }
   function segLabel(kind) {
     if (kind === "speech") return root.t("models.seg.speech")
-    if (kind === "llm") return root.t("models.llm")
+    if (kind === "llm") return root.t("models.seg.llm")
     return root.t("models.seg.other")
   }
 
@@ -117,9 +117,13 @@ Item {
   // there being no way to do it at all. So: open until it is configured,
   // closed once it is, and whatever the user clicks wins over both.
   property var apiOpen: null
+  // Open by default only where it is needed: a mode's step names the API
+  // and the API is not set up. Blank alone opened it for everyone who has
+  // never wanted a remote model, which is most people.
   readonly property bool apiBlank: {
     var a = root.entryNamed("api")
-    return a ? (String(a.base_url || "") === "" || a.ready !== true) : false
+    return a ? ((a.used_by || []).length > 0
+                && (String(a.base_url || "") === "" || a.ready !== true)) : false
   }
   readonly property bool editingApi: root.apiOpen !== null ? root.apiOpen === true
                                                           : root.apiBlank
@@ -133,6 +137,16 @@ Item {
     return null
   }
 
+  // An entry's kind as the cards name it: `local: llama-server is not
+  // installed` put a config key in front of the one sentence on the page
+  // written for someone to act on.
+  function llmKindName(key) {
+    return key === "agent" ? root.t("models.k.agent")
+         : key === "api" ? root.t("models.k.api")
+         : key === "local" ? root.t("models.k.local")
+         : String(key || "")
+  }
+
   // "127.0.0.1:43593" reads better in a strip than the whole URL.
   function hostport(url) {
     var u = String(url || "")
@@ -140,342 +154,211 @@ Item {
     return u.replace(/^[a-z]+:\/\//, "")
   }
 
-  ColumnLayout {
+  Tones { id: tones }
+
+  // Advanced opens once and stays open while the console does.
+  property bool advancedOpen: false
+
+  // One column, the common half first. Two columns side by side — speech on
+  // the left, LLM on the right — put a card with five fixed-width parts into
+  // half of the console, and at the console's own size both columns ran off
+  // their edges: the notes were cut at the divider and the LLM statuses at
+  // the window. What is running, with its pid and port, and the memory bar
+  // are for when something is wrong, and fold under Advanced at the bottom.
+  Flickable {
+    id: pane
     anchors.fill: parent
-    spacing: 0
+    clip: true
+    contentHeight: col.implicitHeight + root.pad * 2
 
-    RowLayout {
-      Layout.fillWidth: true
-      Layout.fillHeight: true
-      spacing: 0
+    ColumnLayout {
+      id: col
+      x: root.pad
+      y: root.pad
+      width: Math.min(pane.width - root.pad * 2, Style.space(960))
+      spacing: Style.space(22)
 
-      // ================= SPEECH =================
-      Flickable {
-        Layout.fillHeight: true
-        // Even halves. 58/42 made sense while each side had its own row and
-        // card code sized to its own content; sharing both components makes
-        // an uneven split the last thing left that does not match.
-        Layout.preferredWidth: Math.round(root.width * 0.5)
-        clip: true
-        contentHeight: speech.implicitHeight + root.pad * 2
+      // ================= VOICE RECOGNITION =================
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: Style.space(10)
+        SectionTitle { rule: false; title: root.t("models.speech"); note: root.t("models.speechsub") }
 
-        ColumnLayout {
-          id: speech
-          x: root.pad
-          y: root.pad
-          width: parent.width - root.pad * 2
-          spacing: Style.space(9)
+        // -- engines, single choice --
+        Repeater {
+          model: [
+            { id: "local-whispercpp", name: root.t("models.e.vulkan"),
+              detail: root.t("models.e.vulkan.sub"),
+              note: root.t("models.e.vulkan.note") },
+            { id: "api", name: root.t("models.e.api"),
+              detail: root.t("models.e.api.sub"),
+              note: root.t("models.e.api.note") }
+          ]
+          ConfigCard {
+            readonly property var eng: modelData
+            readonly property bool up: root.daemonUp && root.speechLive
+                                       && String(root.speechNow.backend || "") === eng.id
+            selectable: true
+            selected: root.payload.backend === eng.id
+            running: up
+            name: eng.name
+            // The weights, not the engine: the detail line below already
+            // says what the engine is, and naming it here put it twice in
+            // one card. The LLM cards follow the same rule — the model when
+            // there is one, the engine only when there is not.
+            secondary: up ? String(root.speechNow.model || root.speechNow.engine || "").replace("ggml:", "")
+                          : ""
+            detail: eng.detail
+            // Selected and not up is a fault here, unlike an LLM server,
+            // which is cold until a take reaches it.
+            status: up ? root.t("models.running")
+                    : (root.payload.backend === eng.id && root.daemonUp
+                       ? root.t("models.notloaded") : "")
+            statusColor: up ? Color.accent : Color.urgent
+            note: eng.note
+            noteColor: eng.id === "api" ? tones.warn : Color.muted
+            onChosen: root.command("omavoi config set speech.backend " + eng.id)
+          }
+        }
 
+        // -- the daemon has not caught up --
+        Rectangle {
+          Layout.fillWidth: true
+          Layout.topMargin: Style.space(4)
+          visible: root.stale
+          implicitHeight: staleRow.implicitHeight + Style.space(16)
+          color: Qt.rgba(Color.urgent.r, Color.urgent.g, Color.urgent.b, 0.09)
+          border.width: 1
+          border.color: Color.urgent
+          radius: Style.cornerRadius
           RowLayout {
-            spacing: Style.space(9)
-            OmText {
-              text: root.t("models.speech")
-              size: "subtitle"
-              font.letterSpacing: 2
-              color: Color.foreground
-            }
-            OmText {
-              text: root.t("models.speechsub")
-              color: Color.muted
-            }
-          }
-
-          // -- what is loaded right now --
-          //
-          // The whole page below this is the config: which engine is selected,
-          // which weights are on disk. None of it answers "and what is running",
-          // which is the question you have while dictation is behaving oddly.
-          RowLayout {
-            Layout.fillWidth: true
-            spacing: Style.space(8)
-            OmText {
-              text: root.t("models.now")
-              font.letterSpacing: 1
-              color: Color.muted
-            }
-            OmText {
-              visible: !root.daemonUp
+            id: staleRow
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.margins: Style.space(11)
+            spacing: Style.space(10)
+            ColumnLayout {
               Layout.fillWidth: true
-              text: root.t("models.nodaemon")
-              color: Color.urgent
-            }
-            OmText {
-              visible: root.daemonUp
-              text: root.speechLive
-                    ? (root.speechNow.engine + "  " + root.speechNow.model
-                       + "  [" + root.speechNow.device + "]")
-                    : root.t("models.notloaded")
-              size: "body"
-              color: root.speechLive ? Color.foreground : Color.urgent
-            }
-            OmText {
-              visible: root.daemonUp && root.speechLive && root.speechNow.url
-              Layout.fillWidth: true
-              elide: Text.ElideRight
-              text: root.hostport(root.speechNow.url)
-                    + (root.speechNow.pid ? "  pid " + root.speechNow.pid : "")
-              color: Qt.darker(Color.muted, 1.1)
-            }
-            Item { Layout.fillWidth: true }
-          }
-
-          // -- engines, single choice --
-          Repeater {
-            model: [
-              { id: "local-whispercpp", name: root.t("models.e.vulkan"),
-                detail: root.t("models.e.vulkan.sub"),
-                note: root.t("models.e.vulkan.note") },
-              { id: "api", name: root.t("models.e.api"),
-                detail: root.t("models.e.api.sub"),
-                note: root.t("models.e.api.note") }
-            ]
-            ConfigCard {
-              readonly property var eng: modelData
-              readonly property bool up: root.daemonUp && root.speechLive
-                                         && String(root.speechNow.backend || "") === eng.id
-              selectable: true
-              selected: root.payload.backend === eng.id
-              running: up
-              name: eng.name
-              // The weights, not the engine: the detail line below already
-              // opens with "whisper.cpp", and naming it here put it twice in
-              // one card. The LLM cards had the same duplication with
-              // llama.cpp, and both follow one rule now — the model when
-              // there is one, the engine only when there is not.
-              secondary: up ? String(root.speechNow.model || root.speechNow.engine || "")
-                            : ""
-              detail: eng.detail
-              // Selected and not up is a fault here, unlike an LLM server,
-              // which is cold until a take reaches it.
-              status: up ? root.t("models.running")
-                      : (root.payload.backend === eng.id && root.daemonUp
-                         ? root.t("models.notloaded") : "")
-              statusColor: up ? Color.accent : Color.urgent
-              note: eng.note
-              noteColor: eng.id === "api" ? Color.urgent : Color.muted
-              onChosen: root.command("omavoi config set speech.backend " + eng.id)
-            }
-          }
-
-          // -- the daemon has not caught up --
-          Rectangle {
-            Layout.fillWidth: true
-            Layout.topMargin: Style.space(4)
-            visible: root.stale
-            implicitHeight: staleRow.implicitHeight + Style.space(16)
-            color: Qt.rgba(Color.urgent.r, Color.urgent.g, Color.urgent.b, 0.09)
-            border.width: 1
-            border.color: Color.urgent
-            radius: Style.cornerRadius
-            RowLayout {
-              id: staleRow
-              anchors.left: parent.left
-              anchors.right: parent.right
-              anchors.verticalCenter: parent.verticalCenter
-              anchors.margins: Style.space(11)
-              spacing: Style.space(10)
-              ColumnLayout {
+              spacing: 1
+              OmText {
+                text: root.t("models.stale")
+                size: "body"
+                color: Color.foreground
+              }
+              OmText {
                 Layout.fillWidth: true
-                spacing: 1
-                OmText {
-                  text: root.t("models.stale")
-                  size: "body"
-                  color: Color.foreground
-                }
-                OmText {
-                  Layout.fillWidth: true
-                  elide: Text.ElideRight
-                  text: root.t("models.loaded") + root.speechNow.model + "   ·   "
-                      + root.t("models.configured") + root.payload.active
-                  color: Color.muted
-                }
-              }
-              Button {
-                text: root.t("models.restart")
-                onClicked: root.command("systemctl --user restart omavoid")
+                elide: Text.ElideRight
+                text: root.t("models.loaded") + String(root.speechNow.model || "").replace("ggml:", "")
+                      + "   ·   " + root.t("models.configured")
+                      + String(root.payload.active || "").replace("ggml:", "")
+                color: Color.muted
               }
             }
-          }
-
-          // ---- the remote endpoint, when speech is the one going out ------
-          RowLayout {
-            Layout.topMargin: Style.space(6)
-            Layout.fillWidth: true
-            spacing: Style.space(9)
-            OmText {
-              text: root.t("models.speechapi")
-              font.letterSpacing: 1
-              color: Color.muted
-            }
-            OmText {
-              Layout.fillWidth: true
-              elide: Text.ElideRight
-              text: root.t("models.speechapi.sub")
-              color: Qt.darker(Color.muted, 1.15)
-            }
-            OmChip {
-              label: root.editingSpeechApi ? root.t("models.f.close")
-                                           : root.t("models.f.edit")
-              on: root.editingSpeechApi
-              onClicked: root.speechApiOpen = !root.editingSpeechApi
+            Button {
+              text: root.t("models.restart")
+              bordered: true
+              fontSize: Style.font.caption
+              onClicked: root.command("systemctl --user restart omavoid")
             }
           }
+        }
 
-          EndpointFields {
-            Layout.fillWidth: true
-            Layout.leftMargin: Style.space(22)
-            visible: root.editingSpeechApi && root.speechApi.provider !== undefined
-            strings: root.strings
-            prefix: "speech.api"
-            // Whatever ApiWhisperBackend will read it by. Hardcoding a name
-            // here stored a key nothing would ever have found.
-            secretName: String(root.speechApi.key_name || "speech-api")
-            checkArgv: ["omavoi", "speech", "check", "--json"]
-            baseUrl: String(root.speechApi.base_url || "")
-            model: String(root.speechApi.model || "")
-            hasKey: root.speechApi.has_key === true
-            keySource: String(root.speechApi.key_source || "")
-            keyEnv: String(root.speechApi.key_env || "")
-            // The preset's values as placeholders: what applies when the field is
-            // left empty, rather than something that happens invisibly.
-            defaultBaseUrl: String(root.speechApi.default_base_url || "")
-            defaultModel: String(root.speechApi.default_model || "")
-            onCommand: function (c) { root.command(c) }
-            onCommandArgs: function (a) { root.commandArgs(a) }
-          }
-
-          // -- models --
-          RowLayout {
-            Layout.topMargin: Style.space(8)
-            Layout.fillWidth: true
-            OmText {
-              // Was `ggml : ct2`, and with the remote engine selected it
-              // said "MODELS · ct2" over a table of ggml weights.
-              text: root.t("models.list") + "ggml"
-              font.letterSpacing: 1
-              color: Color.muted
-            }
-            Item { Layout.fillWidth: true }
-            // The table below is the local engine's weights. With the remote
-            // engine selected it is still true and no longer relevant, and
-            // saying so is cheaper than a user wondering why "use" changed
-            // nothing they could hear.
-            OmText {
-              visible: root.payload.backend === "api"
-              Layout.maximumWidth: Style.space(300)
-              wrapMode: Text.Wrap
-              text: root.t("models.speechapi.cat")
-              color: "#e0af68"
-            }
-            OmText {
-              visible: root.payload.backend !== "api"
-              text: root.t("models.formathint")
-              color: Color.muted
-            }
-          }
-
-          Repeater {
-            model: root.speechModels
-            ModelRow {
-              m: modelData
-              strings: root.strings
-              pulling: root.pulling
-              useCommand: "omavoi model use " + modelData.key
-              onCommand: function (c) { root.command(c) }
-            }
-          }
-
+        // ---- the remote endpoint, when speech is the one going out ------
+        //
+        // Only where it applies. It sat open on every visit, three fields and
+        // a Test button, above the local models of an engine that was not
+        // the remote one — the one part of the page that did nothing.
+        RowLayout {
+          visible: root.payload.backend === "api" && root.speechApi.provider !== undefined
+          Layout.topMargin: Style.space(4)
+          Layout.fillWidth: true
+          spacing: Style.space(10)
           OmText {
-            Layout.topMargin: Style.space(6)
+            text: root.t("models.speechapi")
+            size: "body"
+            color: Color.muted
+          }
+          OmText {
             Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: root.tf("models.outside", root.payload.root || root.t("models.ourstore"))
+            elide: Text.ElideRight
+            text: root.t("models.speechapi.sub")
             color: Qt.darker(Color.muted, 1.1)
+          }
+          OmChip {
+            label: root.editingSpeechApi ? root.t("models.f.close")
+                                         : root.t("models.f.edit")
+            on: root.editingSpeechApi
+            onClicked: root.speechApiOpen = !root.editingSpeechApi
+          }
+        }
+
+        EndpointFields {
+          Layout.fillWidth: true
+          Layout.leftMargin: Style.space(22)
+          visible: root.payload.backend === "api" && root.editingSpeechApi
+                   && root.speechApi.provider !== undefined
+          strings: root.strings
+          prefix: "speech.api"
+          // Whatever ApiWhisperBackend will read it by. Hardcoding a name
+          // here stored a key nothing would ever have found.
+          secretName: String(root.speechApi.key_name || "speech-api")
+          checkArgv: ["omavoi", "speech", "check", "--json"]
+          baseUrl: String(root.speechApi.base_url || "")
+          model: String(root.speechApi.model || "")
+          hasKey: root.speechApi.has_key === true
+          keySource: String(root.speechApi.key_source || "")
+          keyEnv: String(root.speechApi.key_env || "")
+          // The preset's values as placeholders: what applies when the field is
+          // left empty, rather than something that happens invisibly.
+          defaultBaseUrl: String(root.speechApi.default_base_url || "")
+          defaultModel: String(root.speechApi.default_model || "")
+          onCommand: function (c) { root.command(c) }
+          onCommandArgs: function (a) { root.commandArgs(a) }
+        }
+
+        // -- the voice models --
+        ColumnLayout {
+          Layout.fillWidth: true
+          Layout.topMargin: Style.space(8)
+          spacing: Style.space(2)
+          OmText {
+            text: root.t("models.list.speech")
+            size: "body"
+            color: Color.foreground
+          }
+          // The table is the local engine's weights. With the remote engine
+          // selected it is still true and no longer relevant, and saying so
+          // is cheaper than a user wondering why "use" changed nothing they
+          // could hear.
+          OmText {
+            Layout.fillWidth: true
+            Layout.maximumWidth: Style.space(680)
+            wrapMode: Text.Wrap
+            text: root.payload.backend === "api" ? root.t("models.speechapi.cat")
+                                                 : root.t("models.list.speech.sub")
+            color: root.payload.backend === "api" ? tones.warn : Color.muted
+          }
+        }
+        Repeater {
+          model: root.speechModels
+          ModelRow {
+            m: modelData
+            strings: root.strings
+            pulling: root.pulling
+            useCommand: "omavoi model use " + modelData.key
+            onCommand: function (c) { root.command(c) }
           }
         }
       }
 
-      Rectangle {
-        Layout.fillHeight: true
-        Layout.preferredWidth: 1
-        color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.18)
-      }
-
-      // ================= LLM =================
-      Flickable {
-        Layout.fillHeight: true
+      // ================= AI REWRITE =================
+      ColumnLayout {
         Layout.fillWidth: true
-        clip: true
-        contentHeight: llm.implicitHeight + root.pad * 2
+        spacing: Style.space(10)
+        SectionTitle { title: root.t("models.llm"); note: root.t("models.llmsub") }
 
-        ColumnLayout {
-          id: llm
-          x: root.pad
-          y: root.pad
-          width: parent.width - root.pad * 2
-          spacing: Style.space(9)
-
-          RowLayout {
-            spacing: Style.space(9)
-            OmText {
-              text: root.t("models.llm")
-              size: "subtitle"
-              font.letterSpacing: 2
-              color: Color.foreground
-            }
-            OmText {
-              text: root.t("models.llmsub")
-              color: Color.muted
-            }
-          }
-
-          // The speech column has had this line all along and this one had
-          // nothing, which was most of why the two halves did not look alike.
-          // Not urgent when it is empty, unlike speech: an LLM server is cold
-          // until a take reaches it, and that is the resting state rather
-          // than a fault.
-          RowLayout {
-            Layout.fillWidth: true
-            spacing: Style.space(8)
-            OmText {
-              text: root.t("models.now")
-              font.letterSpacing: 1
-              color: Color.muted
-            }
-            OmText {
-              visible: !root.daemonUp
-              Layout.fillWidth: true
-              text: root.t("models.nodaemon")
-              color: Color.urgent
-            }
-            OmText {
-              visible: root.daemonUp && root.llmResident.length === 0
-              Layout.fillWidth: true
-              text: root.t("models.llmnone")
-              color: Qt.darker(Color.muted, 1.1)
-            }
-            Repeater {
-              model: root.daemonUp ? root.llmResident : []
-              RowLayout {
-                readonly property var l: modelData
-                spacing: Style.space(8)
-                OmText {
-                  text: l.engine + (l.model ? "  " + String(l.model).replace("llm:", "") : "")
-                  size: "body"
-                  color: Color.foreground
-                }
-                OmText {
-                  visible: text !== ""
-                  text: root.hostport(l.url)
-                        + ((l.pid || 0) > 0 ? "  pid " + l.pid : "")
-                  color: Qt.darker(Color.muted, 1.1)
-                }
-              }
-            }
-            Item { Layout.fillWidth: true }
-          }
-
-          // Three kinds, one row each, in the same shape as the speech engines
+        // Three kinds, one row each, in the same shape as the speech engines
         // above — an LLM step is one of these, and nothing else. It was an
         // open-ended list of named entries, which put an implementation detail
         // on screen as a configuration surface and read as a mess with four of
@@ -508,7 +391,7 @@ Item {
             // is, and it is only ever true of an agent whose own
             // non-interactive mode has nowhere else to take a prompt.
             detail: kind.detail + (l && l.transcript_in_argv === true
-                                   ? "  " + root.t("models.k.agent.argv") : "")
+                                   ? " " + root.t("models.k.agent.argv") : "")
             // "no key" only where a key is the thing missing. It used to
             // stand for any live_problem at all, and the commonest one on
             // the local row is weights that were never downloaded --
@@ -525,14 +408,29 @@ Item {
                          : l.live_problem ? Color.urgent
                          : l.live_running === true ? Color.accent
                          : Qt.darker(Color.muted, 1.1)
-            note: (l && (l.used_by || []).length) ? (l.used_by || []).join(", ") : "—"
+            // Which modes use it, which is the question a card is looked at
+            // for: "can I take this away".
+            note: (l && (l.used_by || []).length) ? root.tf("models.usedby", (l.used_by || []).join(", ")) : ""
             noteColor: inUse ? Color.accent : Qt.darker(Color.muted, 1.2)
             actionLabel: kind.key === "api"
                          ? (root.editingApi ? root.t("models.f.close")
                                             : root.t("models.f.edit"))
                          : ""
             actionOn: root.editingApi
+            reserveAction: true
             onAction: root.apiOpen = !root.editingApi
+          }
+        }
+
+        // The one thing worth shouting about: an entry that cannot work, and
+        // nothing else on its row says why.
+        Repeater {
+          model: (root.payload.llm || []).filter(function (l) { return !!l.live_problem })
+          OmText {
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.llmKindName(modelData.name) + ": " + modelData.live_problem
+            color: Color.urgent
           }
         }
 
@@ -570,194 +468,241 @@ Item {
           onCommandArgs: function (a) { root.commandArgs(a) }
         }
 
-          // -- the LLM catalogue --
-          //
-          // These live under LLM, not in the speech table above, because they
-          // are the other family's weights — same gguf container, different
-          // job. Use points the local configuration at them, which is the
-          // global switch; a mode's step can still pin different weights for
-          // itself in the Modes tab.
-          RowLayout {
-            Layout.topMargin: Style.space(10)
+        // -- the local model's weights --
+        //
+        // Under AI rewrite, not in the voice table above, because they are
+        // the other family's weights — same file container, different job.
+        // Use points the local configuration at them, which is the global
+        // switch; a mode's step can still pin different weights for itself
+        // in the Modes tab.
+        ColumnLayout {
+          Layout.fillWidth: true
+          Layout.topMargin: Style.space(8)
+          spacing: Style.space(2)
+          OmText {
+            text: root.t("models.list.llm")
+            size: "body"
+            color: Color.foreground
+          }
+          OmText {
             Layout.fillWidth: true
+            Layout.maximumWidth: Style.space(680)
+            wrapMode: Text.Wrap
+            text: root.t("models.list.llm.sub")
+            color: Color.muted
+          }
+        }
+        Repeater {
+          model: root.llmModels
+          ModelRow {
+            m: modelData
+            strings: root.strings
+            pulling: root.pulling
+            // The one real difference: LLM weights are chosen by pointing
+            // the local configuration at them.
+            useCommand: "omavoi config set llm." + (root.localLlms.length ? root.localLlms[0].name : "local") + ".model " + modelData.key
+            onCommand: function (c) { root.command(c) }
+          }
+        }
+      }
+
+      // ================= ADVANCED =================
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: Style.space(12)
+        FoldHeader {
+          objectName: "modelsAdvanced"
+          title: root.t("modes.adv")
+          open: root.advancedOpen
+          // The one thing in the fold worth saying while it is closed.
+          summary: root.stale ? root.t("models.stale") : ""
+          onToggled: root.advancedOpen = !root.advancedOpen
+        }
+
+        ColumnLayout {
+          objectName: "modelsAdvancedBody"
+          visible: root.advancedOpen
+          Layout.fillWidth: true
+          spacing: Style.space(14)
+
+          // -- what is loaded right now --
+          //
+          // The rest of the page is the config: which engine is selected,
+          // which weights are on disk. None of it answers "and what is
+          // running", which is the question you have while dictation is
+          // behaving oddly.
+          ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Style.space(4)
             OmText {
-              text: root.t("models.list") + "gguf"
-              font.letterSpacing: 1
+              text: root.t("models.now")
+              size: "body"
               color: Color.muted
             }
-            Item { Layout.fillWidth: true }
             OmText {
-              text: root.t("models.llmcathint")
-              color: Color.muted
-            }
-          }
-
-          Repeater {
-            model: root.llmModels
-            ModelRow {
-              m: modelData
-              strings: root.strings
-              pulling: root.pulling
-              // The one real difference: LLM weights are chosen by pointing
-              // the local configuration at them.
-              useCommand: "omavoi config set llm." + (root.localLlms.length ? root.localLlms[0].name : "local") + ".model " + modelData.key
-              onCommand: function (c) { root.command(c) }
-            }
-          }
-
-        // The one thing worth shouting about: a remote entry with no key
-          // cannot work, and nothing else on the row says why.
-          Repeater {
-            model: (root.payload.llm || []).filter(function (l) { return !!l.live_problem })
-            OmText {
+              visible: !root.daemonUp
               Layout.fillWidth: true
               wrapMode: Text.Wrap
-              text: modelData.name + ": " + modelData.live_problem
+              text: root.t("models.nodaemon")
               color: Color.urgent
+            }
+            OmText {
+              visible: root.daemonUp
+              Layout.fillWidth: true
+              wrapMode: Text.Wrap
+              text: root.speechLive
+                    ? (root.speechNow.engine + "  " + String(root.speechNow.model || "").replace("ggml:", "")
+                       + "  [" + root.speechNow.device + "]"
+                       + (root.speechNow.url ? "  " + root.hostport(root.speechNow.url) : "")
+                       + (root.speechNow.pid ? "  pid " + root.speechNow.pid : ""))
+                    : root.t("models.notloaded")
+              color: root.speechLive ? Color.foreground : Color.urgent
+            }
+            // Not urgent when empty, unlike speech: an LLM server is cold
+            // until a take reaches it, and that is the resting state rather
+            // than a fault.
+            OmText {
+              visible: root.daemonUp && root.llmResident.length === 0
+              Layout.fillWidth: true
+              text: root.t("models.llmnone")
+              color: Qt.darker(Color.muted, 1.1)
+            }
+            Repeater {
+              model: root.daemonUp ? root.llmResident : []
+              OmText {
+                readonly property var l: modelData
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: l.engine + (l.model ? "  " + String(l.model).replace("llm:", "") : "")
+                      + (l.url ? "  " + root.hostport(l.url) : "")
+                      + ((l.pid || 0) > 0 ? "  pid " + l.pid : "")
+                color: Color.foreground
+              }
+            }
+          }
+
+          // ---- the machine's memory, under both families -------------------
+          ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Style.space(5)
+            visible: (root.payload.vram || {}).total_mb !== undefined
+
+            RowLayout {
+              Layout.fillWidth: true
+              OmText {
+                text: root.t(root.unifiedMem ? "models.shared" : "models.vram")
+                      + ((root.payload.vram || {}).name || "")
+                size: "body"
+                color: Color.muted
+              }
+              Item { Layout.fillWidth: true }
+              OmText {
+                text: (((root.payload.vram || {}).used_mb || 0) / 1024).toFixed(1) + " / "
+                      + (((root.payload.vram || {}).total_mb || 0) / 1024).toFixed(1) + " GB"
+                size: "body"
+                color: Color.foreground
+              }
+            }
+            Rectangle {
+              id: vramTrack
+              Layout.fillWidth: true
+              implicitHeight: Style.space(12)
+              radius: Style.cornerRadius
+              color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
+
+              readonly property int totalMb: ((root.payload.vram || {}).total_mb || 0)
+
+              // Stacked left to right in the order the segments arrive, so the
+              // two families keep the same place every time you look.
+              Row {
+                anchors.fill: parent
+                spacing: 0
+                Repeater {
+                  model: root.vramSegments
+                  Rectangle {
+                    readonly property var seg: modelData
+                    visible: seg.used_mb > 0
+                    width: vramTrack.totalMb > 0
+                           ? vramTrack.width * Math.max(0, Math.min(1,
+                               seg.used_mb / vramTrack.totalMb))
+                           : 0
+                    height: vramTrack.height
+                    color: root.segColor(seg.kind)
+                    opacity: seg.kind === "other" ? 1.0 : 0.8
+                  }
+                }
+              }
+
+              // Fallback for a daemon too old to send segments: the single fill
+              // this replaced, rather than an empty track.
+              Rectangle {
+                visible: root.vramSegments.length === 0
+                width: vramTrack.totalMb > 0
+                       ? vramTrack.width * Math.max(0, Math.min(1,
+                           ((root.payload.vram || {}).used_mb || 0) / vramTrack.totalMb))
+                       : 0
+                height: parent.height
+                color: Color.accent
+                opacity: 0.65
+              }
+            }
+
+            // -- legend --
+            //
+            // A two-colour bar with no key is a puzzle, and which colour is
+            // which is exactly the thing being asked.
+            Flow {
+              Layout.fillWidth: true
+              spacing: Style.space(14)
+              visible: root.vramSegments.length > 0
+              Repeater {
+                model: root.vramSegments
+                Row {
+                  readonly property var seg: modelData
+                  visible: seg.used_mb > 0
+                  spacing: Style.space(5)
+                  Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Style.space(9); height: Style.space(9)
+                    radius: Style.space(2)
+                    color: root.segColor(seg.kind)
+                    opacity: seg.kind === "other" ? 1.0 : 0.8
+                  }
+                  OmText {
+                    text: root.segLabel(seg.kind) + "  "
+                          + (seg.used_mb / 1024).toFixed(1) + " GB"
+                    color: Color.foreground
+                  }
+                  OmText {
+                    text: seg.label
+                    color: Qt.darker(Color.muted, 1.1)
+                  }
+                }
+              }
+            }
+            OmText {
+              Layout.fillWidth: true
+              Layout.maximumWidth: Style.space(680)
+              wrapMode: Text.Wrap
+              text: root.t(root.unifiedMem ? "models.sharednote" : "models.vramnote")
+              color: Qt.darker(Color.muted, 1.1)
             }
           }
 
           OmText {
             Layout.fillWidth: true
+            Layout.maximumWidth: Style.space(680)
+            wrapMode: Text.Wrap
+            text: root.tf("models.outside", root.payload.root || root.t("models.ourstore"))
+            color: Qt.darker(Color.muted, 1.1)
+          }
+          OmText {
+            Layout.fillWidth: true
+            Layout.maximumWidth: Style.space(680)
             wrapMode: Text.Wrap
             text: root.t("models.endpointnote")
             color: Qt.darker(Color.muted, 1.1)
           }
-
-      }
-    }
-  }
-
-    Rectangle {
-      Layout.fillWidth: true
-      Layout.preferredHeight: 1
-      color: Qt.rgba(Color.foreground.r, Color.foreground.g,
-                     Color.foreground.b, 0.18)
-    }
-
-    // ---- the machine's memory, under both families -------------------
-    //
-    // It sat inside the LLM column, which said it belonged to the LLM. It
-    // is a fact about the card, and both families draw on it — the bar has
-    // a segment for each.
-    Rectangle {
-      Layout.fillWidth: true
-      implicitHeight: footerCol.implicitHeight + Style.space(26)
-      color: Qt.darker(Color.popups.background, 1.06)
-      visible: (root.payload.vram || {}).total_mb !== undefined
-
-      ColumnLayout {
-        id: footerCol
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.leftMargin: root.pad
-        anchors.rightMargin: root.pad
-        anchors.topMargin: Style.space(13)
-        Layout.fillWidth: true
-        spacing: Style.space(5)
-
-        OmText {
-          text: root.t(root.unifiedMem ? "models.shared" : "models.vram")
-                + ((root.payload.vram || {}).name || "")
-          font.letterSpacing: 1
-          color: Color.muted
-        }
-        Rectangle {
-          id: vramTrack
-          Layout.fillWidth: true
-          implicitHeight: Style.space(14)
-          color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
-
-          readonly property int totalMb: ((root.payload.vram || {}).total_mb || 0)
-
-          // Stacked left to right in the order the segments arrive, so the
-          // two families keep the same place every time you look.
-          Row {
-            anchors.fill: parent
-            spacing: 0
-            Repeater {
-              model: root.vramSegments
-              Rectangle {
-                readonly property var seg: modelData
-                visible: seg.used_mb > 0
-                width: vramTrack.totalMb > 0
-                       ? vramTrack.width * Math.max(0, Math.min(1,
-                           seg.used_mb / vramTrack.totalMb))
-                       : 0
-                height: vramTrack.height
-                color: root.segColor(seg.kind)
-                opacity: seg.kind === "other" ? 1.0 : 0.8
-              }
-            }
-          }
-
-          // Fallback for a daemon too old to send segments: the single fill
-          // this replaced, rather than an empty track.
-          Rectangle {
-            visible: root.vramSegments.length === 0
-            width: vramTrack.totalMb > 0
-                   ? vramTrack.width * Math.max(0, Math.min(1,
-                       ((root.payload.vram || {}).used_mb || 0) / vramTrack.totalMb))
-                   : 0
-            height: parent.height
-            color: Color.accent
-            opacity: 0.65
-          }
-        }
-
-        // -- legend --
-        //
-        // A two-colour bar with no key is a puzzle, and which colour is
-        // which is exactly the thing being asked.
-        Flow {
-          Layout.fillWidth: true
-          spacing: Style.space(14)
-          visible: root.vramSegments.length > 0
-          Repeater {
-            model: root.vramSegments
-            Row {
-              readonly property var seg: modelData
-              visible: seg.used_mb > 0
-              spacing: Style.space(5)
-              Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: Style.space(9); height: Style.space(9)
-                radius: Style.space(2)
-                color: root.segColor(seg.kind)
-                opacity: seg.kind === "other" ? 1.0 : 0.8
-              }
-              OmText {
-                text: root.segLabel(seg.kind) + "  "
-                      + (seg.used_mb / 1024).toFixed(1) + " GB"
-                color: Color.foreground
-              }
-              OmText {
-                text: seg.label
-                color: Qt.darker(Color.muted, 1.1)
-              }
-            }
-          }
-        }
-        RowLayout {
-          Layout.fillWidth: true
-          OmText {
-            text: root.t("models.vramsub")
-            color: Color.muted
-          }
-          Item { Layout.fillWidth: true }
-          OmText {
-            text: (((root.payload.vram || {}).used_mb || 0) / 1024).toFixed(1) + " / "
-                  + (((root.payload.vram || {}).total_mb || 0) / 1024).toFixed(1) + " GB"
-            size: "body"
-            color: Color.foreground
-          }
-        }
-        OmText {
-          Layout.fillWidth: true
-          wrapMode: Text.Wrap
-          text: root.t(root.unifiedMem ? "models.sharednote" : "models.vramnote")
-          color: Qt.darker(Color.muted, 1.1)
         }
       }
     }
