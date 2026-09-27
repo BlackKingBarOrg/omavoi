@@ -67,15 +67,27 @@ Window {
             break
           case 3:
             check(dictionary.previewText === "联系星河设计", "Wrong preview: " + dictionary.previewText)
-            dictionary.toggleEntry(current())
+            // The options are chips now; one click must reach the draft.
+            dictionary.openEditor(current())
+            dictionary.more = true
+            field(dictionary, "dictionaryHint").clicked()
+            check(dictionary.draft().recognition_hint === false, "The hint chip did not reach the draft")
+            dictionary.discardPrompt = false
+            dictionary.editing = false
+            // Pause through the row menu, as a click would.
+            dictionary.openMenu(current(), {x: 40, y: 40})
+            check(dictionary.menuEntry !== null, "The row menu did not open")
+            dictionary.fireMenu("toggle")
             break
           case 4:
             check(!current().enabled, "Pause failed")
+            check(dictionary.menuEntry === null, "The row menu stayed open")
             dictionary.toggleEntry(current())
             break
           case 5:
             check(current().enabled, "Resume failed")
-            dictionary.send("remove", {id: window.entryId})
+            dictionary.openMenu(current(), {x: 40, y: 40})
+            dictionary.fireMenu("delete")
             break
           case 6:
             check(!current(), "Delete failed")

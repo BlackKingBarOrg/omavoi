@@ -11,6 +11,7 @@ import qs.Ui
 // written once, correctly, and matched by sound.
 Flickable {
   id: root
+  Tones { id: tones }
   property var rules: []
   property var names: []
   property string seed: ""
@@ -107,7 +108,7 @@ Flickable {
           Layout.fillWidth: true
           visible: r.shadowed_by !== ""
           text: root.t("dict.shadowed") + "\"" + r.shadowed_by + "\""
-          color: "#e0af68"
+          color: tones.warn
         }
         Item { Layout.fillWidth: r.shadowed_by === "" }
         Button {
@@ -150,7 +151,7 @@ Flickable {
         OmText {
           Layout.preferredWidth: Style.space(110)
           text: n.enabled ? root.t("dict.matching") : root.t("dict.seedonly")
-          color: n.enabled ? "#9ece6a" : Color.muted
+          color: n.enabled ? tones.good : Color.muted
         }
         Item { Layout.fillWidth: true }
         Button {
@@ -185,7 +186,7 @@ Flickable {
       OmText {
         visible: (root.dropped || []).length > 0
         text: root.tf("dict.overbudget", (root.dropped || []).length)
-        color: "#e0af68"
+        color: tones.warn
       }
     }
 
