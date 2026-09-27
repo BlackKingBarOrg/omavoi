@@ -80,7 +80,7 @@ Window {
   function check(value, message) { if (!value) throw new Error(message) }
   function shot(name) { window.contentItem.grabToImage(function(result) { result.saveToFile(__OUT__ + "/" + name) }) }
   function showing(name) { var item = find(modes, name); return !!item && item.visible }
-  function summary() { var s = find(modes, "advancedSummary"); return s && s.visible ? s.text : "" }
+  function summary() { var s = find(modes, "foldSummary"); return s && s.visible ? s.text : "" }
   Timer {
     interval: 200; repeat: true; running: true
     onTriggered: {

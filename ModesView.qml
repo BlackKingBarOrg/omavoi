@@ -109,6 +109,8 @@ Item {
   signal command(string cmd)
   signal commandArgs(var argv)
 
+  Tones { id: tones }
+
   // `strings` is null for the instant between creation and the Loader setting
   // it, so the key stands in until then rather than a blank.
   function t(k) { return root.strings ? root.strings.t(k) : k }
@@ -282,7 +284,7 @@ Item {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.t("modes.hiddenauto")
-            color: "#e0af68"
+            color: tones.warn
           }
         }
 
@@ -581,18 +583,7 @@ Item {
         ColumnLayout {
           Layout.fillWidth: true
           spacing: Style.space(10)
-          Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            Layout.bottomMargin: Style.space(8)
-            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
-          }
-          OmText {
-            text: root.t("modes.s1")
-            size: "subtitle"
-            font.letterSpacing: 1
-            color: Color.foreground
-          }
+          SectionTitle { title: root.t("modes.s1") }
           RowLayout {
             Layout.fillWidth: true
             spacing: Style.space(10)
@@ -684,25 +675,7 @@ Item {
         ColumnLayout {
           Layout.fillWidth: true
           spacing: Style.space(10)
-          Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            Layout.bottomMargin: Style.space(8)
-            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
-          }
-          ColumnLayout {
-            spacing: Style.space(3)
-            OmText {
-              text: root.t("modes.s2")
-              size: "subtitle"
-              font.letterSpacing: 1
-              color: Color.foreground
-            }
-            OmText {
-              text: root.t("modes.rulessub")
-              color: Color.muted
-            }
-          }
+          SectionTitle { title: root.t("modes.s2"); note: root.t("modes.rulessub") }
           Flow {
             Layout.fillWidth: true
             spacing: Style.space(6)
@@ -736,28 +709,7 @@ Item {
         ColumnLayout {
           Layout.fillWidth: true
           spacing: Style.space(10)
-          Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            Layout.bottomMargin: Style.space(8)
-            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
-          }
-          ColumnLayout {
-            spacing: Style.space(3)
-            OmText {
-              text: root.t("modes.s3")
-              size: "subtitle"
-              font.letterSpacing: 1
-              color: Color.foreground
-            }
-            OmText {
-              Layout.fillWidth: true
-              Layout.maximumWidth: root.noteWidth
-              wrapMode: Text.Wrap
-              text: root.t("modes.llmsub")
-              color: Color.muted
-            }
-          }
+          SectionTitle { title: root.t("modes.s3"); note: root.t("modes.llmsub") }
 
           Repeater {
             model: (root.mode && root.mode.steps) || []
@@ -920,48 +872,13 @@ Item {
         ColumnLayout {
           Layout.fillWidth: true
           spacing: Style.space(12)
-          Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            Layout.bottomMargin: Style.space(6)
-            color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.12)
-          }
-          Item {
-            id: advHead
-            Layout.fillWidth: true
-            implicitHeight: advTitle.implicitHeight
+          FoldHeader {
             readonly property var changes: root.advancedChanges()
-            RowLayout {
-              id: advTitle
-              width: parent.width
-              spacing: Style.space(12)
-              // The shell's own chevrons, the ones its dropdowns draw.
-              OmText {
-                text: root.advancedOpen ? "󰅀" : "󰅂"
-                size: "subtitle"
-                color: Color.muted
-              }
-              OmText {
-                text: root.t("modes.adv")
-                size: "subtitle"
-                font.letterSpacing: 1
-                color: Color.foreground
-              }
-              OmText {
-                objectName: "advancedSummary"
-                visible: !root.advancedOpen && advHead.changes.length > 0
-                Layout.fillWidth: true
-                elide: Text.ElideRight
-                text: root.tf("modes.adv.changed", advHead.changes.join(root.t("modes.adv.sep")))
-                color: Color.accent
-              }
-              Item { Layout.fillWidth: true }
-            }
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.advancedOpen = !root.advancedOpen
-            }
+            title: root.t("modes.adv")
+            open: root.advancedOpen
+            summary: changes.length > 0
+                     ? root.tf("modes.adv.changed", changes.join(root.t("modes.adv.sep"))) : ""
+            onToggled: root.advancedOpen = !root.advancedOpen
           }
 
           ColumnLayout {
