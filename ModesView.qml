@@ -398,6 +398,7 @@ Item {
           Button {
             id: makeMode
             text: "+"
+            bordered: true
             function click() {
               var name = newName.text.trim()
               if (!name) return
@@ -467,6 +468,8 @@ Item {
           Button {
             visible: root.current !== "default"
             text: root.t("modes.delete")
+            foreground: Color.urgent
+            fontSize: Style.font.caption
             onClicked: root.commandArgs(["omavoi", "mode", "rm", root.current])
           }
         }
@@ -753,6 +756,8 @@ Item {
                   Item { Layout.fillWidth: true }
                   Button {
                     text: root.t("modes.remove")
+                    foreground: Color.urgent
+                    fontSize: Style.font.caption
                     onClicked: root.commandArgs(
                       ["omavoi", "mode", "step", root.current, "rm", String(idx)])
                   }
