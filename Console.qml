@@ -191,6 +191,8 @@ Item {
 
   IpcLink { id: link }
 
+  Tones { id: tones }
+
   Strings {
     id: strings
     // Before the daemon exists there is no config to read, so the first-run
@@ -547,7 +549,7 @@ Item {
                                                   : strings.t("state." + link.state))
                       : (strings.t("setup.prefix") + root.setupReport.done
                          + "/" + root.setupReport.total)
-                color: root.ready && link.state !== "stopped" ? "#9ece6a" : "#e0af68"
+                color: root.ready && link.state !== "stopped" ? tones.good : tones.warn
               }
             }
           }

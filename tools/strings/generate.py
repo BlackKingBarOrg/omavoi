@@ -117,13 +117,9 @@ section("firstrun", {
  "first.dbstale.age1": ("Your package database is a day old.",
                     "你的软件包数据库是一天前的。",
                     "ฐานข้อมูลแพ็กเกจของคุณเก่าหนึ่งวัน"),
- "first.dbstale":   ("Installing anything now fails with 404: the versions it lists are no "
-                    "longer on the mirrors. Arch needs a system update before new packages "
-                    "either way.",
-                    "现在装任何东西都会 404 失败 —— 它记录的版本在镜像上已经不存在了。"
-                    "Arch 在装新包之前本来就需要先更新系统。",
-                    "การติดตั้งตอนนี้จะล้มเหลวด้วย 404 เพราะเวอร์ชันที่ระบุไว้ไม่มีบนมิเรอร์แล้ว "
-                    "Arch ต้องอัปเดตระบบก่อนติดตั้งแพ็กเกจใหม่อยู่ดี"),
+ "first.dbstale": ("Installing now may fail with a 404: the versions it lists may no longer be on the mirrors. Updating the system first is the safe order.",
+    "现在安装可能会失败（404）：它记录的版本可能已经不在镜像上了。先更新一次系统更稳妥。",
+    "การติดตั้งตอนนี้อาจล้มเหลว (404) เพราะเวอร์ชันที่บันทึกไว้อาจไม่มีบนมิเรอร์แล้ว อัปเดตระบบก่อนจะปลอดภัยกว่า"),
  "first.updatebtn": ("Update system packages", "更新系统软件包", "อัปเดตแพ็กเกจของระบบ"),
  "first.pacman404": ("The package database is out of date, so the mirrors no longer have the "
                      "versions it lists. Update the system above, then try again.",
@@ -154,16 +150,14 @@ section("firstrun", {
  # through newgrp when the login predates the group, so the key works the
  # moment setup finishes. That sentence used to be the first thing a new
  # user read after being told setup was complete.
- "first.group.needed": ("You are not in the input group yet, so no key can be read. Adding "
-                        "you is part of the step below, and the daemon is started in a way "
-                        "that picks the group up at once — there is nothing to log out of.",
-                        "你还不在 input 组里，所以任何键都读不到。下面那一步会把你加进去，"
-                        "而且 daemon 会以当场就能拿到组权限的方式启动 —— 不需要重新登录。",
-                        "คุณยังไม่อยู่ในกลุ่ม input จึงอ่านปุ่มใดไม่ได้ ขั้นด้านล่างจะเพิ่มคุณเข้าไป "
-                        "และเดมอนจะเริ่มในแบบที่รับสิทธิ์กลุ่มได้ทันที — ไม่ต้องออกจากระบบ"),
+ "first.group.needed": ("You are not in the input group yet, so no key can be read. The step below adds you, and starts the background service so it has the group straight away — no logout needed.",
+    "你还不在 input 组里，所以读不到任何按键。下面那一步会把你加进去，并让后台服务当场拿到组权限 —— 不需要重新登录。",
+    "คุณยังไม่อยู่ในกลุ่ม input จึงอ่านปุ่มไม่ได้ ขั้นด้านล่างจะเพิ่มคุณ และเริ่มบริการเบื้องหลังให้ได้สิทธิ์ทันที — ไม่ต้องออกจากระบบ"),
  "first.step.hotkey": ("hotkey", "快捷键", "ปุ่มลัด"),
  "first.step.packages": ("system packages", "系统软件包", "แพ็กเกจของระบบ"),
- "first.step.daemon":   ("the daemon", "守护进程", "เดมอน"),
+ "first.step.daemon": ("the background service",
+    "后台服务",
+    "บริการเบื้องหลัง"),
  "first.step.language": ("language", "语言", "ภาษา"),
  "first.step.weights":  ("voice model", "语音模型", "โมเดลเสียง"),
  "first.step.use":      ("select the model", "选用模型", "เลือกโมเดล"),
@@ -218,7 +212,9 @@ section("shared-and-setup", {
  # Not "ตั้งค่า": that is nav.settings, and the two tabs sit side by side
  # while an install is unfinished.
  "nav.setup": ("Setup", "安装", "การติดตั้ง"),
- "setup.rootblurb": ("The steps above that need root can be done here, in one password prompt — polkit treats pacman as auth_admin, so asking in two calls means being asked twice. The daemon is restarted afterwards: it remembers a missing engine for the life of the process, so installing the binary alone would leave it still saying the engine is not there.", "上面需要 root 的步骤可以在这里一次做完，只弹一次密码框 —— polkit 把 pacman 当作 auth_admin，分两次调用就会问两次密码。装完会重启守护进程：它对「引擎未安装」的判断在进程存活期间是缓存的，只装二进制的话它仍会说引擎不在。", "ขั้นตอนด้านบนที่ต้องใช้ root ทำได้จากที่นี่ในการถามรหัสผ่านครั้งเดียว — polkit ถือว่า pacman เป็น auth_admin ถ้าเรียกสองครั้งก็จะถูกถามสองครั้ง หลังจากนั้นจะรีสตาร์ตเดมอน เพราะมันจำว่าเอนจินไม่มีอยู่ไปตลอดอายุโปรเซส การติดตั้งไบนารีอย่างเดียวจึงยังทำให้มันบอกว่าไม่มีเอนจิน"),
+ "setup.rootblurb": ("The steps above that need an administrator password can be done here in one go, with one password prompt. The background service restarts afterwards, so it notices what was installed.",
+    "上面需要管理员密码的几步，可以在这里一次装好，只弹一次密码框。装完会自动重启后台服务，让它认出新装的东西。",
+    "ขั้นด้านบนที่ต้องใช้รหัสผ่านผู้ดูแล ทำได้ที่นี่ในครั้งเดียว ถามรหัสผ่านครั้งเดียว จากนั้นบริการเบื้องหลังจะเริ่มใหม่เพื่อให้รู้จักสิ่งที่ติดตั้ง"),
  "setup.rootrun": ("Install these", "一次装好", "ติดตั้งทั้งหมดนี้"),
  "setup.optional": ("optional", "可选", "ไม่บังคับ"),
  # OmTextArea, which is every decoder hint and every LLM prompt on the Modes
@@ -266,7 +262,9 @@ section("state", {
  "state.idle":         ("idle", "空闲", "ว่าง"),
  "state.recording":    ("recording", "录音中", "กำลังอัดเสียง"),
  "state.transcribing": ("transcribing", "转写中", "กำลังถอดเสียง"),
- "state.stopped":      ("daemon stopped", "守护进程已停止", "เดมอนหยุดทำงาน"),
+ "state.stopped": ("service stopped",
+    "后台服务已停止",
+    "บริการหยุดอยู่"),
 })
 
 # The overlay's own four words. It had none: the only text it ever showed
@@ -289,19 +287,54 @@ section("setup", {
                   "ยังต้องติดตั้ง: %1"),
  "setup.titledone": ("Everything is in place", "全部都装好了",
                      "ติดตั้งครบแล้ว"),
- "setup.blurb":    ("Nothing here runs until you press it, and every step shows the exact "
-                    "command first. Omarchy deliberately runs nothing from inside a plugin "
-                    "folder, so this screen asks instead.",
-                    "这里的每一步都要你按下才会执行，并且会先把完整命令显示出来。Omarchy 有意不执行插件目录里的任何东西，"
-                    "所以这个页面只能来问你。",
-                    "ไม่มีอะไรทำงานจนกว่าคุณจะกด และทุกขั้นจะแสดงคำสั่งจริงให้ดูก่อน Omarchy ตั้งใจไม่รันสิ่งใด "
-                    "จากในโฟลเดอร์ปลั๊กอิน หน้านี้จึงต้องถามคุณแทน"),
+ "setup.blurb": ("Nothing here runs until you press it, and every step shows its command first.",
+    "每一步都要你按下才会执行，执行前会先显示完整命令。",
+    "ไม่มีอะไรทำงานจนกว่าคุณจะกด และทุกขั้นจะแสดงคำสั่งก่อนเสมอ"),
  "setup.copy":     ("Copy", "复制", "คัดลอก"),
  "setup.run":      ("Run", "运行", "รัน"),
  "setup.recheck":  ("Re-check", "重新检查", "ตรวจอีกครั้ง"),
  "setup.hint":     ("or run  omavoi setup  in a terminal — same steps, same order",
                     "或者在终端里运行  omavoi setup  —— 步骤和顺序完全一样",
                     "หรือรัน  omavoi setup  ในเทอร์มินัล — ขั้นตอนและลำดับเดียวกัน"),
+ "setup.s.tools": ("Recording and typing tools",
+    "录音和输入工具",
+    "เครื่องมืออัดเสียงและป้อนข้อความ"),
+ "setup.s.engine": ("Speech engine",
+    "语音识别引擎",
+    "เครื่องรู้จำเสียง"),
+ "setup.s.engineapi": ("Speech engine (remote API)",
+    "语音识别引擎（远程 API）",
+    "เครื่องรู้จำเสียง (API ระยะไกล)"),
+ "setup.s.model": ("Voice model (%1)",
+    "语音模型（%1）",
+    "โมเดลเสียง (%1)"),
+ "setup.s.llm": ("Local AI engine (llama.cpp)",
+    "本地 AI 引擎（llama.cpp）",
+    "เครื่อง AI ในเครื่อง (llama.cpp)"),
+ "setup.s.hotkey": ("Hotkey (%1)",
+    "按键（%1）",
+    "ปุ่มลัด (%1)"),
+ "setup.s.service": ("Start at login",
+    "登录后自动启动",
+    "เริ่มเมื่อเข้าสู่ระบบ"),
+ "setup.d.tools": ("The system tools that record your voice and type the text into windows.",
+    "用来录音、把文字输入到窗口里的系统工具。",
+    "เครื่องมือระบบที่ใช้อัดเสียงและพิมพ์ข้อความลงหน้าต่าง"),
+ "setup.d.engine": ("The program that turns your voice into text on this machine.",
+    "在本机把声音转成文字的程序。",
+    "โปรแกรมที่แปลงเสียงเป็นข้อความในเครื่องนี้"),
+ "setup.d.model": ("The model file recognition uses. It is downloaded once.",
+    "识别用的模型文件，只需下载一次。",
+    "ไฟล์โมเดลที่ใช้รู้จำเสียง ดาวน์โหลดครั้งเดียว"),
+ "setup.d.llm": ("Only needed when a mode's AI rewrite uses the local model.",
+    "只有模式里的 AI 改写用「本地模型」时才需要。",
+    "จำเป็นเฉพาะเมื่อ AI เขียนใหม่ของโหมดใช้โมเดลในเครื่อง"),
+ "setup.d.hotkey": ("Reading the key needs you in the input group.",
+    "读取按键需要把你加入 input 用户组。",
+    "การอ่านปุ่มต้องให้คุณอยู่ในกลุ่ม input"),
+ "setup.d.service": ("Starts the background service whenever you log in.",
+    "每次登录后自动启动后台服务。",
+    "เริ่มบริการเบื้องหลังทุกครั้งที่เข้าสู่ระบบ"),
 })
 
 section("history", {

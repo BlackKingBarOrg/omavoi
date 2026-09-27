@@ -28,8 +28,10 @@ ColumnLayout {
   property string failure: ""
   property var log: ({})
 
-  readonly property bool running: at >= 0 && at < steps.length
-  readonly property bool done: steps.length > 0 && at >= steps.length
+  // `steps` can be undefined for the instant a parent's binding has not
+  // landed yet, and these two said so in the journal every time.
+  readonly property bool running: at >= 0 && at < (steps || []).length
+  readonly property bool done: (steps || []).length > 0 && at >= (steps || []).length
 
   signal finished()
 
@@ -58,6 +60,8 @@ ColumnLayout {
   }
 
   spacing: Style.space(3)
+
+  Tones { id: tones }
 
   Process {
     id: runner
@@ -98,7 +102,7 @@ ColumnLayout {
   }
 
   OmText {
-    visible: root.showPlan && !root.done && root.steps.length > 0
+    visible: root.showPlan && !root.done && (root.steps || []).length > 0
     text: root.t("first.willrun")
     font.letterSpacing: 1
     color: Color.muted
@@ -114,7 +118,7 @@ ColumnLayout {
       OmText {
         Layout.preferredWidth: Style.space(16)
         text: root.at > idx ? "✓" : (root.at === idx ? "▶" : "")
-        color: root.at > idx ? "#9ece6a" : Color.accent
+        color: root.at > idx ? tones.good : Color.accent
       }
       OmText {
         // Wide enough for the longest label any translation has, and eliding
@@ -136,7 +140,7 @@ ColumnLayout {
       OmText {
         visible: step.root === true
         text: root.t("first.needspassword")
-        color: "#e0af68"
+        color: tones.warn
       }
     }
   }

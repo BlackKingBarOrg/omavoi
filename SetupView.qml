@@ -21,6 +21,14 @@ Item {
   property bool daemonPresent: true
   property int pad: Style.space(22)
 
+  // `strings` is null for the instant between creation and the console
+  // setting it; every label here called straight through it and logged a
+  // TypeError apiece on the way in.
+  function t(k) { return view.strings ? view.strings.t(k) : k }
+  function tf(k, a) { return view.strings ? view.strings.tf(k, a) : k }
+
+  Tones { id: tones }
+
   // Counted, not asserted. The heading was the fixed string "Two more pieces
   // to install" sitting over a list the daemon computes — so it said two on a
   // machine that needed four, and two again on this one, where six of six
@@ -32,10 +40,39 @@ Item {
     return n
   }
 
+  // A step's title in the interface's language. The daemon's are English —
+  // "Model weights (ggml:large-v3-turbo)" — and this is the second screen a
+  // new user meets, straight after a first-run screen that is all in their
+  // language (BUG-14). The key is stable; what is in the brackets is lifted
+  // out of the daemon's title, and an unknown key keeps the daemon's words.
+  function title(step) {
+    var raw = String(step.title || "")
+    var inner = (raw.match(/\(([^)]*)\)/) || [null, ""])[1]
+    if (step.key === "tools") return view.t("setup.s.tools")
+    if (step.key === "engine")
+      return view.t(raw.indexOf("remote") >= 0 ? "setup.s.engineapi" : "setup.s.engine")
+    if (step.key === "model") return view.tf("setup.s.model", inner.replace("ggml:", ""))
+    if (step.key === "llm-engine") return view.t("setup.s.llm")
+    if (step.key === "hotkey") return view.tf("setup.s.hotkey", inner.split(" ")[0])
+    if (step.key === "service") return view.t("setup.s.service")
+    return raw
+  }
+  // What the step is for, said once, for one that is still to do.
+  function purpose(step) {
+    return step.key === "tools" ? view.t("setup.d.tools")
+         : step.key === "engine" ? view.t("setup.d.engine")
+         : step.key === "model" ? view.t("setup.d.model")
+         : step.key === "llm-engine" ? view.t("setup.d.llm")
+         : step.key === "hotkey" ? view.t("setup.d.hotkey")
+         : step.key === "service" ? view.t("setup.d.service")
+         : ""
+  }
+
   signal run(string cmd)
   signal refresh()
 
   Flickable {
+    id: scroller
     anchors.fill: parent
     contentHeight: setupCol.implicitHeight + view.pad * 2
     clip: true
@@ -44,19 +81,23 @@ Item {
       id: setupCol
       x: view.pad
       y: view.pad
-      width: card.width - view.pad * 2
+      // Its own width, not the console card's: `card.width` named an id in
+      // Console.qml and resolved only because the context chain happened to
+      // reach it. Anywhere else this view was 540 pixels wide.
+      width: Math.min(view.width - view.pad * 2, Style.space(900))
       spacing: Style.space(6)
 
       OmText {
-        text: view.missing > 0 ? view.strings.tf("setup.title", view.missing)
-                               : view.strings.t("setup.titledone")
+        text: view.missing > 0 ? view.tf("setup.title", view.missing)
+                               : view.t("setup.titledone")
         size: "heading"
         color: Color.foreground
       }
       OmText {
         Layout.fillWidth: true
+        Layout.maximumWidth: Style.space(680)
         wrapMode: Text.Wrap
-        text: view.strings.t("setup.blurb")
+        text: view.t("setup.blurb")
         color: Color.muted
       }
 
@@ -72,27 +113,37 @@ Item {
             OmText {
               text: modelData.done ? "󰄬" : (modelData.optional ? "󰅖" : "󰄰")
               size: "body"
-              color: modelData.done ? "#9ece6a"
+              color: modelData.done ? tones.good
                    : (modelData.optional ? Color.muted : Color.accent)
             }
             OmText {
-              text: modelData.title
+              text: view.title(modelData)
               size: "body"
               color: Color.foreground
             }
             OmText {
               visible: modelData.optional && !modelData.done
-              text: view.strings.t("setup.optional")
+              text: view.t("setup.optional")
               color: Color.muted
             }
           }
 
           OmText {
+            visible: !modelData.done && view.purpose(modelData) !== ""
+            Layout.leftMargin: Style.space(26)
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: view.purpose(modelData)
+            color: Color.muted
+          }
+          // The daemon's own detail: a path, a list of programs, what is
+          // missing. Specific and technical, so smaller and dimmer.
+          OmText {
             Layout.leftMargin: Style.space(26)
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: modelData.detail
-            color: Color.muted
+            color: Qt.darker(Color.muted, 1.15)
           }
 
           RowLayout {
@@ -106,20 +157,26 @@ Item {
               implicitHeight: cmdText.implicitHeight + Style.space(12)
               color: Qt.darker(Color.popups.background, 1.35)
               border.width: 1
-              border.color: Color.muted
+              border.color: Qt.rgba(Color.muted.r, Color.muted.g, Color.muted.b, 0.6)
+              radius: Style.cornerRadius
               OmText {
                 id: cmdText
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.leftMargin: Style.space(10)
+                anchors.rightMargin: Style.space(10)
+                elide: Text.ElideRight
                 text: "$ " + modelData.command
                 color: Color.accent
               }
             }
 
             Button {
-              text: modelData.needs_root ? view.strings.t("setup.copy")
-                                         : view.strings.t("setup.run")
+              text: modelData.needs_root ? view.t("setup.copy")
+                                         : view.t("setup.run")
+              bordered: true
+              fontSize: Style.font.caption
               onClicked: {
                 if (modelData.needs_root) {
                   // Root work belongs in a terminal the user is
@@ -132,8 +189,12 @@ Item {
             }
           }
 
+          // The daemon's note is English, written alongside its command. The
+          // line above says what the step is for in the interface's
+          // language, so the note goes only where it can be read as written.
           OmText {
-            visible: !modelData.done && modelData.note
+            visible: !modelData.done && !!modelData.note
+                     && (!view.strings || view.strings.active === "en")
             Layout.leftMargin: Style.space(26)
             Layout.fillWidth: true
             wrapMode: Text.Wrap
@@ -153,15 +214,19 @@ Item {
 
         OmText {
           Layout.fillWidth: true
+          Layout.maximumWidth: Style.space(680)
           wrapMode: Text.Wrap
-          text: view.strings.t("setup.rootblurb")
+          text: view.t("setup.rootblurb")
           color: Color.muted
         }
 
+        // `view.strings`, not `strings`: inside the runner that name is the
+        // runner's own property, so the binding was to itself and the plan
+        // printed its keys — "first.willrun", "first.needspassword".
         StepRunner {
           id: setupRoot
           Layout.fillWidth: true
-          strings: strings
+          strings: view.strings
           steps: view.rootPlan
           onFinished: view.refresh()
         }
@@ -171,15 +236,17 @@ Item {
           spacing: Style.space(10)
           Button {
             visible: !setupRoot.running
-            text: setupRoot.failure !== "" ? view.strings.t("first.retry")
-                                           : view.strings.t("setup.rootrun")
+            text: setupRoot.failure !== "" ? view.t("first.retry")
+                                           : view.t("setup.rootrun")
+            bordered: true
+            fontSize: Style.font.caption
             onClicked: { setupRoot.reset(); setupRoot.begin() }
           }
           OmText {
             visible: setupRoot.running
             // `at` is -1 while idle, and steps[-1] is undefined.
             text: setupRoot.at >= 0 && setupRoot.at < view.rootPlan.length
-                  ? view.strings.tf("first.working", view.rootPlan[setupRoot.at].label)
+                  ? view.tf("first.working", view.rootPlan[setupRoot.at].label)
                   : ""
             size: "body"
             color: Color.accent
@@ -197,9 +264,14 @@ Item {
       RowLayout {
         Layout.topMargin: Style.space(18)
         spacing: Style.space(10)
-        Button { text: view.strings.t("setup.recheck"); onClicked: view.refresh() }
+        Button {
+          text: view.t("setup.recheck")
+          bordered: true
+          fontSize: Style.font.caption
+          onClicked: view.refresh()
+        }
         OmText {
-          text: view.strings.t("setup.hint")
+          text: view.t("setup.hint")
           color: Color.muted
         }
       }

@@ -57,6 +57,8 @@ Flickable {
 
   readonly property int pad: Style.space(24)
 
+  Tones { id: tones }
+
   signal finished()
 
   function t(k) { return root.strings ? root.strings.t(k) : k }
@@ -91,7 +93,10 @@ Flickable {
       onStreamFinished: root.dbAgeDays = parseFloat(text.trim()) || 0
     }
   }
-  readonly property bool dbStale: root.dbAgeDays >= 1
+  // Three days, not one: a database a day old installs fine nearly always,
+  // and the warning below asks for a whole-system update on the first screen
+  // a new user sees (UX-14). What it says is a "may", for the same reason.
+  readonly property bool dbStale: root.dbAgeDays >= 3
 
   // Read below the keyboard layout and never grabbed, so whichever key this
   // is keeps doing whatever it normally does — which is the reason these are
@@ -211,7 +216,7 @@ Flickable {
 
     OmText {
       text: root.t("first.title")
-      size: "title"
+      size: "heading"
       color: Color.foreground
     }
     OmText {
@@ -229,6 +234,7 @@ Flickable {
       visible: !root.running && !root.done
       OmText {
         text: "1  " + root.t("first.pick.language")
+        size: "subtitle"
         font.letterSpacing: 1
         color: root.lang === "" ? Color.accent : Color.muted
       }
@@ -254,6 +260,7 @@ Flickable {
       visible: !root.running && !root.done
       OmText {
         text: "2  " + root.t("first.pick.model")
+        size: "subtitle"
         font.letterSpacing: 1
         color: (root.lang !== "" && root.model === "") ? Color.accent : Color.muted
       }
@@ -264,7 +271,9 @@ Flickable {
           Layout.fillWidth: true
           spacing: Style.space(10)
           OmChip {
-            label: choice.key === "reuse" ? root.t("first.reuse.label") : choice.key
+            // The name the Models tab uses for it, without the file format.
+            label: choice.key === "reuse" ? root.t("first.reuse.label")
+                                          : choice.key.replace("ggml:", "")
             on: root.model === choice.key
             onClicked: root.model = choice.key
           }
@@ -290,6 +299,7 @@ Flickable {
       visible: !root.running && !root.done
       OmText {
         text: "3  " + root.t("first.pick.hotkey")
+        size: "subtitle"
         font.letterSpacing: 1
         color: (root.lang !== "" && root.model !== "" && root.hotkey === "")
                ? Color.accent : Color.muted
@@ -331,7 +341,7 @@ Flickable {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("first.group.needed")
-        color: "#e0af68"
+        color: tones.warn
       }
     }
 
@@ -344,6 +354,7 @@ Flickable {
                && root.hotkey !== ""
       OmText {
         text: "4  " + root.t("first.willrun")
+        size: "subtitle"
         font.letterSpacing: 1
         color: Color.muted
       }
@@ -366,7 +377,7 @@ Flickable {
           OmText {
             Layout.preferredWidth: Style.space(16)
             text: root.at > idx ? "✓" : (root.at === idx ? "▶" : "")
-            color: root.at > idx ? "#9ece6a" : Color.accent
+            color: root.at > idx ? tones.good : Color.accent
           }
           OmText {
             Layout.preferredWidth: Style.space(150)
@@ -382,7 +393,7 @@ Flickable {
           OmText {
             visible: step.root === true
             text: root.t("first.needspassword")
-            color: "#e0af68"
+            color: tones.warn
           }
         }
       }
@@ -398,9 +409,9 @@ Flickable {
       Layout.topMargin: Style.space(6)
       visible: root.dbStale && !root.done
       implicitHeight: staleCol.implicitHeight + Style.space(20)
-      color: Qt.rgba(0.88, 0.69, 0.41, 0.08)
+      color: Qt.rgba(tones.warn.r, tones.warn.g, tones.warn.b, 0.08)
       border.width: 1
-      border.color: "#e0af68"
+      border.color: tones.warn
       radius: Style.cornerRadius
 
       ColumnLayout {
@@ -420,10 +431,12 @@ Flickable {
                  ? root.t("first.dbstale.age1")
                  : root.tf("first.dbstale.age", Math.round(root.dbAgeDays)))
                 + " " + root.t("first.dbstale")
-          color: "#e0af68"
+          color: tones.warn
         }
         Button {
           text: root.t("first.updatebtn")
+          bordered: true
+          fontSize: Style.font.caption
           onClicked: {
             updater.running = true
             // The database changes under us, so what we know about it does not
@@ -449,6 +462,7 @@ Flickable {
       spacing: Style.space(10)
       Button {
         visible: !root.running && !root.done
+        bordered: true
         enabled: root.lang !== "" && root.model !== "" && root.hotkey !== ""
         text: root.failure === "" ? root.t("first.install") : root.t("first.retry")
         onClicked: root.begin()
@@ -482,7 +496,7 @@ Flickable {
         visible: root.done
         text: root.t("first.done")
         size: "body"
-        color: "#9ece6a"
+        color: tones.good
       }
       Item { Layout.fillWidth: true }
     }
