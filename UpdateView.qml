@@ -154,12 +154,9 @@ ColumnLayout {
 
   spacing: Style.space(8)
 
-  OmText {
-    text: root.t("up.title")
-    font.letterSpacing: 1
-    color: Color.muted
-  }
+  Tones { id: tones }
 
+  // The title is the settings page's, as every section's is there.
   OmText {
     Layout.fillWidth: true
     wrapMode: Text.Wrap
@@ -168,7 +165,7 @@ ColumnLayout {
           : root.pluginError !== "" ? root.pluginError
           : root.t("up.unknown")
     size: "body"
-    color: root.behind > 0 || root.pluginError !== "" ? "#e0af68"
+    color: root.behind > 0 || root.pluginError !== "" ? tones.warn
                                                       : Color.foreground
   }
 
@@ -216,6 +213,8 @@ ColumnLayout {
     spacing: Style.space(10)
     Button {
       visible: !plan.running
+      bordered: true
+      fontSize: Style.font.caption
       enabled: !root.pluginDirty
       text: plan.done ? root.t("up.again")
             : plan.failure !== "" ? root.t("first.retry")
@@ -243,7 +242,7 @@ ColumnLayout {
       visible: plan.done
       text: root.t("up.done")
       size: "body"
-      color: "#9ece6a"
+      color: tones.good
     }
     OmText {
       visible: plan.failure !== ""

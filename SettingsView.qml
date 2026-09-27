@@ -164,35 +164,69 @@ Flickable {
     return node
   }
 
+  // What the page is laid out against: one label column, one measure for
+  // prose, and a column that stops before it is a monitor wide.
+  readonly property int labelWidth: Style.space(160)
+  readonly property int noteWidth: Style.space(680)
+  readonly property int columnWidth: Style.space(900)
+
+  Tones { id: tones }
+
+  // Advanced opens once and stays open while the console does.
+  property bool advancedOpen: false
+  // The four audio numbers and what they ship as, so the closed fold can
+  // name the ones somebody moved. The same defaults config.DEFAULTS has.
+  readonly property var audioRows: [
+    { k: "audio.preroll_seconds", label: root.t("set.preroll"), unit: "ms",
+      scale: 1000, from: 0, to: 5000, step: 100, dflt: 0.6, why: root.t("set.prerollwhy") },
+    { k: "audio.tail_seconds", label: root.t("set.tail"), unit: "ms",
+      scale: 1000, from: 0, to: 2000, step: 50, dflt: 0.25, why: root.t("set.tailwhy") },
+    { k: "audio.warn_rms_dbfs", label: root.t("set.warnbelow"), unit: "dBFS",
+      scale: 1, from: -90, to: 0, step: 1, dflt: -45, why: root.t("set.warnwhy") },
+    { k: "audio.max_seconds", label: root.t("set.maxtake"), unit: "s",
+      scale: 1, from: 5, to: 3600, step: 30, dflt: 300, why: root.t("set.maxwhy") }
+  ]
+  function advancedChanges() {
+    var out = []
+    for (var i = 0; i < root.audioRows.length; i++) {
+      var row = root.audioRows[i]
+      var now = Number(root.get(row.k, row.dflt))
+      if (Math.abs(now - row.dflt) > 1e-9)
+        out.push(root.t("modes.adv.kv").replace("%1", row.label)
+                 .replace("%2", Math.round(now * row.scale) + " " + row.unit))
+    }
+    return out
+  }
+
   contentHeight: col.implicitHeight + pad * 2
   clip: true
 
+  // Common first, and the knobs nobody should need under Advanced at the
+  // bottom: the audio timings were the second section on the page, above
+  // the overlay and the history, and each came with a note about PipeWire.
   ColumnLayout {
     id: col
     x: root.pad
     y: root.pad
-    width: root.width - root.pad * 2
-    spacing: Style.space(18)
+    width: Math.min(root.width - root.pad * 2, root.columnWidth)
+    spacing: Style.space(22)
 
     // ---- hotkey ----------------------------------------------------
     ColumnLayout {
       Layout.fillWidth: true
-      spacing: Style.space(8)
-      OmText {
-        text: root.t("set.hotkey")
-        font.letterSpacing: 1
-        color: Color.muted
-      }
+      spacing: Style.space(10)
+      SectionTitle { rule: false; title: root.t("set.hotkey"); note: root.t("set.hotkey.sub") }
       RowLayout {
         Layout.fillWidth: true
+        spacing: Style.space(10)
         OmText {
-          Layout.preferredWidth: Style.space(160)
+          Layout.preferredWidth: root.labelWidth
           text: root.t("set.key")
           size: "body"
           color: Color.muted
         }
         OmText {
-          Layout.preferredWidth: Style.space(96)
+          Layout.minimumWidth: Style.space(96)
           text: root.get("hotkey.key", "?")
           size: "body"
           color: Color.foreground
@@ -200,24 +234,23 @@ Flickable {
         // Pressed rather than picked from a list. Quickshell cannot read an
         // input device, but the daemon already can and already resolves key
         // names, so the capture happens there and the answer comes back here.
+        //
+        // The label stays short while it waits. It used to become the whole
+        // sentence "waiting — press it now, or hold a combination", and the
+        // three controls after it jumped along; the sentence is said in the
+        // status line below, which is where this row says things.
         Button {
-          text: root.capturing ? root.t("set.key.press") : root.t("set.key.rebind")
+          objectName: "rebind"
+          text: root.t("set.key.rebind")
+          bordered: true
+          fontSize: Style.font.caption
           enabled: !root.capturing
           onClicked: { root.captured = ""; grabber.running = true }
         }
         Button {
-          visible: root.remedy !== ""
-          text: root.remedy === "group" ? root.t("set.key.fix.group")
-              : root.remedy === "regroup" ? root.t("set.key.fix.regroup")
-              : root.t("set.key.fix.restart")
-          onClicked: {
-            if (root.remedy === "group") grouper.running = true
-            else if (root.remedy === "regroup") regrouper.running = true
-            else restarter.running = true
-          }
-        }
-        Button {
           text: root.t("set.key.check")
+          bordered: true
+          fontSize: Style.font.caption
           enabled: !root.checking
           onClicked: checker.running = true
         }
@@ -229,7 +262,7 @@ Flickable {
         // keyboard emits applies here too.
         TextField {
           id: typedKey
-          Layout.preferredWidth: Style.space(168)
+          Layout.preferredWidth: Style.space(190)
           placeholderText: root.t("set.key.type")
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
@@ -244,29 +277,54 @@ Flickable {
       }
 
       // One line, and it is either the reason it does not work or the
-      // devices it is working on. Never both, and never neither.
-      OmText {
+      // devices it is working on. Never both, and never neither. The button
+      // that fixes it sits on the same line as the reason.
+      RowLayout {
         Layout.fillWidth: true
-        Layout.maximumWidth: Style.space(760)
-        wrapMode: Text.Wrap
-        text: root.lastError !== "" ? root.lastError
-              : root.captured !== "" ? root.captured
-              : root.checking && root.ill === "" ? root.t("set.key.testing")
-              : root.ill !== "" ? root.ill
-              : root.health.configured !== undefined
-                ? root.tf("set.key.ok",
-                          (root.health.bound_devices || []).length > 0
-                          ? String(root.health.bound_devices.join(", "))
-                              .replace(/\/dev\/input\/\S+ /g, "")
-                          : "—")
-                : ""
-        color: (root.lastError !== "" || root.captured !== "") ? Color.urgent
-               : root.ill !== "" ? Color.urgent : "#9ece6a"
+        Layout.leftMargin: root.labelWidth + Style.space(10)
+        spacing: Style.space(10)
+        // Its own length, not the column's: the fix button sits right after
+        // the sentence rather than across the page from it.
+        OmText {
+          objectName: "keyStatus"
+          Layout.maximumWidth: root.noteWidth
+          wrapMode: Text.Wrap
+          text: root.lastError !== "" ? root.lastError
+                : root.capturing ? root.t("set.key.press")
+                : root.captured !== "" ? root.captured
+                : root.checking && root.ill === "" ? root.t("set.key.testing")
+                : root.ill !== "" ? root.ill
+                : root.health.configured !== undefined
+                  ? root.tf("set.key.ok",
+                            (root.health.bound_devices || []).length > 0
+                            ? String(root.health.bound_devices.join(", "))
+                                .replace(/\/dev\/input\/\S+ /g, "")
+                            : "—")
+                  : ""
+          color: (root.lastError !== "" || root.captured !== "") ? Color.urgent
+                 : root.capturing ? Color.accent
+                 : root.ill !== "" ? Color.urgent : tones.good
+        }
+        Button {
+          visible: root.remedy !== "" && !root.capturing
+          text: root.remedy === "group" ? root.t("set.key.fix.group")
+              : root.remedy === "regroup" ? root.t("set.key.fix.regroup")
+              : root.t("set.key.fix.restart")
+          bordered: true
+          fontSize: Style.font.caption
+          onClicked: {
+            if (root.remedy === "group") grouper.running = true
+            else if (root.remedy === "regroup") regrouper.running = true
+            else restarter.running = true
+          }
+        }
+        Item { Layout.fillWidth: true }
       }
       RowLayout {
         Layout.fillWidth: true
+        spacing: Style.space(10)
         OmText {
-          Layout.preferredWidth: Style.space(160)
+          Layout.preferredWidth: root.labelWidth
           text: root.t("set.behaviour")
           size: "body"
           color: Color.muted
@@ -275,100 +333,32 @@ Flickable {
           options: [{ value: "push_to_talk", label: root.t("set.ptt") },
                     { value: "toggle", label: root.t("set.toggle") }]
           value: root.get("hotkey.mode", "push_to_talk")
+          fontSize: Style.font.caption
           onChanged: function (v) { root.command("omavoi config set hotkey.mode " + v) }
         }
       }
       OmText {
-        Layout.maximumWidth: Style.space(760)
+        Layout.leftMargin: root.labelWidth + Style.space(10)
+        Layout.maximumWidth: root.noteWidth
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("set.hotkeynote")
-        color: Qt.darker(Color.muted, 1.15)
+        color: Qt.darker(Color.muted, 1.1)
       }
     }
 
-    // ---- audio -----------------------------------------------------
+    // ---- on screen ---------------------------------------------------
     ColumnLayout {
       Layout.fillWidth: true
-      spacing: Style.space(8)
-      OmText {
-        text: root.t("set.audio")
-        font.letterSpacing: 1
-        color: Color.muted
-      }
-      // Editable, at last. These four were plain text for as long as the page
-      // existed — including audio.preroll_seconds, which is the knob the
-      // clipped-onset warning tells you to reach for.
-      //
-      // NumberField is integer-only, so the two fractional ones are shown in
-      // milliseconds and divided on the way out. 600 ms is also a plainer thing
-      // to read than 0.6 s.
-      Repeater {
-        model: [
-          { k: "audio.preroll_seconds", label: root.t("set.preroll"), unit: "ms",
-            scale: 1000, from: 0, to: 5000, step: 100,
-            why: root.t("set.prerollwhy") },
-          { k: "audio.tail_seconds", label: root.t("set.tail"), unit: "ms",
-            scale: 1000, from: 0, to: 2000, step: 50, why: "" },
-          { k: "audio.warn_rms_dbfs", label: root.t("set.warnbelow"), unit: "dBFS",
-            scale: 1, from: -90, to: 0, step: 1, why: "" },
-          { k: "audio.max_seconds", label: root.t("set.maxtake"), unit: "s",
-            scale: 1, from: 5, to: 3600, step: 30, why: "" }
-        ]
-        ColumnLayout {
-          readonly property var row: modelData
-          Layout.fillWidth: true
-          spacing: Style.space(2)
-          RowLayout {
-            Layout.fillWidth: true
-            spacing: Style.space(8)
-            OmText {
-              Layout.preferredWidth: Style.space(160)
-              text: row.label
-              size: "body"
-              color: Color.muted
-            }
-            NumberField {
-              value: Math.round(Number(root.get(row.k, 0)) * row.scale)
-              from: row.from
-              to: row.to
-              stepSize: row.step
-              onModified: function (v) {
-                var out = row.scale === 1 ? String(v)
-                                          : String(v / row.scale)
-                root.command("omavoi config set " + row.k + " " + out)
-              }
-            }
-            OmText { text: row.unit; color: Color.muted }
-            Item { Layout.fillWidth: true }
-          }
-          OmText {
-            visible: row.why !== ""
-            Layout.maximumWidth: Style.space(760)
-            Layout.fillWidth: true
-            wrapMode: Text.Wrap
-            text: row.why
-            color: Qt.darker(Color.muted, 1.15)
-          }
-        }
-      }
-    }
-
-    // ---- hud -------------------------------------------------------
-    ColumnLayout {
-      Layout.fillWidth: true
-      spacing: Style.space(8)
-      OmText {
-        text: root.t("set.hud")
-        font.letterSpacing: 1
-        color: Color.muted
-      }
+      spacing: Style.space(10)
+      SectionTitle { title: root.t("set.hud"); note: root.t("set.hud.sub") }
       // Off, and the rest of the section goes with it: a size and a dwell for
       // an overlay that does not appear are two controls for nothing.
       RowLayout {
         Layout.fillWidth: true
+        spacing: Style.space(10)
         OmText {
-          Layout.preferredWidth: Style.space(160)
+          Layout.preferredWidth: root.labelWidth
           text: root.t("set.hud.show")
           size: "body"
           color: Color.muted
@@ -384,8 +374,9 @@ Flickable {
       RowLayout {
         Layout.fillWidth: true
         visible: root.get("ui.hud", true) === true
+        spacing: Style.space(10)
         OmText {
-          Layout.preferredWidth: Style.space(160)
+          Layout.preferredWidth: root.labelWidth
           text: root.t("set.keepup")
           size: "body"
           color: Color.muted
@@ -395,14 +386,25 @@ Flickable {
                     { value: "changed", label: root.t("set.dwell.changed") },
                     { value: "never", label: root.t("set.dwell.never") }]
           value: root.get("ui.hud_dwell", "changed")
+          fontSize: Style.font.caption
           onChanged: function (v) { root.command("omavoi config set ui.hud_dwell " + v) }
         }
+      }
+      OmText {
+        Layout.leftMargin: root.labelWidth + Style.space(10)
+        Layout.maximumWidth: root.noteWidth
+        Layout.fillWidth: true
+        visible: root.get("ui.hud", true) === true
+        wrapMode: Text.Wrap
+        text: root.t("set.hudnote")
+        color: Qt.darker(Color.muted, 1.1)
       }
       RowLayout {
         Layout.fillWidth: true
         visible: root.get("ui.hud", true) === true
+        spacing: Style.space(10)
         OmText {
-          Layout.preferredWidth: Style.space(160)
+          Layout.preferredWidth: root.labelWidth
           text: root.t("set.hud.size")
           size: "body"
           color: Color.muted
@@ -412,21 +414,15 @@ Flickable {
                     { value: "s", label: root.t("set.size.s") },
                     { value: "m", label: root.t("set.size.m") }]
           value: root.get("ui.hud_size", "s")
+          fontSize: Style.font.caption
           onChanged: function (v) { root.command("omavoi config set ui.hud_size " + v) }
         }
       }
-      OmText {
-        Layout.maximumWidth: Style.space(760)
-        Layout.fillWidth: true
-        visible: root.get("ui.hud", true) === true
-        wrapMode: Text.Wrap
-        text: root.t("set.hudnote")
-        color: Qt.darker(Color.muted, 1.15)
-      }
       RowLayout {
         Layout.fillWidth: true
+        spacing: Style.space(10)
         OmText {
-          Layout.preferredWidth: Style.space(160)
+          Layout.preferredWidth: root.labelWidth
           text: root.t("set.notifications")
           size: "body"
           color: Color.muted
@@ -438,22 +434,26 @@ Flickable {
           onClicked: root.command(
             "omavoi config set ui.notify " + (on ? "false" : "true"))
         }
+        OmText {
+          Layout.fillWidth: true
+          Layout.maximumWidth: root.noteWidth
+          wrapMode: Text.Wrap
+          text: root.t("set.notifynote")
+          color: Qt.darker(Color.muted, 1.1)
+        }
       }
     }
 
     // ---- history and privacy ---------------------------------------
     ColumnLayout {
       Layout.fillWidth: true
-      spacing: Style.space(8)
-      OmText {
-        text: root.t("set.history")
-        font.letterSpacing: 1
-        color: Color.muted
-      }
+      spacing: Style.space(10)
+      SectionTitle { title: root.t("set.history"); note: root.t("set.history.sub") }
       RowLayout {
         Layout.fillWidth: true
+        spacing: Style.space(10)
         OmText {
-          Layout.preferredWidth: Style.space(160)
+          Layout.preferredWidth: root.labelWidth
           text: root.t("set.keepaudio")
           size: "body"
           color: Color.muted
@@ -471,11 +471,12 @@ Flickable {
         Item { Layout.fillWidth: true }
       }
       OmText {
-        Layout.maximumWidth: Style.space(760)
+        Layout.leftMargin: root.labelWidth + Style.space(10)
+        Layout.maximumWidth: root.noteWidth
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("set.historynote")
-        color: Qt.darker(Color.muted, 1.15)
+        color: Qt.darker(Color.muted, 1.1)
       }
 
       // One take goes from the history tab, by right-clicking it. This is
@@ -483,20 +484,21 @@ Flickable {
       // `keep audio` has not swept yet.
       RowLayout {
         Layout.fillWidth: true
-        Layout.topMargin: Style.space(4)
+        Layout.leftMargin: root.labelWidth + Style.space(10)
         spacing: Style.space(12)
         Button {
           text: root.t("set.clearhistory")
           foreground: Color.urgent
           bordered: true
+          fontSize: Style.font.caption
           onClicked: root.clearHistory()
         }
         OmText {
-          Layout.maximumWidth: Style.space(560)
+          Layout.maximumWidth: Style.space(520)
           Layout.fillWidth: true
           wrapMode: Text.Wrap
           text: root.t("set.clearnote")
-          color: Qt.darker(Color.muted, 1.15)
+          color: Qt.darker(Color.muted, 1.1)
         }
       }
 
@@ -507,6 +509,7 @@ Flickable {
         color: "transparent"
         border.width: 1
         border.color: Qt.rgba(Color.muted.r, Color.muted.g, Color.muted.b, 0.6)
+        radius: Style.cornerRadius
 
         ColumnLayout {
           id: privacy
@@ -540,7 +543,7 @@ Flickable {
                   ? root.tf("set.audioleaves", privacy.speechTarget)
                   : root.t("set.neverleaves")
             size: "body"
-            color: privacy.speechIsRemote ? "#e0af68" : "#9ece6a"
+            color: privacy.speechIsRemote ? tones.warn : tones.good
           }
           OmText {
             Layout.fillWidth: true
@@ -559,8 +562,8 @@ Flickable {
     // is not the one anybody would guess.
     ColumnLayout {
       Layout.fillWidth: true
-      Layout.topMargin: Style.space(10)
-      spacing: Style.space(8)
+      spacing: Style.space(10)
+      SectionTitle { title: root.t("up.title") }
       UpdateView {
         Layout.fillWidth: true
         strings: root.strings
@@ -569,20 +572,111 @@ Flickable {
       }
     }
 
-    RowLayout {
-      Layout.topMargin: Style.space(6)
-      spacing: Style.space(8)
-      // `config edit`, not `config path`. The latter prints the path to stdout,
-      // which this console throws away -- so the button did nothing at all.
-      Button { text: root.t("set.editconfig"); onClicked: root.command("omavoi config edit") }
-      Button {
-        text: root.t("set.restart")
-        onClicked: root.command("systemctl --user restart omavoid")
+    // ---- advanced ----------------------------------------------------
+    ColumnLayout {
+      Layout.fillWidth: true
+      spacing: Style.space(12)
+      FoldHeader {
+        objectName: "settingsAdvanced"
+        readonly property var changes: root.advancedChanges()
+        title: root.t("modes.adv")
+        open: root.advancedOpen
+        summary: changes.length > 0
+                 ? root.tf("modes.adv.changed", changes.join(root.t("modes.adv.sep"))) : ""
+        onToggled: root.advancedOpen = !root.advancedOpen
       }
-      OmText {
+
+      ColumnLayout {
+        objectName: "settingsAdvancedBody"
+        visible: root.advancedOpen
         Layout.fillWidth: true
-        text: root.t("set.configpath")
-        color: Color.muted
+        spacing: Style.space(12)
+
+        // Editable, at last. These four were plain text for as long as the
+        // page existed — including audio.preroll_seconds, which is the knob
+        // the clipped-onset warning tells you to reach for.
+        //
+        // NumberField is integer-only, so the two fractional ones are shown
+        // in milliseconds and divided on the way out. 600 ms is also a
+        // plainer thing to read than 0.6 s.
+        Repeater {
+          model: root.audioRows
+          ColumnLayout {
+            readonly property var row: modelData
+            Layout.fillWidth: true
+            spacing: Style.space(3)
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: Style.space(10)
+              OmText {
+                Layout.preferredWidth: root.labelWidth
+                wrapMode: Text.Wrap
+                text: row.label
+                size: "body"
+                color: Color.muted
+              }
+              NumberField {
+                value: Math.round(Number(root.get(row.k, row.dflt)) * row.scale)
+                from: row.from
+                to: row.to
+                stepSize: row.step
+                onModified: function (v) {
+                  var out = row.scale === 1 ? String(v)
+                                            : String(v / row.scale)
+                  root.command("omavoi config set " + row.k + " " + out)
+                }
+              }
+              OmText { text: row.unit; color: Color.muted }
+              Item { Layout.fillWidth: true }
+            }
+            OmText {
+              visible: row.why !== ""
+              Layout.leftMargin: root.labelWidth + Style.space(10)
+              Layout.maximumWidth: root.noteWidth
+              Layout.fillWidth: true
+              wrapMode: Text.Wrap
+              text: row.why
+              color: Qt.darker(Color.muted, 1.1)
+            }
+          }
+        }
+
+        RowLayout {
+          Layout.fillWidth: true
+          Layout.topMargin: Style.space(4)
+          spacing: Style.space(10)
+          OmText {
+            Layout.preferredWidth: root.labelWidth
+            wrapMode: Text.Wrap
+            text: root.t("set.configfile")
+            size: "body"
+            color: Color.muted
+          }
+          // `config edit`, not `config path`. The latter prints the path to
+          // stdout, which this console throws away -- so the button did
+          // nothing at all.
+          Button {
+            text: root.t("set.editconfig")
+            bordered: true
+            fontSize: Style.font.caption
+            onClicked: root.command("omavoi config edit")
+          }
+          Button {
+            text: root.t("set.restart")
+            bordered: true
+            fontSize: Style.font.caption
+            onClicked: root.command("systemctl --user restart omavoid")
+          }
+          Item { Layout.fillWidth: true }
+        }
+        OmText {
+          Layout.leftMargin: root.labelWidth + Style.space(10)
+          Layout.fillWidth: true
+          Layout.maximumWidth: root.noteWidth
+          wrapMode: Text.Wrap
+          text: root.t("set.configpath")
+          color: Qt.darker(Color.muted, 1.1)
+        }
       }
     }
   }
