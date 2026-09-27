@@ -41,13 +41,31 @@ Item {
   readonly property bool quiet: link.level > 0 && link.level < 0.02
 
   readonly property color edge: {
-    if (phase === "done") return quiet ? Color.foreground : "#9ece6a"
+    if (phase === "done") return quiet ? Color.foreground : tones.good
     if (phase === "rejected") return Color.muted
-    if (quiet && phase === "recording") return "#e0af68"
+    if (quiet && phase === "recording") return tones.warn
     return Color.accent
   }
 
   IpcLink { id: link }
+
+  Tones { id: tones }
+
+  // Why a take typed nothing, in the interface's language. The daemon's
+  // reason is a sentence for its log -- "only 0.20s, below
+  // audio.min_seconds=0.35" -- and it was going on screen as it was, in
+  // English, over whatever window you were typing into. The History tab
+  // says it the same way and keeps the daemon's words.
+  function dropped(reason) {
+    var r = String(reason || "")
+    var m = r.match(/^only ([\d.]+)s, below/)
+    if (m) return strings.tf("hist.drop.short", Number(m[1]).toFixed(1))
+    if (r === "empty" || r === "nothing left after post-processing"
+        || r.indexOf("all text segments rejected") === 0)
+      return strings.t("hist.drop.nospeech")
+    if (r.indexOf("transcription failed") === 0) return strings.t("hist.drop.failed")
+    return r
+  }
 
   // The overlay's own table. Strings.qml is documented as one instance per
   // root component and had exactly one, in the console — so the surface you
@@ -263,7 +281,7 @@ Item {
           // microphone never heard, which sends you to the wrong end of the
           // pipeline. The fallback stays for a rejection with no reason.
           text: root.phase === "done" ? root.doneText
-                : root.rejectedWhy !== "" ? root.rejectedWhy
+                : root.rejectedWhy !== "" ? root.dropped(root.rejectedWhy)
                 : strings.t("hud.nospeech")
         }
 

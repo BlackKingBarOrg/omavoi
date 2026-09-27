@@ -7,10 +7,17 @@ import qs.Ui
 //
 // It was the only tab still living inside Console.qml — Modes, Models,
 // Dictionary and Settings had all been components for a while — and it was
-// 307 of that file's 1,058 lines. Nothing here changed on the way out.
+// 307 of that file's 1,058 lines.
 //
 // `take` is derived rather than passed: the console owns the list and the
 // index, and two sources for the same thing is how they disagree.
+//
+// The detail is in two halves, like the settings: what a person reading back
+// a take wants — what it typed, what went wrong, what the AI steps did, what
+// the model actually heard — and, folded underneath, the numbers behind it.
+// Every sentence the daemon writes about a take is English and written for a
+// log; the ones this view knows are said in the interface's language, and
+// the daemon's own words stay in the fold, verbatim.
 Item {
   id: view
 
@@ -28,6 +35,8 @@ Item {
   // have `omavoi history rm` -- the plugin updates separately from it --
   // does nothing and says nothing about why.
   property string error: ""
+  // The numbers behind a take, folded; open stays open from take to take.
+  property bool detailsOpen: false
 
   readonly property var take: (takes && takes.length > selected)
                               ? takes[selected] : null
@@ -37,6 +46,82 @@ Item {
   signal runArgs(var argv)
   signal pick(int index)
   signal remove(string id)
+
+  Tones { id: tones }
+
+  // `strings` is null for the instant between creation and the console
+  // setting it; every other view already guarded this, and this one logged
+  // a TypeError per label on each opening instead.
+  function t(k) { return view.strings ? view.strings.t(k) : k }
+  function tf(k, a) { return view.strings ? view.strings.tf(k, a) : k }
+  function fmt(k, a, b, c) {
+    return view.t(k).replace("%1", a).replace("%2", b).replace("%3", c === undefined ? "" : c)
+  }
+
+  // -- the daemon's sentences, in the reader's language ---------------------
+
+  // When a take was, as briefly as it can be said: the time today, "yesterday"
+  // and the time, and the date beyond that.
+  function when(ts) {
+    if (!ts) return ""
+    var d = new Date(ts * 1000)
+    var now = new Date()
+    var day = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    var hm = Qt.formatDateTime(d, "hh:mm")
+    if (d >= day) return hm
+    if (d >= new Date(day.getTime() - 86400000)) return view.tf("hist.yesterday", hm)
+    if (d.getFullYear() === now.getFullYear()) return Qt.formatDateTime(d, "MM-dd hh:mm")
+    return Qt.formatDateTime(d, "yyyy-MM-dd")
+  }
+  // Why a take typed nothing.
+  function dropped(reason) {
+    var r = String(reason || "")
+    var m = r.match(/^only ([\d.]+)s, below/)
+    if (m) return view.tf("hist.drop.short", Number(m[1]).toFixed(1))
+    if (r === "empty" || r === "nothing left after post-processing"
+        || r.indexOf("all text segments rejected") === 0)
+      return view.t("hist.drop.nospeech")
+    if (r.indexOf("transcription failed") === 0) return view.t("hist.drop.failed")
+    return r
+  }
+  function llmName(name) {
+    return name === "agent" ? view.t("models.k.agent")
+         : name === "api" ? view.t("models.k.api")
+         : name === "local" ? view.t("models.k.local")
+         : String(name || "?")
+  }
+  function warning(w) {
+    var s = String(w || ""), m
+    if ((m = s.match(/^input is quiet: rms (-?[\d.]+) dBFS/)))
+      return view.tf("hist.w.quiet", m[1])
+    if ((m = s.match(/^step (\d+) \(([^)]+)\) fell through: (.*)$/)))
+      return view.fmt("hist.w.step", m[1], view.llmName(m[2]), m[3])
+    if ((m = s.match(/^step (\d+): llm '([^']+)' unavailable — (.*)$/)))
+      return view.fmt("hist.w.step", m[1], view.llmName(m[2]), m[3])
+    if (s.indexOf("the ring buffer wrapped") === 0) return view.t("hist.w.wrapped")
+    if (s.indexOf("low confidence") === 0) return view.t("hist.w.lowconf")
+    if (s.indexOf("a segment may be silence") === 0) return view.t("hist.w.silence")
+    if (s.indexOf("this is an X11 window and xdotool") === 0) return view.t("hist.w.noxdotool")
+    if (s.indexOf("Chinese script conversion failed") === 0) return view.t("hist.w.script")
+    if ((m = s.match(/^injection fell back to (\S+)/))) return view.tf("hist.w.fellback", m[1])
+    if (s.indexOf("injection failed") === 0) return view.t("hist.w.injectfailed")
+    return s
+  }
+  // What a rule did to the text.
+  function change(c) {
+    var s = String(c || "")
+    if (s === "fillers") return view.t("hist.c.fillers")
+    if (s === "deduped") return view.t("hist.c.deduped")
+    if (s === "cjk spacing") return view.t("hist.c.spacing")
+    if (s === "line breaks folded" || s.indexOf("newlines folded") === 0) return view.t("hist.c.lines")
+    if (s.indexOf("punctuation=") === 0) return view.t("hist.c.punct")
+    if (s.indexOf("dictionary: ") === 0) return view.tf("hist.c.dictionary", s.slice(12).replace(/×\d+/g, ""))
+    if (s.indexOf("names: ") === 0) return view.tf("hist.c.dictionary", s.slice(7).replace(/->/g, "→"))
+    if (s.indexOf("segment ") === 0 && s.indexOf("silence") >= 0) return view.t("hist.c.silence")
+    if (s === "Chinese script: zh-Hans") return view.t("hist.c.hans")
+    if (s === "Chinese script: zh-Hant") return view.t("hist.c.hant")
+    return s
+  }
 
   // ---- the right-click menu ---------------------------------------------
   //
@@ -55,9 +140,9 @@ Item {
     var out = []
     // A dropped take has no text to copy, and a take old enough for
     // `history.keep_audio` to have swept it has no recording to play.
-    if (t.text) out.push({ key: "copy", label: view.strings.t("hist.copy") })
-    if (t.wav) out.push({ key: "play", label: view.strings.t("hist.play") })
-    out.push({ key: "delete", label: view.strings.t("hist.delete"), danger: true })
+    if (t.text) out.push({ key: "copy", label: view.t("hist.copy") })
+    if (t.wav) out.push({ key: "play", label: view.t("hist.play") })
+    out.push({ key: "delete", label: view.t("hist.delete"), danger: true })
     return out
   }
 
@@ -120,23 +205,32 @@ Item {
             spacing: Style.space(3)
             RowLayout {
               Layout.fillWidth: true
+              spacing: Style.space(8)
+              // When, first: it is what a list of takes is read by, and it
+              // was the one thing the row did not say (UX-06).
               OmText {
-                text: (modelData.mode && modelData.mode.name) || "?"
+                text: view.when(modelData.ts)
                 color: Color.muted
               }
-              Item { Layout.fillWidth: true }
+              OmText {
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+                text: (modelData.mode && modelData.mode.name) || "?"
+                color: Qt.darker(Color.muted, 1.15)
+              }
               OmText {
                 text: ((modelData.audio && modelData.audio.seconds) || 0).toFixed(1) + "s"
                 color: (modelData.warnings && modelData.warnings.length)
-                       ? "#e0af68" : Color.muted
+                       ? tones.warn : Color.muted
               }
             }
             OmText {
               Layout.fillWidth: true
               elide: Text.ElideRight
+              maximumLineCount: 2
+              wrapMode: Text.Wrap
               text: modelData.text ? modelData.text
-                                   : (view.strings.t("hist.dropped")
-                                      + (modelData.rejected || ""))
+                                   : view.tf("hist.droppedas", view.dropped(modelData.rejected))
               size: "body"
               color: modelData.text ? Color.foreground : Color.muted
             }
@@ -154,8 +248,11 @@ Item {
         }
         OmText {
           anchors.centerIn: parent
+          width: parent.width - Style.space(40)
+          horizontalAlignment: Text.AlignHCenter
+          wrapMode: Text.Wrap
           visible: view.takes.length === 0
-          text: view.strings.tf("hist.none", view.hotkey || view.strings.t("hist.yourkey"))
+          text: view.tf("hist.none", view.hotkey || view.t("hist.yourkey"))
           size: "body"
           color: Color.muted
         }
@@ -182,9 +279,9 @@ Item {
       }
     }
 
-    // Detail. This is the answer to "why did it type that": raw model
-    // output, what each rule changed, and the per-segment confidences.
+    // Detail. This is the answer to "why did it type that".
     Flickable {
+      id: pane
       Layout.fillWidth: true
       Layout.fillHeight: true
       clip: true
@@ -195,51 +292,33 @@ Item {
         id: detail
         x: view.pad
         y: view.pad
-        width: parent.width - view.pad * 2
-        spacing: Style.space(14)
+        width: Math.min(pane.width - view.pad * 2, Style.space(900))
+        spacing: Style.space(18)
 
-        OmText {
+        ColumnLayout {
           Layout.fillWidth: true
-          wrapMode: Text.Wrap
-          text: view.take ? (view.take.text || view.take.rejected || "") : ""
-          size: "title"
-          color: view.take && view.take.text ? Color.foreground : Color.muted
-        }
-
-        Flow {
-          Layout.fillWidth: true
-          spacing: Style.space(18)
-          Repeater {
-            model: {
-              if (!view.take) return []
-              var a = view.take.audio || {}, s = view.take.asr || {}
-              return [
-                { k: view.strings.t("hist.audio"), v: (a.seconds || 0).toFixed(2) + "s" },
-                { k: view.strings.t("hist.level"),
-                  v: (a.rms_dbfs || 0).toFixed(1) + " dBFS" },
-                { k: view.strings.t("hist.decode"),
-                  v: (s.decode_seconds || 0).toFixed(2) + "s" },
-                { k: "RTF", v: (s.rtf || 0).toFixed(3) },
-                { k: view.strings.t("hist.model"), v: s.model || "?" },
-                { k: view.strings.t("hist.language"), v: s.language || "?" },
-                { k: view.strings.t("hist.mode"),
-                  v: (view.take.mode && view.take.mode.name) || "?" },
-                { k: view.strings.t("hist.injected"),
-                  v: (view.take.inject && view.take.inject.method) || "—" }
-              ]
+          spacing: Style.space(6)
+          OmText {
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: view.take ? (view.take.text || view.dropped(view.take.rejected)) : ""
+            size: "title"
+            color: view.take && view.take.text ? Color.foreground : Color.muted
+          }
+          // Mode, length and when. The eight-number strip that stood here is
+          // under the numbers fold below.
+          OmText {
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: {
+              if (!view.take) return ""
+              var parts = [(view.take.mode && view.take.mode.name) || "?",
+                           ((view.take.audio && view.take.audio.seconds) || 0).toFixed(1) + "s"]
+              var w = view.when(view.take.ts)
+              if (w !== "") parts.push(w)
+              return parts.join("  ·  ")
             }
-            ColumnLayout {
-              spacing: 1
-              OmText {
-                text: modelData.k
-                color: Color.muted
-              }
-              OmText {
-                text: modelData.v
-                size: "body"
-                color: Color.foreground
-              }
-            }
+            color: Color.muted
           }
         }
 
@@ -251,34 +330,37 @@ Item {
         // and the reason it is plain dictation was unreadable.
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Style.space(4)
+          spacing: Style.space(6)
           visible: !!(view.take && (view.take.warnings || []).length)
           OmText {
-            text: view.strings.t("hist.problems")
+            text: view.t("hist.problems")
+            size: "subtitle"
             font.letterSpacing: 1
-            color: Color.urgent
+            color: tones.warn
           }
           Repeater {
             model: (view.take && view.take.warnings) ? view.take.warnings : []
             OmText {
               Layout.fillWidth: true
+              Layout.maximumWidth: Style.space(760)
               wrapMode: Text.Wrap
-              text: "· " + modelData
+              text: "· " + view.warning(modelData)
               size: "body"
-              color: "#e0af68"
+              color: Color.foreground
             }
           }
         }
 
-        // ---- the chain, step by step -----------------------------
+        // ---- the AI steps ------------------------------------------
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Style.space(4)
+          spacing: Style.space(6)
           visible: !!(view.take && (view.take.steps || []).length)
           OmText {
-            text: view.strings.t("hist.steps")
+            text: view.t("modes.s3")
+            size: "subtitle"
             font.letterSpacing: 1
-            color: Color.muted
+            color: Color.foreground
           }
           Repeater {
             model: (view.take && view.take.steps) ? view.take.steps : []
@@ -290,11 +372,11 @@ Item {
               OmText {
                 Layout.preferredWidth: Style.space(14)
                 text: fell ? "✕" : "✓"
-                color: fell ? Color.urgent : "#9ece6a"
+                color: fell ? Color.urgent : tones.good
               }
               OmText {
-                Layout.preferredWidth: Style.space(90)
-                text: st.llm || "?"
+                Layout.preferredWidth: Style.space(130)
+                text: view.llmName(st.llm)
                 size: "body"
                 color: Color.foreground
               }
@@ -302,122 +384,210 @@ Item {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
                 text: fell
-                      ? (view.strings.t("hist.fellthrough")
-                         + (st.error ? " — " + st.error : ""))
-                      : ((st.seconds !== undefined
-                          ? st.seconds.toFixed(2) + "s  " : "")
-                         + (st.model || ""))
-                color: fell ? "#e0af68" : Color.muted
+                      ? view.t("hist.fellthrough")
+                      : (st.seconds !== undefined ? view.tf("hist.took", st.seconds.toFixed(1)) : "")
+                color: fell ? tones.warn : Color.muted
               }
             }
           }
         }
 
-        OmText {
-          visible: !!(view.take && view.take.raw_text
-                      && view.take.raw_text !== view.take.text)
-          Layout.fillWidth: true
-          wrapMode: Text.Wrap
-          text: view.strings.t("hist.said") + (view.take ? view.take.raw_text : "")
-          size: "body"
-          color: Color.muted
-        }
-
+        // What the recognizer heard, when something changed it.
         ColumnLayout {
           Layout.fillWidth: true
-          spacing: Style.space(4)
+          spacing: Style.space(6)
+          visible: !!(view.take && view.take.raw_text
+                      && view.take.raw_text !== view.take.text)
+          OmText {
+            text: view.t("hist.said")
+            size: "subtitle"
+            font.letterSpacing: 1
+            color: Color.foreground
+          }
+          OmText {
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: view.take ? view.take.raw_text : ""
+            size: "body"
+            color: Color.muted
+          }
+        }
+
+        // What the rules did to it, in words.
+        ColumnLayout {
+          Layout.fillWidth: true
+          spacing: Style.space(6)
           visible: !!(view.take && view.take.post
                       && (view.take.post.changes || []).length)
           OmText {
-            text: view.strings.t("hist.post")
+            text: view.t("hist.post")
+            size: "subtitle"
             font.letterSpacing: 1
-            color: Color.muted
+            color: Color.foreground
           }
           Repeater {
             model: (view.take && view.take.post) ? view.take.post.changes : []
             OmText {
               Layout.fillWidth: true
               wrapMode: Text.Wrap
-              text: "· " + modelData
+              text: "· " + view.change(modelData)
               size: "body"
               color: Color.foreground
             }
           }
         }
 
-        ColumnLayout {
-          Layout.fillWidth: true
-          spacing: Style.space(4)
-          visible: !!(view.take && view.take.asr
-                      && (view.take.asr.segments || []).length)
-          OmText {
-            text: view.strings.t("hist.segments")
-            font.letterSpacing: 1
-            color: Color.muted
-          }
-          Repeater {
-            model: (view.take && view.take.asr) ? view.take.asr.segments : []
-            RowLayout {
-              id: segmentRow
-              readonly property bool hasConfidence: typeof modelData.avg_logprob === "number"
-                                                    && isFinite(modelData.avg_logprob)
-              readonly property real logProbability: hasConfidence ? modelData.avg_logprob : 0
-              Layout.fillWidth: true
-              spacing: Style.space(12)
-              OmText {
-                Layout.preferredWidth: Style.space(96)
-                text: (modelData.start || 0).toFixed(2) + "–" + (modelData.end || 0).toFixed(2)
-                color: Color.muted
-              }
-              Rectangle {
-                Layout.preferredWidth: Style.space(92)
-                Layout.preferredHeight: 5
-                color: Qt.darker(Color.muted, 1.5)
-                Rectangle {
-                  visible: segmentRow.hasConfidence
-                  width: parent.width * Math.max(0, Math.min(1,
-                         1 + segmentRow.logProbability / 1.5))
-                  height: parent.height
-                  color: segmentRow.logProbability < -1.0 ? "#e0af68" : "#9ece6a"
-                }
-              }
-              OmText {
-                Layout.preferredWidth: Style.space(52)
-                text: segmentRow.hasConfidence ? segmentRow.logProbability.toFixed(2) : "—"
-                color: Color.muted
-              }
-              OmText {
-                Layout.fillWidth: true
-                elide: Text.ElideRight
-                text: modelData.text || ""
-                size: "body"
-                color: Color.foreground
-              }
-            }
-          }
-        }
-
-        // The warnings used to be repeated here as well, under no heading and
-        // with a different bullet, half a page below the "what went wrong"
-        // block that already lists them. That block is the one with the
-        // heading, so this one goes.
-
         RowLayout {
-          Layout.topMargin: Style.space(6)
+          // Not there at all for a dropped take, which has neither: an empty
+          // row still costs the column's spacing on both sides.
+          visible: !!(view.take && (view.take.text || view.take.wav))
           spacing: Style.space(8)
           // Copy used to run `omavoi last --raw`, which is two takes away
           // from this one: the last take rather than the selected one, and
           // the model's raw output rather than what was actually typed. The
           // console already has the take in hand, so it copies that.
           Button {
-            text: view.strings.t("hist.copy")
+            text: view.t("hist.copy")
+            bordered: true
+            fontSize: Style.font.caption
             visible: !!(view.take && view.take.text)
             onClicked: view.runArgs(["wl-copy", "--", String(view.take.text)])
           }
           Button {
-            text: view.strings.t("hist.play")
+            text: view.t("hist.play")
+            bordered: true
+            fontSize: Style.font.caption
             visible: !!(view.take && view.take.wav)
             onClicked: view.runArgs(["pw-play", String(view.take.wav)])
+          }
+        }
+
+        // ---- the numbers ------------------------------------------------
+        ColumnLayout {
+          Layout.fillWidth: true
+          spacing: Style.space(12)
+          FoldHeader {
+            objectName: "historyDetails"
+            title: view.t("hist.details")
+            open: view.detailsOpen
+            onToggled: view.detailsOpen = !view.detailsOpen
+          }
+          ColumnLayout {
+            visible: view.detailsOpen
+            Layout.fillWidth: true
+            spacing: Style.space(14)
+
+            Flow {
+              Layout.fillWidth: true
+              spacing: Style.space(18)
+              Repeater {
+                model: {
+                  if (!view.take) return []
+                  var a = view.take.audio || {}, s = view.take.asr || {}
+                  return [
+                    { k: view.t("hist.audio"), v: (a.seconds || 0).toFixed(2) + "s" },
+                    { k: view.t("hist.level"), v: (a.rms_dbfs || 0).toFixed(1) + " dBFS" },
+                    { k: view.t("hist.decode"), v: (s.decode_seconds || 0).toFixed(2) + "s" },
+                    { k: "RTF", v: (s.rtf || 0).toFixed(3) },
+                    { k: view.t("hist.model"), v: String(s.model || "?").replace("ggml:", "") },
+                    { k: view.t("hist.language"), v: s.language || "?" },
+                    { k: view.t("hist.injected"),
+                      v: (view.take.inject && view.take.inject.method) || "—" }
+                  ]
+                }
+                ColumnLayout {
+                  spacing: 1
+                  OmText {
+                    text: modelData.k
+                    color: Color.muted
+                  }
+                  OmText {
+                    text: modelData.v
+                    size: "body"
+                    color: Color.foreground
+                  }
+                }
+              }
+            }
+            OmText {
+              Layout.fillWidth: true
+              Layout.maximumWidth: Style.space(680)
+              wrapMode: Text.Wrap
+              text: view.t("hist.rtfnote")
+              color: Qt.darker(Color.muted, 1.1)
+            }
+
+            // The daemon's own words for what went wrong, verbatim, for
+            // anyone who wants the number the friendly sentence rounded.
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: Style.space(4)
+              visible: !!(view.take && ((view.take.warnings || []).length || view.take.rejected))
+              OmText {
+                text: view.t("hist.raw")
+                color: Color.muted
+              }
+              Repeater {
+                model: view.take ? (view.take.warnings || []).concat(view.take.rejected ? [view.take.rejected] : []) : []
+                OmText {
+                  Layout.fillWidth: true
+                  wrapMode: Text.Wrap
+                  text: "· " + modelData
+                  color: Qt.darker(Color.muted, 1.1)
+                }
+              }
+            }
+
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: Style.space(4)
+              visible: !!(view.take && view.take.asr
+                          && (view.take.asr.segments || []).length)
+              OmText {
+                text: view.t("hist.segments")
+                color: Color.muted
+              }
+              Repeater {
+                model: (view.take && view.take.asr) ? view.take.asr.segments : []
+                RowLayout {
+                  id: segmentRow
+                  readonly property bool hasConfidence: typeof modelData.avg_logprob === "number"
+                                                        && isFinite(modelData.avg_logprob)
+                  readonly property real logProbability: hasConfidence ? modelData.avg_logprob : 0
+                  Layout.fillWidth: true
+                  spacing: Style.space(12)
+                  OmText {
+                    Layout.preferredWidth: Style.space(96)
+                    text: (modelData.start || 0).toFixed(2) + "–" + (modelData.end || 0).toFixed(2)
+                    color: Color.muted
+                  }
+                  Rectangle {
+                    Layout.preferredWidth: Style.space(92)
+                    Layout.preferredHeight: 5
+                    color: Qt.darker(Color.muted, 1.5)
+                    Rectangle {
+                      visible: segmentRow.hasConfidence
+                      width: parent.width * Math.max(0, Math.min(1,
+                             1 + segmentRow.logProbability / 1.5))
+                      height: parent.height
+                      color: segmentRow.logProbability < -1.0 ? tones.warn : tones.good
+                    }
+                  }
+                  OmText {
+                    Layout.preferredWidth: Style.space(52)
+                    text: segmentRow.hasConfidence ? segmentRow.logProbability.toFixed(2) : "—"
+                    color: Color.muted
+                  }
+                  OmText {
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    text: modelData.text || ""
+                    size: "body"
+                    color: Color.foreground
+                  }
+                }
+              }
+            }
           }
         }
       }
