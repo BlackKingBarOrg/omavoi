@@ -152,7 +152,7 @@ BarWidget {
           : "󰍬  " + root.setupDone + "/" + root.setupTotal
     active: root.recording
     tooltipText: root.recording
-                 ? root.t("bar.tip.recording")
+                 ? root.t("bar.tip.recording") + root.keyLine(true)
                  : root.missing
                    ? root.t("bar.tip.notinstalled")
                    : root.serviceDown
@@ -173,14 +173,30 @@ BarWidget {
     // `active` is the bar's own attention colour, which this theme already
     // reserves for recording modules.
     active: root.recording
+    // What to press, not what is running. This was the daemon's description
+    // of its engine -- "whisper.cpp ggml:large-v3-turbo [vulkan]
+    // http://127.0.0.1:8178 (running)", or with the remote engine a URL and a
+    // redacted key -- on the one surface that is always on screen. What is
+    // running, with its port, is under Advanced on the Models tab.
     tooltipText: {
       if (root.working) return root.t("bar.tip.transcribing")
       // Right-click starts and stops a take by hand. It is the way in when
       // the key is not working yet, and it was written down nowhere.
-      return (link.backend || root.t("bar.tip.ready"))
+      return root.t("bar.tip.ready") + root.keyLine(false)
              + (root.setupReady ? "\n" + root.t("bar.tip.rightclick") : "")
     }
     onPressed: function (b) { root.handle(b) }
+  }
+
+  // The key, as the listener is bound to it, and how to press it: to start
+  // a take, or -- mid-take -- to finish one. Nothing when no listener is up,
+  // where the key would not do what the line said.
+  function keyLine(recording) {
+    if (!link.hotkeyOn || link.hotkey === "") return ""
+    var toggle = link.hotkeyMode === "toggle"
+    return "\n" + root.tf(recording ? (toggle ? "bar.tip.again" : "bar.tip.release")
+                                     : (toggle ? "bar.tip.toggle" : "bar.tip.hold"),
+                           link.hotkey)
   }
 
   function handle(b) {

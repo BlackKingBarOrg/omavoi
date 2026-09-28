@@ -22,6 +22,11 @@ Item {
   property string mode: ""
   property string backend: ""
   property string hotkey: ""
+  // How the key is pressed, "push_to_talk" or "toggle", and whether anything
+  // is listening for it at all -- so the bar can say "hold RIGHTCTRL" or
+  // "press it again" rather than one sentence that is wrong for half of you.
+  property string hotkeyMode: ""
+  property bool hotkeyOn: false
 
   // The overlay's settings, as the daemon has them. Defaulted to the shipped
   // values so the HUD behaves correctly before the first snapshot arrives and
@@ -160,7 +165,11 @@ Item {
     if (msg.state !== undefined) {
       link.state = msg.state
       link.backend = msg.backend || ""
-      if (msg.hotkey) link.hotkey = msg.hotkey.key || ""
+      if (msg.hotkey) {
+        link.hotkey = msg.hotkey.key || ""
+        link.hotkeyMode = msg.hotkey.mode || ""
+        link.hotkeyOn = msg.hotkey.enabled === true
+      }
       if (msg.ui) link._digestUi(msg.ui)
     }
   }

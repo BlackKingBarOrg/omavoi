@@ -33,10 +33,19 @@ Item {
   // to install" sitting over a list the daemon computes — so it said two on a
   // machine that needed four, and two again on this one, where six of six
   // were already done.
-  readonly property int missing: {
+  //
+  // The optional ones apart: "one more component to install" over a list
+  // whose only open step was starting at login -- a setting, and optional --
+  // told someone who could already dictate that they could not.
+  readonly property int missing: view.openSteps(false)
+  readonly property int optionalLeft: view.openSteps(true)
+  // Not `left`: that is the Item's own anchor line, and a function by the
+  // name is shadowed by it.
+  function openSteps(optional) {
     var steps = (view.setupReport && view.setupReport.steps) || []
     var n = 0
-    for (var i = 0; i < steps.length; i++) if (!steps[i].done) n++
+    for (var i = 0; i < steps.length; i++)
+      if (!steps[i].done && (steps[i].optional === true) === optional) n++
     return n
   }
 
@@ -56,6 +65,30 @@ Item {
     if (step.key === "hotkey") return view.tf("setup.s.hotkey", inner.split(" ")[0])
     if (step.key === "service") return view.t("setup.s.service")
     return raw
+  }
+  // The daemon's detail line, in the reader's language where it is a
+  // sentence -- "not in the input group", "no unit file yet" -- rather than
+  // a path or a list of programs, which read the same in any language.
+  // Written against omavoi/setup.py; anything it does not know keeps the
+  // daemon's words.
+  function detail(step) {
+    var s = String(step.detail || ""), m
+    if ((m = s.match(/^missing: (.+)$/))) return view.tf("setup.x.missing", m[1])
+    if (s === "whisper.cpp is not installed") return view.tf("setup.x.notinstalled", "whisper.cpp")
+    if (s.indexOf("whisper.cpp is installed but no CPU ggml backend") === 0) return view.t("setup.x.nocpu")
+    if ((m = s.match(/^not downloaded, (.+)$/))) return view.tf("setup.x.notdownloaded", m[1])
+    // Which LLM entries need it is config vocabulary; the step's title
+    // already says it is the local AI engine.
+    if (s.indexOf("llama-server is not installed") === 0) return view.tf("setup.x.notinstalled", "llama-server")
+    if (s === "the daemon is reading it") return view.t("setup.x.reading")
+    if (s === "in the input group, but this session started before that") return view.t("setup.x.relogin")
+    if (s === "in the input group") return view.t("setup.x.ingroup")
+    if (s === "not in the input group") return view.t("setup.x.notingroup")
+    if (s === "omavoid.service is enabled") return view.t("setup.x.enabled")
+    if (s === "not enabled") return view.t("setup.x.notenabled")
+    if (s === "no unit file yet") return view.t("setup.x.nounit")
+    if ((m = s.match(/^provider (.+)$/))) return view.tf("setup.x.provider", m[1])
+    return s
   }
   // What the step is for, said once, for one that is still to do.
   function purpose(step) {
@@ -89,7 +122,8 @@ Item {
 
       OmText {
         text: view.missing > 0 ? view.tf("setup.title", view.missing)
-                               : view.t("setup.titledone")
+            : view.optionalLeft > 0 ? view.tf("setup.titleoptional", view.optionalLeft)
+            : view.t("setup.titledone")
         size: "heading"
         color: Color.foreground
       }
@@ -142,7 +176,7 @@ Item {
             Layout.leftMargin: Style.space(26)
             Layout.fillWidth: true
             wrapMode: Text.Wrap
-            text: modelData.detail
+            text: view.detail(modelData)
             color: Qt.darker(Color.muted, 1.15)
           }
 
