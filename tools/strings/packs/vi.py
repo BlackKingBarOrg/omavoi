@@ -403,6 +403,8 @@ PACK = {
  "bar.tip.toggle": "Nhấn %1 để bắt đầu, nhấn lần nữa để kết thúc",
  "bar.tip.release": "Thả %1 để kết thúc",
  "bar.tip.again": "Nhấn %1 lần nữa để kết thúc",
+ "word.corrects": "Sửa: %1",
+ "word.sep": ", ",
 }
 
 # My dictionary: one word and its optional corrections.
@@ -435,7 +437,6 @@ PACK.update({'word.add': 'Thêm từ',
  'word.keepediting': 'Tiếp tục sửa',
  'word.discard': 'Bỏ thay đổi',
  'word.search': 'Tìm từ hoặc cách viết sai…',
- 'word.from': 'Sửa:',
  'word.paused': 'Đã tạm dừng',
  'word.pause': 'Tạm dừng từ',
  'word.resume': 'Dùng lại từ',
@@ -457,7 +458,7 @@ PACK.update({'word.add': 'Thêm từ',
  'word.correct': 'Cách viết này đã đúng, không cần sửa.',
  'word.invalidmode': 'Chế độ đã chọn không còn. Hãy chọn lại.',
  'word.missing': 'Từ này đã bị xóa ở nơi khác. Hãy tải lại.',
- 'word.capacity': 'Một số từ chưa được dùng làm gợi ý. Các cách sửa vẫn có hiệu lực:',
+ "word.capacity": "Một số từ chưa được dùng làm gợi ý. Các cách sửa vẫn có hiệu lực: %1",
  'word.legacy': 'Từ điển cũ vẫn dùng được bên dưới. Cần cập nhật dịch vụ giọng nói hoặc xem lại cài đặt '
                 'được liệt kê.',
  'word.use': 'Dùng từ điển của tôi',

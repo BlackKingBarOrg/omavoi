@@ -214,7 +214,8 @@ Item {
       ColumnLayout {
         Layout.fillWidth: true
         spacing: Style.space(3)
-        OmText { text: root.t("nav.dictionary"); size: "subtitle"; font.letterSpacing: 1; color: Color.foreground }
+        // In capitals, as every other page's section titles are written.
+        OmText { text: root.t("nav.dictionary"); size: "subtitle"; font.letterSpacing: 1; font.capitalization: Font.AllUppercase; color: Color.foreground }
         OmText { Layout.fillWidth: true; Layout.maximumWidth: Style.space(680); wrapMode: Text.Wrap; text: root.t("word.intro"); color: Color.muted }
       }
       Item { Layout.fillWidth: true }
@@ -248,7 +249,7 @@ Item {
     OmText {
       visible: (root.payload.dropped || []).length > 0 && !root.legacy
       Layout.fillWidth: true; wrapMode: Text.Wrap
-      text: root.t("word.capacity") + " " + (root.payload.dropped || []).join("、")
+      text: root.tf("word.capacity", (root.payload.dropped || []).join(root.t("word.sep")))
       color: Color.muted
     }
     RowLayout {
@@ -338,7 +339,10 @@ Item {
             OmText {
               visible: row.modelData.aliases.length > 0
               Layout.fillWidth: true; wrapMode: Text.WrapAnywhere
-              text: root.t("word.from") + " " + row.modelData.aliases.slice(0, 2).join("、")
+              // The list's own comma: 、 in Chinese and Japanese, ", " elsewhere.
+              // It was 、 in every language, so an English row read
+              // "Corrects: hyperland、hyper land".
+              text: root.tf("word.corrects", row.modelData.aliases.slice(0, 2).join(root.t("word.sep")))
                     + (row.modelData.aliases.length > 2 ? "  +" + (row.modelData.aliases.length - 2) : "")
               color: Color.muted
             }

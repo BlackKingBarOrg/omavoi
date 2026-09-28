@@ -407,6 +407,8 @@ PACK = {
  "bar.tip.toggle": "Drück %1 zum Starten und noch einmal zum Beenden",
  "bar.tip.release": "Lass %1 los, um zu beenden",
  "bar.tip.again": "Drück %1 noch einmal, um zu beenden",
+ "word.corrects": "Korrigiert: %1",
+ "word.sep": ", ",
 }
 
 # My dictionary: one word and its optional corrections.
@@ -441,7 +443,6 @@ PACK.update({'word.add': 'Wort hinzufügen',
  'word.keepediting': 'Weiter bearbeiten',
  'word.discard': 'Änderungen verwerfen',
  'word.search': 'Wörter oder Fehlschreibungen suchen…',
- 'word.from': 'Korrigiert:',
  'word.paused': 'Pausiert',
  'word.pause': 'Wort pausieren',
  'word.resume': 'Wieder verwenden',
@@ -463,7 +464,7 @@ PACK.update({'word.add': 'Wort hinzufügen',
  'word.correct': 'Diese Schreibweise ist bereits richtig.',
  'word.invalidmode': 'Ein gewählter Modus existiert nicht mehr.',
  'word.missing': 'Dieses Wort wurde anderswo gelöscht. Bitte neu laden.',
- 'word.capacity': 'Einige Wörter passen nicht in die Erkennungshilfe. Ihre Korrekturen bleiben aktiv:',
+ "word.capacity": "Einige Wörter passen nicht in die Erkennungshilfe. Ihre Korrekturen bleiben aktiv: %1",
  'word.legacy': 'Dein bisheriges Wörterbuch bleibt unten verfügbar. Für den neuen Editor muss der '
                 'Sprachdienst aktualisiert oder die aufgeführte Konfiguration geprüft werden.',
  'word.use': 'Mein Wörterbuch verwenden',

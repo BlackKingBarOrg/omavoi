@@ -402,6 +402,8 @@ PACK = {
  "bar.tip.toggle": "%1 を押して開始、もう一度押して終了",
  "bar.tip.release": "%1 を離すと終了",
  "bar.tip.again": "もう一度 %1 を押すと終了",
+ "word.corrects": "修正対象：%1",
+ "word.sep": "、",
 }
 
 # My dictionary: one word and its optional corrections.
@@ -434,7 +436,6 @@ PACK.update({'word.add': '単語を追加',
  'word.keepediting': '編集を続ける',
  'word.discard': '変更を破棄',
  'word.search': '単語や間違った表記を検索…',
- 'word.from': '修正対象：',
  'word.paused': '一時停止中',
  'word.pause': '使用を一時停止',
  'word.resume': '使用を再開',
@@ -456,7 +457,7 @@ PACK.update({'word.add': '単語を追加',
  'word.correct': 'この表記はすでに正しいため修正は不要です。',
  'word.invalidmode': '選択したモードがありません。選び直してください。',
  'word.missing': 'この単語は別の場所で削除されました。再読み込みしてください。',
- 'word.capacity': '認識のヒントに使われなかった単語があります。設定済みの文字修正は有効です：',
+ "word.capacity": "認識のヒントに使われなかった単語があります。設定済みの文字修正は有効です：%1",
  'word.legacy': '従来の辞書は下で使えます。新しい編集画面には音声サービスの更新、または表示された旧設定の確認が必要です。',
  'word.use': '自分の辞書を使う',
  'word.partial': '一部有効'})

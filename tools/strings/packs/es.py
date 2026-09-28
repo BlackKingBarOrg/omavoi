@@ -406,6 +406,8 @@ PACK = {
  "bar.tip.toggle": "Pulsa %1 para empezar y otra vez para terminar",
  "bar.tip.release": "Suelta %1 para terminar",
  "bar.tip.again": "Pulsa %1 otra vez para terminar",
+ "word.corrects": "Corrige: %1",
+ "word.sep": ", ",
 }
 
 # My dictionary: one word and its optional corrections.
@@ -440,7 +442,6 @@ PACK.update({'word.add': 'Añadir palabra',
  'word.keepediting': 'Seguir editando',
  'word.discard': 'Descartar cambios',
  'word.search': 'Buscar palabras o errores…',
- 'word.from': 'Corrige:',
  'word.paused': 'En pausa',
  'word.pause': 'Pausar palabra',
  'word.resume': 'Volver a usar',
@@ -462,7 +463,7 @@ PACK.update({'word.add': 'Añadir palabra',
  'word.correct': 'Esta forma ya es correcta.',
  'word.invalidmode': 'El modo elegido ya no existe.',
  'word.missing': 'Esta palabra se eliminó en otro lugar. Recarga el diccionario.',
- 'word.capacity': 'Algunas palabras no se usaron como pistas. Sus correcciones siguen activas:',
+ "word.capacity": "Algunas palabras no se usaron como pistas. Sus correcciones siguen activas: %1",
  'word.legacy': 'Tu diccionario sigue disponible abajo. Actualiza el servicio de voz o revisa los '
                 'ajustes indicados para usar el nuevo editor.',
  'word.use': 'Usar mi diccionario',

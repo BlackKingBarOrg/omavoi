@@ -1067,6 +1067,12 @@ section("dictionary", {
  "set.configfile": ("config file",
     "配置文件",
     "ไฟล์ตั้งค่า"),
+ "word.corrects": ("Corrects: %1",
+    "纠正：%1",
+    "แก้ไข: %1"),
+ "word.sep": (", ",
+    "、",
+    ", "),
 })
 
 section("my dictionary", {'word.add': ('Add word', '添加词语', 'เพิ่มคำ'),
@@ -1119,7 +1125,6 @@ section("my dictionary", {'word.add': ('Add word', '添加词语', 'เพิ่
  'word.keepediting': ('Keep editing', '继续编辑', 'แก้ไขต่อ'),
  'word.discard': ('Discard changes', '放弃修改', 'ทิ้งการเปลี่ยนแปลง'),
  'word.search': ('Search words or misspellings…', '搜索词语或写错的内容…', 'ค้นหาคำหรือคำที่เขียนผิด…'),
- 'word.from': ('Corrects:', '纠正：', 'แก้ไข:'),
  'word.paused': ('Paused', '已暂停', 'หยุดใช้ชั่วคราว'),
  'word.pause': ('Pause word', '暂停使用', 'หยุดใช้คำนี้'),
  'word.resume': ('Use word again', '恢复使用', 'ใช้คำนี้อีกครั้ง'),
@@ -1163,10 +1168,9 @@ section("my dictionary", {'word.add': ('Add word', '添加词语', 'เพิ่
  'word.missing': ('This word was removed elsewhere. Reload the dictionary.',
                   '这个词已在其他地方删除，请重新读取词典。',
                   'คำนี้ถูกลบที่อื่นแล้ว โปรดโหลดใหม่'),
- 'word.capacity': ('Some words could not be used as recognition hints. Their explicit corrections still '
-                   'apply:',
-                   '部分词语本次未用于帮助识别，已设置的文字纠正仍有效：',
-                   'บางคำไม่ถูกใช้เป็นคำแนะนำ แต่การแก้ไขข้อความยังทำงาน:'),
+ "word.capacity": ("Some words could not be used as recognition hints. Their explicit corrections still apply: %1",
+    "部分词语本次未用于帮助识别，已设置的文字纠正仍有效：%1",
+    "บางคำไม่ถูกใช้เป็นคำแนะนำ แต่การแก้ไขข้อความยังทำงาน: %1"),
  'word.legacy': ('Your existing dictionary is still available below. A newer speech service or a review '
                  'of the listed settings is needed for the new editor.',
                  '现有词典仍可在下方使用。使用新编辑方式前，需要更新语音服务，或处理列出的旧设置。',
