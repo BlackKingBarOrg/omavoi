@@ -153,7 +153,7 @@ PACK = {
  "models.running": "稼働中",
  "models.notloaded": "未ロード",
  "models.llmnone": '未ロード — それぞれ初回の使用時に起動します',
- "models.coldshort": '停止中',
+ "models.coldshort": "未起動",
  "models.ready": "準備完了",
  "models.nodaemon": "バックグラウンドサービスに接続できないため、何が読み込まれているか分かりません",
  "models.f.edit": '編集',

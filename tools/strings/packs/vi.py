@@ -154,7 +154,7 @@ PACK = {
  "models.running": "đang chạy",
  "models.notloaded": "chưa nạp",
  "models.llmnone": 'chưa nạp — mỗi cái khởi động khi dùng lần đầu',
- "models.coldshort": 'chưa chạy',
+ "models.coldshort": "chưa chạy",
  "models.ready": "sẵn sàng",
  "models.nodaemon": "dịch vụ nền không phản hồi, nên không biết đang tải gì",
  "models.f.edit": 'Sửa',

@@ -156,7 +156,7 @@ PACK = {
  "models.running": "en ejecución",
  "models.notloaded": "sin cargar",
  "models.llmnone": 'ninguno cargado — cada uno arranca en su primer uso',
- "models.coldshort": 'en frío',
+ "models.coldshort": "sin iniciar",
  "models.ready": "listo",
  "models.nodaemon": "el servicio en segundo plano no responde, así que no se sabe qué está cargado",
  "models.f.edit": 'Editar',
