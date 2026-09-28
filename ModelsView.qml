@@ -410,7 +410,7 @@ Item {
                          : Qt.darker(Color.muted, 1.1)
             // Which modes use it, which is the question a card is looked at
             // for: "can I take this away".
-            note: (l && (l.used_by || []).length) ? root.tf("models.usedby", (l.used_by || []).join(", ")) : ""
+            note: (l && (l.used_by || []).length) ? root.tf("models.usedby", (l.used_by || []).join(root.t("word.sep"))) : ""
             noteColor: inUse ? Color.accent : Qt.darker(Color.muted, 1.2)
             actionLabel: kind.key === "api"
                          ? (root.editingApi ? root.t("models.f.close")
