@@ -473,6 +473,13 @@ Item {
             topRightRadius: Math.max(0, card.radius - card.border.width)
             color: Qt.darker(Color.popups.background, 1.25)
 
+            // Everything but the spacer at its own width, and the spacer the
+            // only thing that grows. Where the row is short of room -- German,
+            // French or Vietnamese on a 1366-pixel screen -- the tabs' padding
+            // and the language picker give some up, and the state never does:
+            // it is the one thing here that is news. Items a layout does not
+            // fill are fixed at their preferred width, so before this the row
+            // simply ran past the card and the state was cut off at the border.
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: Style.space(18)
@@ -488,12 +495,17 @@ Item {
 
               RowLayout {
                 Layout.fillHeight: true
+                Layout.fillWidth: true
+                Layout.maximumWidth: implicitWidth
                 spacing: 0
                 visible: root.ready
                 Repeater {
                   model: root.tabs
                   Item {
                     Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: tabLabel.implicitWidth + Style.space(12)
+                    Layout.maximumWidth: implicitWidth
                     implicitWidth: tabLabel.implicitWidth + Style.space(30)
                     OmText {
                       id: tabLabel
@@ -524,7 +536,11 @@ Item {
               Dropdown {
                 id: languagePicker
                 Layout.alignment: Qt.AlignVCenter
+                Layout.fillWidth: true
                 Layout.preferredWidth: Style.space(150)
+                Layout.maximumWidth: Style.space(150)
+                // "Tiếng Việt", the longest name on the list, still fits.
+                Layout.minimumWidth: Style.space(110)
                 visible: root.ready
                 showLabel: false
                 // The code is the value, so what comes back from `changed`
