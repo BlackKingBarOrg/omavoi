@@ -92,7 +92,7 @@ PACK = {
  "hist.delete": "Löschen",
 
  "modes.wontfit": 'braucht %1 frei',
- "modes.blocked": 'nicht gewechselt — das Modell dieses Modus passt gerade nicht in den VRAM',
+ "modes.blocked": "nicht gewechselt — das Modell dieses Modus passt gerade nicht in den Grafikspeicher",
  "modes.speechmodel": "Erkennungsmodell",
  "modes.speechglobal": "Standard verwenden",
  "modes.speechglobalnamed": "Standard verwenden (%1)",
@@ -138,7 +138,7 @@ PACK = {
  "modes.addstep": "+ Überarbeitungsschritt hinzufügen",
  "modes.weights": "Modell",
  "modes.inherit": "Standard verwenden (%1)",
- "modes.nollm": "kein LLM konfiguriert — siehe Tab Modelle",
+ "modes.nollm": "noch kein KI-Modell eingerichtet — siehe Tab Modelle",
  "modes.inject.auto": "auto",
  "modes.inject.type": "tippen",
  "modes.inject.clipboard": "einfügen",

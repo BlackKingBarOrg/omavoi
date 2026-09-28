@@ -91,7 +91,7 @@ PACK = {
  "hist.delete": "Xóa",
 
  "modes.wontfit": 'cần %1 trống',
- "modes.blocked": 'chưa chuyển — mô hình của chế độ này hiện không vừa VRAM',
+ "modes.blocked": "chưa chuyển — mô hình của chế độ này hiện không vừa bộ nhớ đồ họa",
  "modes.speechmodel": "mô hình giọng nói",
  "modes.speechglobal": "dùng mặc định",
  "modes.speechglobalnamed": "dùng mặc định (%1)",
@@ -135,7 +135,7 @@ PACK = {
  "modes.addstep": "+ thêm bước viết lại",
  "modes.weights": "Mô hình",
  "modes.inherit": "dùng mặc định (%1)",
- "modes.nollm": "chưa cấu hình LLM nào — xem thẻ Mô hình",
+ "modes.nollm": "chưa thiết lập mô hình AI nào — xem thẻ Mô hình",
  "modes.inject.auto": "tự động",
  "modes.inject.type": "gõ từng chữ",
  "modes.inject.clipboard": "dán",

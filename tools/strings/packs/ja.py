@@ -91,7 +91,7 @@ PACK = {
  "hist.delete": "削除",
 
  "modes.wontfit": '空き %1 が必要',
- "modes.blocked": '切り替えていません —— このモードのモデルは今の VRAM に収まりません',
+ "modes.blocked": "切り替えていません —— このモードのモデルは今のグラフィックメモリに収まりません",
  "modes.speechmodel": "音声モデル",
  "modes.speechglobal": "既定のものを使う",
  "modes.speechglobalnamed": "既定のものを使う (%1)",
@@ -134,7 +134,7 @@ PACK = {
  "modes.addstep": "+ 書き直しステップを追加",
  "modes.weights": "モデル",
  "modes.inherit": "既定のものを使う (%1)",
- "modes.nollm": "LLM が未設定です —— 「モデル」タブを確認してください",
+ "modes.nollm": "AI モデルが未設定です —— 「モデル」タブを確認してください",
  "modes.inject.auto": "自動",
  "modes.inject.type": "打鍵で入力",
  "modes.inject.clipboard": "貼り付け",

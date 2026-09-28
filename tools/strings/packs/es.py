@@ -91,7 +91,7 @@ PACK = {
  "hist.delete": "Eliminar",
 
  "modes.wontfit": 'necesita %1 libres',
- "modes.blocked": 'no se cambió — el modelo de este modo no cabe ahora en la VRAM',
+ "modes.blocked": "no se cambió — el modelo de este modo no cabe ahora en la memoria gráfica",
  "modes.speechmodel": "modelo de voz",
  "modes.speechglobal": "usar el predeterminado",
  "modes.speechglobalnamed": "usar el predeterminado (%1)",
@@ -137,7 +137,7 @@ PACK = {
  "modes.addstep": "+ añadir un paso de reescritura",
  "modes.weights": "Modelo",
  "modes.inherit": "usar el predeterminado (%1)",
- "modes.nollm": "no hay ningún LLM configurado — mira la pestaña Modelos",
+ "modes.nollm": "aún no hay ningún modelo de IA configurado — mira la pestaña Modelos",
  "modes.inject.auto": "auto",
  "modes.inject.type": "teclear",
  "modes.inject.clipboard": "pegar",

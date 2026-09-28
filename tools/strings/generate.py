@@ -570,9 +570,9 @@ section("modes", {
                       "与 Hyprland 的 class 和 title 做匹配，最长的匹配胜出。",
                       "เทียบกับ class และ title ของ Hyprland กฎที่ตรงยาวที่สุดชนะ"),
  # -- header -------------------------------------------------------------------
- "modes.blocked":    ("not switched — this mode's model will not fit in VRAM right now",
-                      "未切换 —— 这个模式的模型现在装不进显存",
-                      "ไม่ได้สลับ — โมเดลของโหมดนี้ใส่ใน VRAM ตอนนี้ไม่พอ"),
+ "modes.blocked": ("not switched — this mode's model does not fit in the graphics memory right now",
+    "未切换 —— 这个模式的模型现在装不进显存",
+    "ไม่ได้สลับ — โมเดลของโหมดนี้ใส่ในหน่วยความจำการ์ดจอตอนนี้ไม่พอ"),
  "modes.delete":     ("Delete mode", "删除模式", "ลบโหมด"),
  # -- voice ----------------------------------------------------------------------
  # Section titles are capitals in English, like every other tab's, and carry
@@ -625,8 +625,9 @@ section("modes", {
  "modes.addwhich":   ("rewrite with:", "用哪个改写：", "เขียนใหม่ด้วย:"),
  "modes.weights":    ("model", "模型", "โมเดล"),
  "modes.inherit":    ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
- "modes.nollm":      ("no LLM is configured — see the Models tab", "还没有配置 LLM —— 去「模型」页",
-                      "ยังไม่ได้ตั้งค่า LLM — ดูที่แท็บโมเดล"),
+ "modes.nollm": ("no AI model is set up yet — see the Models tab",
+    "还没有设置 AI 模型 —— 去「模型」页",
+    "ยังไม่ได้ตั้งค่าโมเดล AI — ดูที่แท็บโมเดล"),
  # -- advanced -------------------------------------------------------------------
  "modes.adv":        ("ADVANCED", "高级", "ขั้นสูง"),
  # On the closed fold: whatever in it is off its default, so folding a
