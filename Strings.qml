@@ -624,7 +624,7 @@ Item {
       // ---- state
       "state.idle": "空闲",
       "state.recording": "录音中",
-      "state.transcribing": "转写中",
+      "state.transcribing": "识别中",
       "state.stopped": "后台服务已停止",
 
       // ---- hud

@@ -275,7 +275,9 @@ section("nav", {
 section("state", {
  "state.idle":         ("idle", "空闲", "ว่าง"),
  "state.recording":    ("recording", "录音中", "กำลังอัดเสียง"),
- "state.transcribing": ("transcribing", "转写中", "กำลังถอดเสียง"),
+ "state.transcribing": ("transcribing",
+    "识别中",
+    "กำลังถอดเสียง"),
  "state.stopped": ("service stopped",
     "后台服务已停止",
     "บริการหยุดอยู่"),
