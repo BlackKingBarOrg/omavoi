@@ -179,6 +179,9 @@ Item {
     Rectangle {
       Layout.preferredWidth: Style.space(420)
       Layout.fillHeight: true
+      // The console card's bottom-left corner, less its border, so a theme
+      // that rounds its windows does not get a square pane poking out.
+      bottomLeftRadius: Math.max(0, Style.cornerRadius - Math.max(1, Style.space(2)))
       color: Qt.darker(Color.popups.background, 1.12)
 
       ListView {

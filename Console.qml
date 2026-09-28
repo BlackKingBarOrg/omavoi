@@ -454,14 +454,23 @@ Item {
         // Swallow clicks so the backdrop dismissal does not fire through.
         MouseArea { anchors.fill: parent }
 
+        // Inside the border, not over it. A Rectangle paints its border
+        // beneath its children, and the header and the history list are
+        // opaque, so the accent frame showed on the right and along the
+        // bottom of the detail pane and nowhere else.
         ColumnLayout {
           anchors.fill: parent
+          anchors.margins: card.border.width
           spacing: 0
 
           // ---- header -------------------------------------------------
           Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: Style.space(44)
+            // The card's own rounding, less the border, so a theme that
+            // rounds its windows gets a header that follows the corner.
+            topLeftRadius: Math.max(0, card.radius - card.border.width)
+            topRightRadius: Math.max(0, card.radius - card.border.width)
             color: Qt.darker(Color.popups.background, 1.25)
 
             RowLayout {
