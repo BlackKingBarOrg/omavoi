@@ -113,6 +113,28 @@ Window {
             window.contentItem.grabToImage(function(result) { result.saveToFile(EDITOR_IMAGE) })
             break
           case 11:
+            dictionary.allModes = false
+            dictionary.selectedModes = []
+            dictionary.save()
+            check(dictionary.error === strings.t("word.selectmode"), "an empty subset silently became All modes")
+            check(dictionary.editing && current().modes.length === 0, "invalid scope wrote to disk")
+            dictionary.error = ""
+            dictionary.selectedModes = ["code"]
+            dictionary.save()
+            break
+          case 12:
+            check(current().modes.length === 1 && current().modes[0] === "code", "selected scope was not saved")
+            dictionary.openEditor(current())
+            check(!dictionary.allModes, "existing subset reopened as All modes")
+            dictionary.selectedModes = []
+            dictionary.save()
+            check(dictionary.error === strings.t("word.selectmode") && current().modes[0] === "code", "removing the last mode widened scope")
+            dictionary.error = ""
+            dictionary.allModes = true
+            dictionary.save()
+            break
+          case 13:
+            check(current().modes.length === 0, "explicit All modes did not save")
             console.log("DICTIONARY_SMOKE_OK")
             Qt.quit()
         }

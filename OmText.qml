@@ -17,6 +17,7 @@ import qs.Commons
 // Input controls keep their own font lines: a TextField is not a label, and
 // six of them set the same pair for a different reason.
 Text {
+  textFormat: Text.PlainText
   property string size: "caption"
 
   font.family: Style.font.family

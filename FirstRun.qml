@@ -1,4 +1,5 @@
 import QtQuick
+import "UiLabels.js" as Labels
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
@@ -66,8 +67,8 @@ Flickable {
 
   // -- the three answers --------------------------------------------------
   property string lang: ""
-  property string model: ""
-  property string hotkey: ""
+  property string model: root.reuse.key ? "reuse" : "ggml:large-v3-turbo"
+  property string hotkey: "RIGHTCTRL"
 
   // evdev needs group membership, and the group only takes effect at the next
   // login — so this has to be said, not silently fixed.
@@ -77,7 +78,11 @@ Flickable {
     command: ["sh", "-c", "id -nG | tr ' ' '\\n' | grep -qx input"]
     onExited: function (code, status) { root.inInputGroup = code === 0 }
   }
-  Component.onCompleted: { probeGroup.running = true; probeDb.running = true }
+  onStringsChanged: if (root.lang === "" && root.strings) root.lang = root.strings.active
+  Component.onCompleted: {
+    if (root.lang === "") root.lang = root.strings ? root.strings.active : "en"
+    probeGroup.running = true; probeDb.running = true
+  }
 
   // Arch's own rule, not ours: `pacman -S` without -y fetches the versions the
   // local database lists, and a database older than a few days lists versions
@@ -206,6 +211,7 @@ Flickable {
 
   contentHeight: col.implicitHeight + pad * 2
   clip: true
+  ScrollBar.vertical: ScrollBar {}
 
   ColumnLayout {
     id: col
@@ -311,7 +317,7 @@ Flickable {
           model: root.hotkeyChoices
           OmChip {
             readonly property string code: modelData
-            label: code
+            label: Labels.hotkey(code, root.strings)
             on: root.hotkey === code
             onClicked: root.hotkey = code
           }
@@ -364,38 +370,9 @@ Flickable {
         strings: root.strings
         steps: root.steps
         // The heading is written above, in the numbered sequence.
-        showPlan: false
+        showPlan: true
+        showHeading: false
         onFinished: root.finished()
-      }
-      Repeater {
-        model: root.steps
-        RowLayout {
-          readonly property var step: modelData
-          readonly property int idx: index
-          Layout.fillWidth: true
-          spacing: Style.space(8)
-          OmText {
-            Layout.preferredWidth: Style.space(16)
-            text: root.at > idx ? "✓" : (root.at === idx ? "▶" : "")
-            color: root.at > idx ? tones.good : Color.accent
-          }
-          OmText {
-            Layout.preferredWidth: Style.space(150)
-            text: step.label
-            color: root.at >= idx ? Color.foreground : Color.muted
-          }
-          OmText {
-            Layout.fillWidth: true
-            elide: Text.ElideRight
-            text: "$ " + step.argv.join(" ")
-            color: Qt.darker(Color.muted, 1.15)
-          }
-          OmText {
-            visible: step.root === true
-            text: root.t("first.needspassword")
-            color: tones.warn
-          }
-        }
       }
     }
 

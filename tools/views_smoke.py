@@ -39,6 +39,7 @@ Window {
   property int step: 0
   property int ticks: 0
   property bool busy: false
+  property var queued: []
   property string failure: ""
   property var refused: []
   property var ran: []
@@ -64,9 +65,11 @@ Window {
     stderr: StdioCollector { id: writeErr }
     onExited: function(code, status) {
       if (code) window.failure = "write failed: " + JSON.stringify(writer.command) + " " + writeErr.text
-      modelsProc.running = true
+      if (window.queued.length) { var next = window.queued[0]; window.queued = window.queued.slice(1); writer.command = next; nextWrite.restart() }
+      else modelsProc.running = true
     }
   }
+  Timer { id: nextWrite; interval: 0; onTriggered: writer.running = true }
   Process {
     id: modelsProc; command: [__CLI__, "model", "list", "--json"]; running: true
     stdout: StdioCollector { onStreamFinished: { window.models = JSON.parse(text); window.busy = false; window.ready = true } }
@@ -81,6 +84,7 @@ Window {
     strings: tr; payload: window.models; pulling: ({})
     onCommand: function(cmd) { window.run(["sh", "-c", cmd]) }
     onCommandArgs: function(argv) { window.run(argv) }
+    onCommandBatch: function(commands) { window.queued = commands.slice(1); window.run(commands[0]) }
   }
   HistoryView {
     id: historyView; visible: false; width: 1400; height: 900
@@ -135,22 +139,34 @@ Window {
             cards(modelsView)[1].chosen()                       // the remote engine card
             break
           case 1:
-            check(window.models.backend === "api", "the remote card did not select the remote engine")
+            check(window.models.backend === "local-whispercpp", "opening the form changed the active engine")
             check(texts(modelsView).indexOf(tr.t("models.speechapi")) >= 0, "the remote endpoint is missing with the remote engine selected")
-            cards(modelsView)[0].chosen()
+            var endpoint = all(modelsView, function(i) { return i.objectName === "speechEndpoint" })[0]
+            check(endpoint && endpoint.activateOnSave, "missing staged endpoint form")
+            endpoint.draftUrl = "invalid address"
+            endpoint.save()
+            check(endpoint.checkNote === tr.t("api.invalid") && !window.busy, "invalid endpoint was saved")
+            endpoint.draftUrl = "https://example.invalid/v1"
+            endpoint.draftModel = "test-model"
+            check(window.models.backend === "local-whispercpp" && !window.busy, "editing the form saved it")
+            endpoint.save()
             break
           case 2:
+            check(window.models.backend === "api", "save and enable did not activate the endpoint")
+            cards(modelsView)[0].chosen()
+            break
+          case 3:
             check(window.models.backend === "local-whispercpp", "the local card did not switch back")
             // A downloaded voice model that is not in use: Use must reach the config.
             var spare = (window.models.models || []).filter(function(m) { return m.kind === "speech" && m.downloaded && !m.active })[0]
-            if (!spare) { window.step = 4; return }
+            if (!spare) { window.step = 5; return }
             window.spareKey = spare.key
             buttonsLabelled(modelsView, tr.t("models.use"))[0].clicked()
             break
-          case 3:
+          case 4:
             check(speech(window.spareKey).active === true, "Use did not make " + window.spareKey + " the voice model")
             break
-          case 4:
+          case 5:
             var before = window.refused.length
             var downloads = buttonsLabelled(modelsView, tr.t("models.download"))
             if (downloads.length) downloads[0].clicked()
@@ -199,6 +215,8 @@ Window {
             firstRun.visible = true
             break
           case 23:
+            check(firstRun.model === "ggml:large-v3-turbo" && firstRun.hotkey === "RIGHTCTRL", "first run has no recommended defaults")
+            check(firstRun.lang === tr.active, "first-run language was not preselected")
             firstRun.lang = "zh"; firstRun.model = "ggml:large-v3-turbo-q5_0"; firstRun.hotkey = "RIGHTCTRL"
             var plan = firstRun.steps.map(function(s) { return s.argv.join(" ") })
             check(plan.some(function(p) { return p === "omavoi model pull ggml:large-v3-turbo-q5_0" }), "the plan does not fetch the chosen model")

@@ -35,19 +35,6 @@ RowLayout {
   Layout.topMargin: Style.space(4)
   spacing: Style.space(10)
 
-  OmText {
-    Layout.preferredWidth: Style.space(12)
-    Layout.alignment: Qt.AlignTop
-    // ▶ is loaded right now, ● is chosen but not loaded, ○ is merely on
-    // disk. The glyph carries that distinction, so the colour does not have
-    // to — the speech table used to paint ● in the urgent colour, which is
-    // right for a speech model that was asked for and did not load and wrong
-    // for LLM weights, which are cold until a take reaches them.
-    text: m.running ? "▶" : (m.active ? "●" : (m.downloaded ? "○" : ""))
-    size: "body"
-    color: (m.running || m.active) ? Color.accent : Color.muted
-  }
-
   ColumnLayout {
     Layout.fillWidth: true
     spacing: Style.space(2)
@@ -62,7 +49,7 @@ RowLayout {
         color: Color.foreground
       }
       OmText {
-        text: (m.size_mb / 1024).toFixed(1) + " GB"
+        text: row.t("models.downloadsize") + " " + (m.size_mb / 1024).toFixed(1) + " GB"
         color: Color.muted
       }
       // Won't-fit is worth saying before the download, not after — and never
@@ -72,6 +59,11 @@ RowLayout {
         visible: m.fits === false && m.running !== true
         text: row.t("models.needs") + " " + (m.needed_mb / 1024).toFixed(1) + " GB"
         color: Color.urgent
+      }
+      OmText {
+        visible: (m.tags || []).indexOf("recommended") >= 0
+        text: row.t("models.recommended")
+        color: Color.accent
       }
       Item { Layout.fillWidth: true }
     }
@@ -98,8 +90,8 @@ RowLayout {
     Layout.alignment: Qt.AlignTop
     spacing: Style.space(7)
     OmText {
-      visible: m.running === true
-      text: row.t("models.running")
+      visible: m.running === true || m.active === true || (m.downloaded && m.ours)
+      text: row.t(m.running ? "models.running" : m.active ? "models.default" : "models.downloaded")
       color: Color.accent
     }
     // Found where another tool put it, and used where it lies rather than

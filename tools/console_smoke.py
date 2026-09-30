@@ -38,7 +38,7 @@ import "Plugin"
 Window {
   id: window
   width: __W__; height: __H__; visible: true; color: "#101010"
-  property int step: 0
+  property int step: -2
   property int ticks: 0
   property var before: []
   Strings { id: de; lang: "de" }
@@ -60,7 +60,7 @@ Window {
   function one(test, what) { var r = all(window.contentItem, test); if (!r.length) throw new Error("no " + what); return r[0] }
   function history() { return one(function(i) { return i.menuActions !== undefined && typeof i.openMenu === "function" }, "history view") }
   function picker() { return one(function(i) { return i.showLabel === false && i.options !== undefined }, "language picker") }
-  function dialog() { return one(function(i) { return i.confirmText !== undefined && i.opened !== undefined }, "confirmation dialog") }
+  function dialog() { return one(function(i) { return i.objectName === "clearHistoryDialog" }, "confirmation dialog") }
   function visibleTexts() { return all(window.contentItem, function(i) { return typeof i.text === "string" && i.font !== undefined && i.visible }).map(function(i) { return i.text }) }
   function check(v, m) { if (!v) throw new Error(m) }
 
@@ -70,6 +70,17 @@ Window {
       try {
         if (++window.ticks > 480) throw new Error("Timed out at step " + window.step)
         switch (window.step) {
+          case -2:
+            if (!con.ready || con.takes.length !== 40) return
+            check(con.historyHasMore, "older history was hidden without Load more")
+            con.selected = 7
+            history().loadMore()
+            break
+          case -1:
+            if (con.takes.length !== __TAKES__) return
+            check(!con.historyHasMore, "Load more remains after the last entry")
+            check(con.selected === 7, "loading older history moved the selection")
+            break
           case 0:
             if (!con.ready || con.takes.length !== __TAKES__) return
             // The header, at this size: nothing in it past the card's edge.
@@ -124,6 +135,23 @@ Window {
           case 6:
             var empty = tr.tf("hist.none", tr.t("hist.yourkey"))
             if (visibleTexts().indexOf(empty) < 0) return
+            con.tab = "modes"
+            con.applyBatch([["omavoi", "config", "set", "ui.hud", "false"],
+                            ["omavoi", "config", "set", "ui.notify", "false"]])
+            break
+          case 7:
+            if (con.saving || !con.configData.ui || con.configData.ui.hud !== false || con.configData.ui.notify !== false) return
+            check(con.feedback.modes.state === "pending", "unavailable service was reported as applied")
+            con.applyArgs(["omavoi", "config", "set", "audio.preroll_seconds", "999"])
+            con.tab = "models"
+            break
+          case 8:
+            if (con.saving) return
+            check(con.feedback.modes.state === "failed" && con.feedback.modes.detail !== "", "failed edit was not reported on its originating page")
+            check(con.currentFeedback.state === undefined, "error appeared on an unrelated page")
+            check(con.configData.audio.preroll_seconds === 0.6, "invalid edit changed configuration")
+            con.tab = "modes"
+            check(con.currentFeedback.state === "failed", "returning to the failed page lost its error")
             console.log("CONSOLE_SMOKE_OK")
             Qt.quit()
             return
@@ -176,7 +204,7 @@ def main() -> int:
             (work/'data'/'omavoi').mkdir(parents=True)
             (work/'data'/'omavoi'/'models').symlink_to(models)
         (work/'state'/'omavoi').mkdir(parents=True)
-        entries = takes()
+        entries = [{**takes()[0], 'id': f'older-{i}', 'text': f'Older entry {i}'} for i in range(45)] + takes()
         with open(work/'state'/'omavoi'/'history.jsonl', 'w', encoding='utf-8') as fh:
             for entry in entries:
                 fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -204,7 +232,7 @@ def main() -> int:
             print(output)
             return 1
         print(f'Console passed at {args.width}x{args.height}: header fits, delete from the menu lands on the next take, '
-              'language switch from the header, clear history through the dialog.')
+              'language switch, confirmed clearing, history pagination, queued saves and page-specific failures.')
     return 0
 
 

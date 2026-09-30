@@ -85,7 +85,7 @@ Window {
   }
   function chips() { return all(view, function(i) { return i.label !== undefined && i.on !== undefined && typeof i.clicked === "function" }) }
   function chipLabelled(text) { var c = chips(); for (var i = 0; i < c.length; i++) if (c[i].label === text && c[i].visible) return c[i]; return null }
-  function groups() { return all(view, function(i) { return i.options !== undefined && typeof i.changed === "function" && i.cursorIndex !== undefined }) }
+  function groups() { return all(view, function(i) { return i.options !== undefined && typeof i.changed === "function" }) }
   function groupWith(value) { var g = groups(); for (var i = 0; i < g.length; i++) for (var j = 0; j < g[i].options.length; j++) if (g[i].options[j].value === value) return g[i]; return null }
   function numbers() { return all(view, function(i) { return typeof i.modified === "function" && i.stepSize !== undefined }) }
   function check(v, m) { if (!v) throw new Error(m) }
@@ -122,9 +122,7 @@ Window {
             break
           case 5:
             check(cfg("hotkey.mode") === "toggle", "press style did not write toggle")
-            var n = numbers()
-            check(n.length >= 1, "no number fields")
-            n[0].modified(40)                                // keep recordings is the first one showing
+            find(view, "historyAudioCount").modified(40)                                // keep recordings is the first one showing
             break
           case 6:
             check(cfg("history.keep_audio") === 40, "keep recordings did not write 40: " + cfg("history.keep_audio"))
@@ -133,21 +131,38 @@ Window {
             break
           case 7:
             var nums = numbers().filter(function(x) { return x.visible })
-            check(nums.length === 5, "Advanced does not show the four audio numbers: " + nums.length)
-            nums[1].modified(800)                            // start early by, in ms
+            check(nums.length === 6, "Expected two retention fields and four audio numbers: " + nums.length)
+            var pre = find(view, "audioNumber:audio.preroll_seconds").field
+            check(pre.contentItem.text === "0.6", "pre-roll display does not show seconds: " + pre.contentItem.text)
+            check(pre.valueFromText("0.8", Qt.locale("en_US")) === 800, "seconds input lost precision")
+            check(pre.textFromValue(600, Qt.locale("en_US")) === "0.6", "pre-roll still displays milliseconds")
+            var maximum = find(view, "audioNumber:audio.max_seconds").field
+            check(maximum.contentItem.text === "5", "maximum length display does not show minutes: " + maximum.contentItem.text)
+            check(maximum.textFromValue(300, Qt.locale("en_US")) === "5", "maximum length does not display minutes")
+            check(maximum.valueFromText("5.5", Qt.locale("en_US")) === 330, "minutes input did not convert to seconds")
+            find(view, "audioNumber:audio.preroll_seconds").modified(800)                            // start early by, in ms
             break
           case 8:
             check(Math.abs(cfg("audio.preroll_seconds") - 0.8) < 1e-9, "pre-roll did not write 0.8: " + cfg("audio.preroll_seconds"))
+            check(find(view, "audioNumber:audio.preroll_seconds").field.contentItem.text === "0.8", "display did not follow saved seconds")
             view.advancedOpen = false
             break
           case 9:
-            var s = find(view, "foldSummary")
-            check(s && s.visible && s.text.indexOf("800") >= 0, "the closed fold does not name the changed pre-roll: " + (s ? s.text : "none"))
+            var s = find(find(view, "settingsAdvanced"), "foldSummary")
+            check(s && s.visible && s.text.indexOf("0.8") >= 0, "the closed fold does not name the changed pre-roll: " + (s ? s.text : "none"))
             window.shot("settings-changed.png")
             view.commandArgs(["omavoi", "config", "set", "hotkey.key", "F9"])
             break
           case 10:
             check(cfg("hotkey.key") === "F9", "typed key did not write F9")
+            find(view, "hotkeyToggle").clicked()
+            break
+          case 11:
+            check(cfg("hotkey.enabled") === false, "hotkey toggle did not disable the shortcut")
+            find(view, "hotkeyToggle").clicked()
+            break
+          case 12:
+            check(cfg("hotkey.enabled") === true, "hotkey toggle did not enable the shortcut")
             var refusedBefore = window.refused.length
             view.command("systemctl --user restart omavoid")
             check(window.refused.length === refusedBefore + 1, "a machine command was not refused")

@@ -1,4 +1,6 @@
 import QtQuick
+import QtQuick.Controls as Controls
+import "UiLabels.js" as Labels
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
@@ -14,6 +16,7 @@ Flickable {
   property var setupReport: ({ steps: [] })
   property int pad: Style.space(22)
   property var strings: null
+  property bool recordingBusy: false
 
   // Why the last command was refused, from the console. Without it a
   // refused `config set` moved nothing and said nothing.
@@ -31,6 +34,9 @@ Flickable {
   property bool capturing: false
   property string captured: ""
   property bool capturedOk: false
+  property int captureSeconds: 0
+  onCapturingChanged: if (capturing) captureSeconds = 8
+  Timer { interval: 1000; repeat: true; running: root.capturing; onTriggered: root.captureSeconds = Math.max(0, root.captureSeconds - 1) }
 
   Process {
     id: grabber
@@ -193,13 +199,16 @@ Flickable {
       var now = Number(root.get(row.k, row.dflt))
       if (Math.abs(now - row.dflt) > 1e-9)
         out.push(root.t("modes.adv.kv").replace("%1", row.label)
-                 .replace("%2", Math.round(now * row.scale) + " " + row.unit))
+                 .replace("%2", (row.k === "audio.max_seconds" ? Number((now / 60).toFixed(3)) + " " + root.t("unit.minutes")
+                                  : row.unit === "ms" ? now + " " + root.t("unit.seconds")
+                                  : now + " " + row.unit)))
     }
     return out
   }
 
   contentHeight: col.implicitHeight + pad * 2
   clip: true
+  Controls.ScrollBar.vertical: Controls.ScrollBar {}
 
   // Common first, and the knobs nobody should need under Advanced at the
   // bottom: the audio timings were the second section on the page, above
@@ -216,6 +225,12 @@ Flickable {
       Layout.fillWidth: true
       spacing: Style.space(10)
       SectionTitle { rule: false; title: root.t("set.hotkey"); note: root.t("set.hotkey.sub") }
+      OmToggle {
+        objectName: "hotkeyToggle"
+        label: root.t("set.hotkey")
+        on: root.get("hotkey.enabled", true)
+        onClicked: root.commandArgs(["omavoi", "config", "set", "hotkey.enabled", on ? "false" : "true"])
+      }
       RowLayout {
         Layout.fillWidth: true
         spacing: Style.space(10)
@@ -227,7 +242,7 @@ Flickable {
         }
         OmText {
           Layout.minimumWidth: Style.space(96)
-          text: root.get("hotkey.key", "?")
+          text: Labels.hotkey(root.get("hotkey.key", "?"), root.strings)
           size: "body"
           color: Color.foreground
         }
@@ -262,16 +277,28 @@ Flickable {
         // keyboard emits applies here too.
         TextField {
           id: typedKey
+          objectName: "typedHotkey"
           Layout.preferredWidth: Style.space(190)
           placeholderText: root.t("set.key.type")
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
-          onAccepted: {
+          function apply() {
             var want = text.trim().toUpperCase()
             if (want === "") return
             root.commandArgs(["omavoi", "config", "set", "hotkey.key", want])
             text = ""
           }
+          onAccepted: apply()
+        }
+        Button {
+          visible: typedKey.text.trim() !== ""
+          text: root.t("edit.save"); bordered: true; fontSize: Style.font.caption
+          onClicked: typedKey.apply()
+        }
+        Button {
+          visible: root.capturing
+          text: root.t("word.cancel"); bordered: true; fontSize: Style.font.caption
+          onClicked: { grabber.running = false; root.captured = "" }
         }
         Item { Layout.fillWidth: true }
       }
@@ -290,7 +317,7 @@ Flickable {
           Layout.maximumWidth: root.noteWidth
           wrapMode: Text.Wrap
           text: root.lastError !== "" ? root.lastError
-                : root.capturing ? root.t("set.key.press")
+                : root.capturing ? root.tf("set.key.press", root.captureSeconds)
                 : root.captured !== "" ? root.captured
                 : root.checking && root.ill === "" ? root.t("set.key.testing")
                 : root.ill !== "" ? root.ill
@@ -343,8 +370,16 @@ Flickable {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("set.hotkeynote")
-        color: Qt.darker(Color.muted, 1.1)
+        color: Color.muted
       }
+    }
+
+    MicrophoneSettings {
+      Layout.fillWidth: true
+      strings: root.strings
+      target: String(root.get("audio.target", ""))
+      recordingBusy: root.recordingBusy
+      onCommandArgs: function(a) { root.commandArgs(a) }
     }
 
     // ---- on screen ---------------------------------------------------
@@ -363,7 +398,8 @@ Flickable {
           size: "body"
           color: Color.muted
         }
-        OmChip {
+        OmToggle {
+          objectName: "overlayToggle"
           label: root.get("ui.hud", true) === true ? root.t("set.on")
                                                    : root.t("set.off")
           on: root.get("ui.hud", true) === true
@@ -381,12 +417,14 @@ Flickable {
           size: "body"
           color: Color.muted
         }
-        ButtonGroup {
+        Dropdown {
+          objectName: "resultPolicy"
+          showLabel: false
+          Layout.preferredWidth: Style.space(340)
           options: [{ value: "always", label: root.t("set.dwell.always") },
                     { value: "changed", label: root.t("set.dwell.changed") },
                     { value: "never", label: root.t("set.dwell.never") }]
-          value: root.get("ui.hud_dwell", "changed")
-          fontSize: Style.font.caption
+          Binding on value { value: root.get("ui.hud_dwell", "changed") }
           onChanged: function (v) { root.command("omavoi config set ui.hud_dwell " + v) }
         }
       }
@@ -397,7 +435,7 @@ Flickable {
         visible: root.get("ui.hud", true) === true
         wrapMode: Text.Wrap
         text: root.t("set.hudnote")
-        color: Qt.darker(Color.muted, 1.1)
+        color: Color.muted
       }
       RowLayout {
         Layout.fillWidth: true
@@ -418,6 +456,16 @@ Flickable {
           onChanged: function (v) { root.command("omavoi config set ui.hud_size " + v) }
         }
       }
+      Rectangle {
+        visible: root.get("ui.hud", true)
+        Layout.leftMargin: root.labelWidth + Style.space(10)
+        Layout.preferredWidth: Style.space(root.get("ui.hud_size", "s") === "xs" ? 160 : root.get("ui.hud_size", "s") === "m" ? 280 : 220)
+        implicitHeight: Style.space(root.get("ui.hud_size", "s") === "m" ? 48 : root.get("ui.hud_size", "s") === "xs" ? 28 : 36)
+        radius: Style.cornerRadius
+        color: Color.popups.background
+        border.color: Color.muted
+        OmText { anchors.centerIn: parent; text: "▂ ▅ ▃ ▆ ▂   " + root.t("set.preview"); color: Color.foreground }
+      }
       RowLayout {
         Layout.fillWidth: true
         spacing: Style.space(10)
@@ -427,7 +475,8 @@ Flickable {
           size: "body"
           color: Color.muted
         }
-        OmChip {
+        OmToggle {
+          objectName: "notificationToggle"
           label: root.get("ui.notify", true) === true ? root.t("set.on")
                                                        : root.t("set.off")
           on: root.get("ui.notify", true) === true
@@ -439,7 +488,7 @@ Flickable {
           Layout.maximumWidth: root.noteWidth
           wrapMode: Text.Wrap
           text: root.t("set.notifynote")
-          color: Qt.darker(Color.muted, 1.1)
+          color: Color.muted
         }
       }
     }
@@ -451,6 +500,28 @@ Flickable {
       SectionTitle { title: root.t("set.history"); note: root.t("set.history.sub") }
       RowLayout {
         Layout.fillWidth: true
+        OmText { Layout.preferredWidth: root.labelWidth; text: root.t("history.save"); size: "body"; color: Color.muted }
+        OmToggle {
+          objectName: "historyToggle"
+          label: root.get("history.enabled", true) ? root.t("set.on") : root.t("set.off")
+          on: root.get("history.enabled", true)
+          onClicked: root.commandArgs(["omavoi", "config", "set", "history.enabled", on ? "false" : "true"])
+        }
+      }
+      OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("history.savenote"); color: Color.muted }
+      RowLayout {
+        visible: root.get("history.enabled", true)
+        Layout.fillWidth: true
+        OmText { Layout.preferredWidth: root.labelWidth; text: root.t("history.textcount"); size: "body"; color: Color.muted }
+        NumberField {
+          objectName: "historyTextCount"
+          value: Number(root.get("history.keep", 500)); from: 1; to: 10000; stepSize: 50
+          onModified: function(v) { root.commandArgs(["omavoi", "config", "set", "history.keep", String(v)]) }
+        }
+        OmText { text: root.t("set.takes"); color: Color.muted }
+      }
+      RowLayout {
+        Layout.fillWidth: true
         spacing: Style.space(10)
         OmText {
           Layout.preferredWidth: root.labelWidth
@@ -459,6 +530,8 @@ Flickable {
           color: Color.muted
         }
         NumberField {
+          objectName: "historyAudioCount"
+          enabled: root.get("history.enabled", true)
           value: Number(root.get("history.keep_audio", 0))
           from: 0
           to: 500
@@ -468,6 +541,11 @@ Flickable {
           }
         }
         OmText { text: root.t("set.takes"); color: Color.muted }
+        Button {
+          text: root.t("history.noaudio"); bordered: true; fontSize: Style.font.caption
+          enabled: root.get("history.enabled", true) && Number(root.get("history.keep_audio", 0)) > 0
+          onClicked: root.commandArgs(["omavoi", "config", "set", "history.keep_audio", "0"])
+        }
         Item { Layout.fillWidth: true }
       }
       OmText {
@@ -476,7 +554,7 @@ Flickable {
         Layout.fillWidth: true
         wrapMode: Text.Wrap
         text: root.t("set.historynote")
-        color: Qt.darker(Color.muted, 1.1)
+        color: Color.muted
       }
 
       // One take goes from the history tab, by right-clicking it. This is
@@ -498,7 +576,7 @@ Flickable {
           Layout.fillWidth: true
           wrapMode: Text.Wrap
           text: root.t("set.clearnote")
-          color: Qt.darker(Color.muted, 1.1)
+          color: Color.muted
         }
       }
 
@@ -596,9 +674,7 @@ Flickable {
         // page existed — including audio.preroll_seconds, which is the knob
         // the clipped-onset warning tells you to reach for.
         //
-        // NumberField is integer-only, so the two fractional ones are shown
-        // in milliseconds and divided on the way out. 600 ms is also a
-        // plainer thing to read than 0.6 s.
+        // Keep integer precision internally while displaying seconds or minutes.
         Repeater {
           model: root.audioRows
           ColumnLayout {
@@ -616,6 +692,17 @@ Flickable {
                 color: Color.muted
               }
               NumberField {
+                objectName: "audioNumber:" + row.k
+                id: audioNumber
+                readonly property real divisor: row.unit === "ms" ? 1000 : row.k === "audio.max_seconds" ? 60 : 1
+                DoubleValidator { id: audioValidator; bottom: row.from / audioNumber.divisor; top: row.to / audioNumber.divisor; decimals: 4 }
+                Component.onCompleted: {
+                  var divisor = this.divisor
+                  field.validator = audioValidator
+                  field.textFromValue = function(value, locale) { return Number(value / divisor).toLocaleString(locale, 'f', divisor === 1 ? 0 : 3).replace(/([.,]\d*?)0+$/, '$1').replace(/[.,]$/, '') }
+                  field.valueFromText = function(text, locale) { return Math.round(Number.fromLocaleString(locale, text) * divisor) }
+                  field.contentItem.text = Qt.binding(function() { return audioNumber.field.textFromValue(audioNumber.field.value, audioNumber.field.locale) })
+                }
                 value: Math.round(Number(root.get(row.k, row.dflt)) * row.scale)
                 from: row.from
                 to: row.to
@@ -626,7 +713,7 @@ Flickable {
                   root.command("omavoi config set " + row.k + " " + out)
                 }
               }
-              OmText { text: row.unit; color: Color.muted }
+              OmText { text: row.unit === "ms" ? root.t("unit.seconds") : row.k === "audio.max_seconds" ? root.t("unit.minutes") : row.unit; color: Color.muted }
               Item { Layout.fillWidth: true }
             }
             OmText {
@@ -636,7 +723,7 @@ Flickable {
               Layout.fillWidth: true
               wrapMode: Text.Wrap
               text: row.why
-              color: Qt.darker(Color.muted, 1.1)
+              color: Color.muted
             }
           }
         }
@@ -675,7 +762,7 @@ Flickable {
           Layout.maximumWidth: root.noteWidth
           wrapMode: Text.Wrap
           text: root.t("set.configpath")
-          color: Qt.darker(Color.muted, 1.1)
+          color: Color.muted
         }
       }
     }

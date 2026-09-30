@@ -11,6 +11,13 @@ Rectangle {
   property bool on: false
   property bool enabled: true
   signal clicked()
+  activeFocusOnTab: true
+  Accessible.role: Accessible.Button
+  Accessible.name: label
+  Accessible.onPressAction: if (enabled) clicked()
+  Keys.onSpacePressed: if (enabled) clicked()
+  Keys.onReturnPressed: if (enabled) clicked()
+  Keys.onEnterPressed: if (enabled) clicked()
 
   implicitWidth: text.implicitWidth + Style.space(16)
   implicitHeight: text.implicitHeight + Style.space(6)
@@ -18,7 +25,7 @@ Rectangle {
   color: on ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, hover.containsMouse ? 0.26 : 0.16)
             : (hover.containsMouse ? Qt.rgba(Color.foreground.r, Color.foreground.g,
                                              Color.foreground.b, 0.06) : "transparent")
-  border.width: 1
+  border.width: activeFocus ? 2 : 1
   border.color: on ? Color.accent
                    : Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.28)
   radius: Style.cornerRadius
@@ -36,6 +43,6 @@ Rectangle {
     anchors.fill: parent
     hoverEnabled: true
     cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-    onClicked: if (root.enabled) root.clicked()
+    onClicked: if (root.enabled) { root.forceActiveFocus(); root.clicked() }
   }
 }

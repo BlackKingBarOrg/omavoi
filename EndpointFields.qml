@@ -5,223 +5,191 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 
-// A URL, a key and a model id — for either family's remote endpoint.
-//
-// Everything else that used to be on screen here — key_env, key_name,
-// timeout, temperature — is machinery, and putting it up made a mechanism
-// look like a decision. It lives in the config file for anyone who needs it.
-//
-// Written once because the speech side had none of this at all: the console
-// offered a "remote API" engine card for speech and there was nowhere to put
-// the URL, so the engine could be selected and never configured. Building a
-// second copy of the LLM panel is how the two would have drifted the way the
-// rows and the cards did.
-//
-// Three fields, and only three. The speech backend does ship provider
-// presets, and a row of them was here for one revision — but a menu of
-// vendor names is a list of things to read about, not something to fill in,
-// and it made four controls out of a job that has three. The presets still
-// work from the config file, and the placeholders show whichever values one
-// is currently supplying, so a blank field never hides a surprise.
+// A complete form: nothing is written on focus loss. The key uses stdin;
+// the remaining fields form one queued action, with activation last.
 ColumnLayout {
   id: fields
-
   property var strings: null
-  // What `omavoi config set` writes under: "llm.api" or "speech.api".
   property string prefix: ""
-  // What `omavoi secrets set` stores the key as.
   property string secretName: ""
-  // What answers "does this endpoint work", as argv.
   property var checkArgv: []
-
   property string baseUrl: ""
   property string model: ""
   property bool hasKey: false
-  // "env", "file" or "" — which of the two the daemon will actually read.
   property string keySource: ""
   property string keyEnv: ""
-  // The value that applies when the field is left empty, shown as the
-  // placeholder so a preset is visible rather than magic.
   property string defaultBaseUrl: ""
   property string defaultModel: ""
-
-  signal command(string cmd)
-  // Anything carrying typed text goes as argv. A base_url or a model id is
-  // whatever someone pasted, and JSON.stringify is JSON quoting, not shell
-  // quoting: "$(…)" and backticks still run inside double quotes.
-  signal commandArgs(var argv)
-
-  function t(k) { return fields.strings ? fields.strings.t(k) : k }
-  function tf(k, a) { return fields.strings ? fields.strings.tf(k, a) : k }
-
-  spacing: Style.space(5)
-
-  Tones { id: tones }
-
+  property bool activateOnSave: false
+  property bool saving: false
+  property string draftUrl: ""
+  property string draftModel: ""
+  property string baselineUrl: ""
+  property string baselineModel: ""
+  property bool initialized: false
+  readonly property bool dirty: draftUrl !== baselineUrl || draftModel !== baselineModel || keyField.text !== ""
+  readonly property bool needsSave: dirty || activateOnSave || draftUrl.trim() !== baseUrl || draftModel.trim() !== model
+  readonly property bool busy: saving || keyWriter.running
   property string keyNote: ""
   property string checkNote: ""
   property bool checkOk: false
   property var checkModels: []
-
-  // The key goes over stdin, never in a command line: a value in argv is
-  // readable from /proc by every process running as this user for as long as
-  // the command lives.
+  signal command(string cmd)
+  signal commandArgs(var argv)
+  signal commandBatch(var commands)
+  function t(k) { return strings ? strings.t(k) : k }
+  function tf(k, a) { return strings ? strings.tf(k, a) : k }
+  function sync() {
+    var url = baseUrl || defaultBaseUrl
+    var chosen = model || defaultModel
+    if (!initialized || draftUrl === baselineUrl) draftUrl = url
+    if (!initialized || draftModel === baselineModel) draftModel = chosen
+    baselineUrl = url
+    baselineModel = chosen
+    initialized = true
+  }
+  Component.onCompleted: sync()
+  onBaseUrlChanged: syncSoon.restart()
+  onModelChanged: syncSoon.restart()
+  onDefaultBaseUrlChanged: syncSoon.restart()
+  onDefaultModelChanged: syncSoon.restart()
+  Timer { id: syncSoon; interval: 0; onTriggered: fields.sync() }
+  function commitFields() {
+    var commands = [
+      ["omavoi", "config", "set", prefix + ".base_url", draftUrl.trim()],
+      ["omavoi", "config", "set", prefix + ".model", draftModel.trim()]
+    ]
+    if (activateOnSave) commands.push(["omavoi", "config", "set", "speech.backend", "api"])
+    commandBatch(commands)
+  }
+  function save() {
+    if (busy || checker.running) return
+    if (!/^https?:\/\/[^\s/]+/.test(draftUrl.trim()) || !draftModel.trim()) {
+      checkOk = false; checkNote = t("api.invalid"); return
+    }
+    checkNote = ""
+    if (keyField.text !== "") keyWriter.send(keyField.text)
+    else commitFields()
+  }
+  spacing: Style.space(8)
+  Tones { id: tones }
   Process {
     id: keyWriter
     command: ["omavoi", "secrets", "set", fields.secretName]
     stdinEnabled: true
     property string pending: ""
     function send(value) {
-      keyWriter.pending = value
+      pending = value
+      stdinEnabled = true
       fields.keyNote = ""
-      keyWriter.running = true
+      running = true
     }
-    onStarted: {
-      // Written once the pipe exists, then closed so the reader sees EOF.
-      keyWriter.write(keyWriter.pending)
-      keyWriter.pending = ""
-      keyWriter.stdinEnabled = false
-    }
-    onExited: function (code, status) {
-      fields.keyNote = code === 0 ? fields.t("models.f.key.saved")
-                                  : fields.t("models.f.key.failed")
-      keyField.text = ""
-      fields.command("omavoi config show --json")
+    onStarted: { write(pending); pending = ""; stdinEnabled = false }
+    onExited: function(code, status) {
+      fields.keyNote = fields.t(code === 0 ? "models.f.key.saved" : "models.f.key.failed")
+      if (code === 0) { keyField.text = ""; fields.commitFields() }
     }
   }
-
   Process {
     id: checker
     command: fields.checkArgv
     stdout: StdioCollector {
       onStreamFinished: {
-        var r = ({})
-        try { r = JSON.parse(text) } catch (e) { r = ({ ok: false, error: text }) }
-        fields.checkOk = r.ok === true
-        fields.checkModels = r.ok === true ? (r.models || []) : []
-        // tf, not t: the string carries a %1 for the count, and plain t left
-        // the placeholder on screen with the number stuck on after it.
-        fields.checkNote = r.ok === true
-          ? fields.tf("models.f.testok", (r.models || []).length)
-          : String(r.error || fields.t("models.f.testfail"))
+        var response = ({})
+        try { response = JSON.parse(text) } catch(e) {}
+        fields.checkOk = response.ok === true
+        fields.checkModels = fields.checkOk ? response.models || [] : []
+        fields.checkNote = fields.checkOk
+          ? fields.tf("models.f.testok", fields.checkModels.length)
+          : fields.t("models.f.testfail") + (response.error ? "\n" + response.error : "")
       }
     }
   }
-
-  // -- url and model --------------------------------------------------------
-  Repeater {
-    model: [
-      { key: "url", label: fields.t("models.f.url") },
-      { key: "model", label: fields.t("models.f.model") }
-    ]
-    RowLayout {
-      readonly property var f: modelData
-      readonly property string now: f.key === "url" ? fields.baseUrl : fields.model
-      Layout.fillWidth: true
-      spacing: Style.space(9)
-      OmText {
-        Layout.preferredWidth: Style.space(52)
-        text: f.label
-        color: Color.muted
-      }
-      TextField {
-        Layout.fillWidth: true
-        Layout.maximumWidth: Style.space(320)
-        text: now
-        placeholderText: f.key === "url" ? fields.defaultBaseUrl
-                                         : fields.defaultModel
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
-        onEditingFinished: {
-          if (text === now) return
-          fields.commandArgs(
-            ["omavoi", "config", "set",
-             fields.prefix + "." + (f.key === "url" ? "base_url" : "model"),
-             String(text)])
-        }
-      }
-    }
-  }
-
-  // -- the key --------------------------------------------------------------
   RowLayout {
     Layout.fillWidth: true
-    spacing: Style.space(9)
-    OmText {
-      Layout.preferredWidth: Style.space(52)
-      text: fields.t("models.f.key")
-      color: Color.muted
+    OmText { Layout.preferredWidth: Style.space(100); text: fields.t("models.f.url"); color: Color.muted }
+    TextField {
+      objectName: "endpointUrl"
+      Layout.fillWidth: true; Layout.maximumWidth: Style.space(430)
+      text: fields.draftUrl
+      enabled: !fields.busy && !checker.running
+      font.family: Style.font.family; font.pixelSize: Style.font.caption
+      onTextEdited: { fields.draftUrl = text; fields.checkNote = ""; fields.checkModels = [] }
+      onAccepted: fields.save()
     }
+  }
+  RowLayout {
+    Layout.fillWidth: true
+    OmText { Layout.preferredWidth: Style.space(100); text: fields.t("models.f.model"); color: Color.muted }
+    TextField {
+      objectName: "endpointModel"
+      Layout.fillWidth: true; Layout.maximumWidth: Style.space(430)
+      text: fields.draftModel
+      enabled: !fields.busy && !checker.running
+      font.family: Style.font.family; font.pixelSize: Style.font.caption
+      onTextEdited: fields.draftModel = text
+      onAccepted: fields.save()
+    }
+  }
+  RowLayout {
+    Layout.fillWidth: true
+    OmText { Layout.preferredWidth: Style.space(100); text: fields.t("models.f.key"); color: Color.muted }
     TextField {
       id: keyField
-      Layout.fillWidth: true
-      Layout.maximumWidth: Style.space(320)
+      objectName: "endpointKey"
+      Layout.fillWidth: true; Layout.maximumWidth: Style.space(430)
+      enabled: !fields.busy && !checker.running
       echoMode: TextInput.Password
       placeholderText: fields.t("models.f.key.place")
-      font.family: Style.font.family
-      font.pixelSize: Style.font.caption
-      onAccepted: if (text !== "") keyWriter.send(text)
-    }
-    Button {
-      enabled: keyField.text !== ""
-      bordered: true
-      fontSize: Style.font.caption
-      text: fields.t("models.f.key.save")
-      onClicked: keyWriter.send(keyField.text)
-    }
-    OmText {
-      Layout.fillWidth: true
-      elide: Text.ElideRight
-      // Which one is in use, not merely that one exists. The environment
-      // wins over the file, so a variable left over from a shell profile
-      // silently beats the key just saved here — and "a key is stored" was
-      // true in both cases.
-      text: fields.keyNote !== "" ? fields.keyNote
-            : fields.keySource === "env"
-              ? fields.tf("models.f.key.fromenv", fields.keyEnv)
-            : fields.keySource === "file" ? fields.t("models.f.key.fromfile")
-            : (fields.hasKey ? fields.t("models.f.key.have") : "")
-      wrapMode: Text.Wrap
-      color: fields.keyNote !== "" ? Color.accent
-             : fields.keySource === "env" ? tones.warn : Color.muted
+      font.family: Style.font.family; font.pixelSize: Style.font.caption
+      onAccepted: fields.save()
     }
   }
-
-  // -- does it answer? ------------------------------------------------------
-  RowLayout {
-    Layout.fillWidth: true
-    Layout.topMargin: Style.space(3)
-    spacing: Style.space(9)
+  OmText {
+    Layout.fillWidth: true; wrapMode: Text.Wrap
+    text: fields.keyNote || (fields.keySource === "env" ? fields.tf("models.f.key.fromenv", fields.keyEnv)
+          : fields.keySource === "file" ? fields.t("models.f.key.fromfile")
+          : fields.hasKey ? fields.t("models.f.key.have") : "")
+    visible: text !== ""
+    color: fields.keySource === "env" ? tones.warn : Color.muted
+  }
+  Flow {
+    Layout.fillWidth: true; spacing: Style.space(8)
     Button {
-      enabled: (fields.checkArgv || []).length > 0
-      bordered: true
-      fontSize: Style.font.caption
-      text: fields.t("models.f.test")
+      objectName: "saveEndpoint"
+      text: fields.activateOnSave ? fields.t("api.enable") : fields.t("models.f.key.save")
+      enabled: !fields.busy && !checker.running && fields.needsSave
+      bordered: true; fontSize: Style.font.caption
+      onClicked: fields.save()
+    }
+    Button {
+      visible: fields.dirty
+      text: fields.t("edit.revert"); bordered: true; fontSize: Style.font.caption
+      enabled: !fields.busy
+      onClicked: { fields.draftUrl = fields.baselineUrl; fields.draftModel = fields.baselineModel; keyField.text = ""; fields.checkNote = "" }
+    }
+    Button {
+      objectName: "testEndpoint"
+      text: fields.t("models.f.test"); bordered: true; fontSize: Style.font.caption
+      enabled: !fields.busy && !checker.running && !fields.needsSave && fields.checkArgv.length > 0
       onClicked: { fields.checkNote = fields.t("models.f.testing"); checker.running = true }
     }
-    OmText {
-      Layout.fillWidth: true
-      wrapMode: Text.Wrap
-      text: fields.checkNote
-      color: fields.checkOk ? tones.good : Color.urgent
-    }
   }
-
-  // Offered rather than typed: the check already returned the list, and a
-  // model id from memory is the commonest thing to get wrong.
-  Flow {
-    Layout.fillWidth: true
-    spacing: Style.space(6)
+  OmText {
+    Layout.fillWidth: true; wrapMode: Text.Wrap
+    text: fields.checkNote || fields.t("api.savenote")
+    color: fields.checkNote !== "" && !fields.checkOk && !checker.running ? Color.urgent : Color.muted
+  }
+  SearchableDropdown {
+    objectName: "endpointModels"
     visible: fields.checkModels.length > 0
-    Repeater {
-      model: fields.checkModels
-      OmChip {
-        readonly property string mid: modelData
-        label: mid
-        on: mid === fields.model
-        onClicked: fields.commandArgs(
-          ["omavoi", "config", "set", fields.prefix + ".model", String(mid)])
-      }
-    }
+    Layout.fillWidth: true; Layout.maximumWidth: Style.space(540)
+    showLabel: false
+    Binding on value { value: fields.draftModel }
+    options: fields.checkModels.map(function(id) { return { value: id, label: id } })
+    placeholderText: fields.t("api.search")
+    triggerLabel: fields.t("models.f.model")
+    emptyText: fields.t("modes.langempty")
+    onChanged: function(value) { fields.draftModel = value }
   }
 }

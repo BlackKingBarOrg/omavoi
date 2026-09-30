@@ -22,6 +22,8 @@ Item {
   // never fired, and the console kept claiming everything was fine.
   property var setupReport: ({ ready: false, done: 0, total: 5, steps: [] })
   property var takes: []
+  property int historyLimit: 40
+  property bool historyHasMore: false
   property int selected: 0
   // Which row the next history load should land on. -1 means the newest,
   // which is right for every load except the one after a delete: there, the
@@ -167,8 +169,7 @@ Item {
   // A command changes config on disk, so everything on screen is re-read
   // after it rather than guessed at.
   function applyArgs(argv) {
-    argRunner.command = argv
-    argRunner.running = true
+    applyBatch([argv])
   }
 
   function apply(cmd) {
@@ -180,8 +181,7 @@ Item {
       pulling = next
       slowPoll.restart()
     }
-    applier.command = ["bash", "-lc", cmd]
-    applier.running = true
+    applyArgs(["bash", "-lc", cmd])
   }
 
   onTabChanged: {
@@ -264,12 +264,13 @@ Item {
 
   Process {
     id: histProc
-    command: ["omavoi", "history", "-n", "40", "--json"]
+    command: ["omavoi", "history", "-n", String(root.historyLimit + 1), "--json"]
     stdout: StdioCollector {
       onStreamFinished: {
         try {
           var list = JSON.parse(text)
-          root.takes = list.reverse()
+          root.historyHasMore = list.length > root.historyLimit
+          root.takes = list.reverse().slice(0, root.historyLimit)
           root.selected = root.keepSelected < 0 ? 0
                           : Math.max(0, Math.min(root.keepSelected,
                                                  root.takes.length - 1))
@@ -279,46 +280,83 @@ Item {
     }
   }
 
-  // What the last command said when it refused. Both runners threw stderr
-  // away and returned to the screen, so a `config set` that was refused —
-  // a key no keyboard emits, a model not in the catalogue, a number out of
-  // range — changed nothing and said nothing, and the only sign was a label
-  // that did not move. Every one of those commands prints a reason.
+  // Serialize writes so rapid clicks and multi-field forms cannot lose a
+  // command. Each action reports back to the tab that submitted it.
+  property var jobs: []
+  property var currentJob: null
+  property int commandIndex: 0
+  property bool reloading: false
+  property bool restartRequired: false
+  property var feedback: ({})
+  property bool feedbackDetails: false
+  readonly property var currentFeedback: feedback[tab] || ({})
+  readonly property bool saving: currentJob !== null || jobs.length > 0
   property string lastError: ""
 
+  function report(owner, state, detail) {
+    var next = Object.assign({}, root.feedback)
+    next[owner] = { state: state, detail: detail || "" }
+    root.feedback = next
+    root.feedbackDetails = false
+  }
+  function applyBatch(commands) {
+    if (!commands || !commands.length) return
+    var needsRestart = commands.some(function(a) {
+      var line = a.join(" ")
+      return /omavoi config set (audio\.|speech\.)/.test(line)
+             || /omavoi model use /.test(line)
+    })
+    var restarts = commands.some(function(a) { return a.join(" ").indexOf("systemctl --user restart omavoid") >= 0 })
+    root.jobs = root.jobs.concat([{ owner: root.tab, commands: commands,
+                                  needsRestart: needsRestart, restarts: restarts }])
+    root.report(root.tab, "saving", "")
+    queueNext.restart()
+  }
+  function nextJob() {
+    if (root.currentJob || !root.jobs.length) return
+    root.currentJob = root.jobs[0]
+    root.jobs = root.jobs.slice(1)
+    root.report(root.currentJob.owner, "saving", "")
+    root.commandIndex = 0
+    root.reloading = false
+    mutation.command = root.currentJob.commands[0]
+    mutation.running = true
+  }
+  function finishJob(state, detail) {
+    root.report(root.currentJob.owner, state, detail)
+    root.currentJob = null
+    root.pulling = ({})
+    root.refresh()
+    queueNext.restart()
+  }
+  Timer { id: queueNext; interval: 0; onTriggered: root.nextJob() }
+  Timer { id: nextCommand; interval: root.reloading && root.currentJob && root.currentJob.restarts ? 1400 : 0; onTriggered: mutation.running = true }
   Process {
-    id: applier
-    stderr: StdioCollector { id: applierErr }
-    onExited: function (code, status) {
-      root.pulling = ({})
-      root.lastError = code === 0 ? "" : String(applierErr.text || "").trim()
-      root.settle()
+    id: mutation
+    stderr: StdioCollector { id: mutationErr }
+    onExited: function(code, status) {
+      var why = String(mutationErr.text || "").replace(/\x1b\[[0-9;]*m/g, "").trim()
+      if (root.reloading) {
+        root.finishJob(code === 0 ? "saved" : "pending", why)
+        return
+      }
+      if (code !== 0) {
+        root.lastError = why
+        root.finishJob("failed", why)
+        return
+      }
+      root.lastError = ""
+      if (root.currentJob.needsRestart) root.restartRequired = true
+      if (root.currentJob.restarts) root.restartRequired = false
+      root.commandIndex++
+      if (root.commandIndex < root.currentJob.commands.length) {
+        mutation.command = root.currentJob.commands[root.commandIndex]
+      } else {
+        root.reloading = true
+        mutation.command = ["omavoi", "reload"]
+      }
+      nextCommand.restart()
     }
-  }
-
-  // Anything carrying user text goes as argv, never through a shell: a prompt
-  // has spaces, quotes and newlines in it, and building a command line out of
-  // that is a quoting bug waiting to happen.
-  Process {
-    id: argRunner
-    stderr: StdioCollector { id: argRunnerErr }
-    onExited: function (code, status) {
-      root.lastError = code === 0 ? "" : String(argRunnerErr.text || "").trim()
-      root.settle()
-    }
-  }
-
-  // The daemon reads its config once at startup. Without this every edit made
-  // here writes to disk and changes nothing until the next restart — which is
-  // exactly how a mode with an LLM step can sit there running zero steps.
-  Process {
-    id: reloader
-    command: ["omavoi", "reload"]
-    onExited: function (code, status) { root.refresh() }
-  }
-
-  function settle() {
-    reloader.running = true
   }
 
   // A download says nothing until it finishes, so ask the catalogue what it
@@ -429,6 +467,7 @@ Item {
       // Escape, and an Enter that reached the console behind it would be
       // answering a question nobody could see.
       Keys.onPressed: function (event) {
+        if (root.tab === "modes" && modesView.handleKey(event)) { event.accepted = true; return }
         if (confirmClear.handleKey(event)) { event.accepted = true; return }
         if (event.key === Qt.Key_Escape) {
           if (!historyView.dismissMenu()) root.close()
@@ -579,6 +618,49 @@ Item {
             }
           }
 
+          ColumnLayout {
+            visible: root.ready && (root.currentFeedback.state !== undefined || root.restartRequired)
+            Layout.fillWidth: true
+            Layout.leftMargin: root.pad
+            Layout.rightMargin: root.pad
+            Layout.topMargin: Style.space(8)
+            Layout.bottomMargin: Style.space(8)
+            spacing: Style.space(5)
+            RowLayout {
+              Layout.fillWidth: true
+              OmText {
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                text: root.currentFeedback.state === "failed" ? strings.t("feedback.failed")
+                    : root.currentFeedback.state === "saving" ? strings.t("feedback.saving")
+                    : root.restartRequired ? strings.t("feedback.restart")
+                    : root.currentFeedback.state === "pending" ? strings.t("feedback.pending")
+                    : strings.t("feedback.saved")
+                color: root.currentFeedback.state === "failed" ? Color.urgent
+                     : root.restartRequired || root.currentFeedback.state === "pending" ? tones.warn : Color.foreground
+              }
+              Button {
+                visible: root.restartRequired || root.currentFeedback.state === "pending"
+                text: strings.t("set.restart")
+                bordered: true; fontSize: Style.font.caption
+                enabled: !root.saving && link.state !== "recording" && link.state !== "transcribing"
+                onClicked: root.applyArgs(["systemctl", "--user", "restart", "omavoid"])
+              }
+              Button {
+                visible: !!root.currentFeedback.detail
+                text: strings.t("feedback.details")
+                bordered: true; fontSize: Style.font.caption
+                onClicked: root.feedbackDetails = !root.feedbackDetails
+              }
+            }
+            OmText {
+              visible: root.feedbackDetails && !!root.currentFeedback.detail
+              Layout.fillWidth: true; wrapMode: Text.Wrap
+              text: root.currentFeedback.detail || ""
+              color: Color.muted
+            }
+          }
+
           // ---- first run ----------------------------------------------
           //
           // With no daemon there is nothing to interrogate, so the checklist
@@ -618,6 +700,9 @@ Item {
             Layout.fillHeight: true
             strings: strings
             takes: root.takes
+            hasMore: root.historyHasMore
+            loading: histProc.running
+            onLoadMore: { root.keepSelected = root.selected; root.historyLimit += 40; histProc.running = true }
             selected: root.selected
             pad: root.pad
             hotkey: link.hotkey
@@ -630,6 +715,7 @@ Item {
 
           // ---- modes / models / dictionary / settings -----------------
           ModesView {
+            id: modesView
             strings: strings
             visible: root.ready && root.tab === "modes"
             Layout.fillWidth: true
@@ -647,6 +733,8 @@ Item {
             Layout.fillHeight: true
             payload: root.modelsData
             pulling: root.pulling
+            saving: root.saving
+            onCommandBatch: function(commands) { root.applyBatch(commands) }
             onCommand: function (c) { root.apply(c) }
             onCommandArgs: function (a) { root.applyArgs(a) }
           }
@@ -673,8 +761,8 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             cfg: root.configData
+            recordingBusy: link.state === "recording" || link.state === "transcribing"
             setupReport: root.setupReport
-            lastError: root.lastError
             onCommand: function (c) { root.apply(c) }
             onCommandArgs: function (a) { root.applyArgs(a) }
             onClearHistory: confirmClear.opened = true
@@ -691,6 +779,7 @@ Item {
         // page and be clipped by it.
         ConfirmDialog {
           id: confirmClear
+          objectName: "clearHistoryDialog"
           anchors.fill: parent
           z: 100
           message: strings.t("set.clear.confirm")

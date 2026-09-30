@@ -19,6 +19,13 @@ Item {
   property bool rule: true
 
   signal toggled()
+  activeFocusOnTab: true
+  Accessible.role: Accessible.Button
+  Accessible.name: title
+  Accessible.onPressAction: toggled()
+  Keys.onSpacePressed: toggled()
+  Keys.onReturnPressed: toggled()
+  Keys.onEnterPressed: toggled()
 
   Layout.fillWidth: true
   implicitHeight: body.implicitHeight
@@ -48,7 +55,7 @@ Item {
         text: fold.title
         size: "subtitle"
         font.letterSpacing: 1
-        color: Color.foreground
+        color: fold.activeFocus ? Color.accent : Color.foreground
       }
       OmText {
         objectName: "foldSummary"
@@ -65,6 +72,6 @@ Item {
   MouseArea {
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
-    onClicked: fold.toggled()
+    onClicked: { fold.forceActiveFocus(); fold.toggled() }
   }
 }

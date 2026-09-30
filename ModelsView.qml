@@ -15,11 +15,15 @@ Item {
   property var pulling: ({})
   readonly property int pad: Style.space(20)
   property var strings: null
+  property bool saving: false
+  property bool speechDraft: false
+  property bool localModelsOpen: false
 
   signal command(string cmd)
   // Forwarded from EndpointFields, whose base_url and model id are typed
   // into a text box and must never be spliced into a shell string.
   signal commandArgs(var argv)
+  signal commandBatch(var commands)
 
   // `strings` is null for the instant between creation and the Loader setting
   // it, so the key stands in until then rather than a blank.
@@ -169,6 +173,7 @@ Item {
     id: pane
     anchors.fill: parent
     clip: true
+    ScrollBar.vertical: ScrollBar {}
     contentHeight: col.implicitHeight + root.pad * 2
 
     ColumnLayout {
@@ -217,7 +222,10 @@ Item {
             statusColor: up ? Color.accent : Color.urgent
             note: eng.note
             noteColor: eng.id === "api" ? tones.warn : Color.muted
-            onChosen: root.command("omavoi config set speech.backend " + eng.id)
+            onChosen: {
+              if (eng.id === "api") { root.speechDraft = true; root.speechApiOpen = true }
+              else { root.speechDraft = false; root.command("omavoi config set speech.backend " + eng.id) }
+            }
           }
         }
 
@@ -270,7 +278,7 @@ Item {
         // a Test button, above the local models of an engine that was not
         // the remote one — the one part of the page that did nothing.
         RowLayout {
-          visible: root.payload.backend === "api" && root.speechApi.provider !== undefined
+          visible: (root.payload.backend === "api" || root.speechDraft) && root.speechApi.provider !== undefined
           Layout.topMargin: Style.space(4)
           Layout.fillWidth: true
           spacing: Style.space(10)
@@ -283,7 +291,7 @@ Item {
             Layout.fillWidth: true
             elide: Text.ElideRight
             text: root.t("models.speechapi.sub")
-            color: Qt.darker(Color.muted, 1.1)
+            color: Color.muted
           }
           OmChip {
             label: root.editingSpeechApi ? root.t("models.f.close")
@@ -296,10 +304,14 @@ Item {
         EndpointFields {
           Layout.fillWidth: true
           Layout.leftMargin: Style.space(22)
-          visible: root.payload.backend === "api" && root.editingSpeechApi
+          visible: (root.payload.backend === "api" || root.speechDraft) && root.editingSpeechApi
                    && root.speechApi.provider !== undefined
           strings: root.strings
           prefix: "speech.api"
+          objectName: "speechEndpoint"
+          activateOnSave: root.payload.backend !== "api"
+          saving: root.saving
+          onCommandBatch: function(commands) { root.commandBatch(commands) }
           // Whatever ApiWhisperBackend will read it by. Hardcoding a name
           // here stored a key nothing would ever have found.
           secretName: String(root.speechApi.key_name || "speech-api")
@@ -317,6 +329,11 @@ Item {
           onCommandArgs: function (a) { root.commandArgs(a) }
         }
 
+        Button {
+          visible: root.speechDraft && root.payload.backend !== "api"
+          text: root.t("word.cancel"); bordered: true; fontSize: Style.font.caption
+          onClicked: root.speechDraft = false
+        }
         // -- the voice models --
         ColumnLayout {
           Layout.fillWidth: true
@@ -340,13 +357,18 @@ Item {
             color: root.payload.backend === "api" ? tones.warn : Color.muted
           }
         }
+        Button {
+          visible: root.payload.backend === "api"
+          text: root.t("models.localfiles"); bordered: true; fontSize: Style.font.caption
+          onClicked: root.localModelsOpen = !root.localModelsOpen
+        }
         Repeater {
-          model: root.speechModels
+          model: root.payload.backend === "api" && !root.localModelsOpen ? [] : root.speechModels
           ModelRow {
             m: modelData
             strings: root.strings
             pulling: root.pulling
-            useCommand: "omavoi model use " + modelData.key
+            useCommand: root.payload.backend === "api" ? "" : "omavoi model use " + modelData.key
             onCommand: function (c) { root.command(c) }
           }
         }
@@ -441,6 +463,8 @@ Item {
           visible: root.editingApi && root.entryNamed("api") !== null
           strings: root.strings
           prefix: "llm.api"
+          saving: root.saving
+          onCommandBatch: function(commands) { root.commandBatch(commands) }
           // The name the daemon actually reads the key by, not a guess.
           secretName: {
             var e = root.entryNamed("api")
@@ -565,7 +589,7 @@ Item {
               visible: root.daemonUp && root.llmResident.length === 0
               Layout.fillWidth: true
               text: root.t("models.llmnone")
-              color: Qt.darker(Color.muted, 1.1)
+              color: Color.muted
             }
             Repeater {
               model: root.daemonUp ? root.llmResident : []
@@ -675,7 +699,7 @@ Item {
                   }
                   OmText {
                     text: seg.label
-                    color: Qt.darker(Color.muted, 1.1)
+                    color: Color.muted
                   }
                 }
               }
@@ -685,7 +709,7 @@ Item {
               Layout.maximumWidth: Style.space(680)
               wrapMode: Text.Wrap
               text: root.t(root.unifiedMem ? "models.sharednote" : "models.vramnote")
-              color: Qt.darker(Color.muted, 1.1)
+              color: Color.muted
             }
           }
 
@@ -694,14 +718,14 @@ Item {
             Layout.maximumWidth: Style.space(680)
             wrapMode: Text.Wrap
             text: root.tf("models.outside", root.payload.root || root.t("models.ourstore"))
-            color: Qt.darker(Color.muted, 1.1)
+            color: Color.muted
           }
           OmText {
             Layout.fillWidth: true
             Layout.maximumWidth: Style.space(680)
             wrapMode: Text.Wrap
             text: root.t("models.endpointnote")
-            color: Qt.darker(Color.muted, 1.1)
+            color: Color.muted
           }
         }
       }

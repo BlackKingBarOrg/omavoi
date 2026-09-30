@@ -82,7 +82,7 @@ def main():
             (work/name).symlink_to(Path('/usr/share/omarchy/shell')/name)
         plugin = work/'Plugin'
         plugin.mkdir()
-        for source in repo.glob('*.qml'):
+        for source in [*repo.glob('*.qml'), *repo.glob('*.js')]:
             if source.name != 'Console.qml':
                 (plugin/source.name).symlink_to(source)
         console = (repo/'Console.qml').read_text()

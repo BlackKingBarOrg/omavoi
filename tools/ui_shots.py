@@ -132,8 +132,11 @@ Window {
     else if (name === "history:quiet") window.historyPick = 4
     else if (name === "history:ai") window.historyPick = 0
     else if (name === "history:details") { window.historyPick = 0; item.detailsOpen = true }
-    else if (name === "modes:advanced" || name === "settings:advanced" || name === "models:advanced") item.advancedOpen = true
-    else if (name === "models:api") item.apiOpen = true
+    else if (name === "modes:advanced" || name === "settings:advanced" || name === "models:advanced") {
+      item.advancedOpen = true
+      if (name === "settings:advanced") item.contentY = Qt.binding(function() { return Math.max(0, item.contentHeight - item.height) })
+    }
+    else if (name === "models:api") { item.speechDraft = true; item.speechApiOpen = true }
     else if (name === "dictionary:edit" || name === "dictionary:editmore") {
       var e = (item.payload.entries || [])
       var pick = null

@@ -1198,6 +1198,10 @@ for _code in ("de", "fr", "es", "ja", "vi"):
     EXTRA[_code] = __import__(_code).PACK
 
 
+from usability import apply
+apply(SECTIONS, EXTRA)
+
+
 def q(s):
     return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"' if False else '"' + s.replace('"', '\\"') + '"'
 
@@ -1244,7 +1248,7 @@ _ROOT = os.path.join(_HERE, "..", "..")
 # The routes `omavoi inject --method` actually takes are "", wtype and
 # clipboard; xdotool is a --paste-via choice, not a route, and the chip for it
 # was a string nothing could ever reach.
-DYNAMIC = {f"modes.inject.{v}" for v in ("auto", "clipboard")} | {
+DYNAMIC = {f"mode.name.{v}" for v in ("default", "code", "prose", "terminal")} | {f"modes.inject.{v}" for v in ("auto", "clipboard")} | {
     f"state.{v}" for v in ("idle", "recording", "transcribing", "stopped")} | {
     f"hud.stage.{v}" for v in ("decoding", "llm", "injecting")}
 # Conservative on purpose. An earlier version of this check looked only for
@@ -1255,7 +1259,7 @@ DYNAMIC = {f"modes.inject.{v}" for v in ("auto", "clipboard")} | {
 # any of these files, in any form.
 source = ""
 for name in sorted(os.listdir(_ROOT)):
-    if name.endswith(".qml") and name != "Strings.qml":
+    if name.endswith((".qml", ".js")) and name != "Strings.qml":
         source += open(os.path.join(_ROOT, name), encoding="utf-8").read()
 asked = {k for k in keys if '"%s"' % k in source}
 # Only a literal immediately after t( can be checked in the other direction:

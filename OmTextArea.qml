@@ -5,9 +5,8 @@ import qs.Commons
 // A themed multi-line field. qs.Ui's TextField is single-line, and a decoder
 // hint or an LLM prompt is several sentences with deliberate line breaks.
 //
-// Edits commit when the field loses focus rather than on every keystroke:
-// each commit rewrites config.toml and makes the daemon re-read it, and doing
-// that per character would be absurd.
+// Save is explicit. Drafts live in the owning view so switching modes or
+// refreshing a repeater never discards text that has not been saved.
 Rectangle {
   id: root
   // Handed down like every other view's, because this control has three
@@ -15,6 +14,7 @@ Rectangle {
   // Modes tab.
   property var strings: null
   function t(k) { return root.strings ? root.strings.t(k) : k }
+  property alias editor: area
   property string text: ""
   property string placeholder: ""
   property int minLines: 2
@@ -23,11 +23,27 @@ Rectangle {
   // prompt on screen — editable, and about to be saved to the wrong place.
   property string key: ""
   signal committed(string value)
+  property var drafts: ({})
+  property bool loading: false
+  property string loadedKey: ""
+  signal draftEdited(string draftKey, var value)
+  function syncDraft() {
+    root.loading = true
+    var draft = root.drafts[root.key]
+    var value = draft !== undefined ? draft : root.text
+    if (area.text !== value) area.text = value
+    root.loadedKey = root.key
+    root.loading = false
+    if (draft !== undefined && draft === root.text) root.draftEdited(root.key, undefined)
+  }
+  Timer { id: syncSoon; interval: 0; onTriggered: root.syncDraft() }
+  Component.onCompleted: syncSoon.restart()
 
   readonly property bool dirty: area.text !== root.text
 
-  onKeyChanged: area.text = root.text
-  onTextChanged: if (!root.dirty || !area.activeFocus) area.text = root.text
+  onKeyChanged: syncSoon.restart()
+  onTextChanged: syncSoon.restart()
+  onDraftsChanged: syncSoon.restart()
 
   implicitHeight: Math.max(area.implicitHeight + Style.space(10),
                            Style.font.body * 1.7 * minLines + Style.space(10))
@@ -50,7 +66,10 @@ Rectangle {
     anchors.top: parent.top
     anchors.margins: Style.space(5)
     height: parent.height - Style.space(10) - (root.dirty ? Style.space(26) : 0)
-    text: root.text
+    onTextChanged: {
+      if (!root.loading && root.loadedKey === root.key)
+        root.draftEdited(root.key, text === root.text ? undefined : text)
+    }
     placeholderText: root.placeholder
     wrapMode: TextArea.Wrap
     selectByMouse: true
@@ -87,7 +106,7 @@ Rectangle {
     OmChip {
       label: root.t("edit.revert")
       on: false
-      onClicked: area.text = root.text
+      onClicked: { root.draftEdited(root.key, undefined); root.syncDraft() }
     }
     OmChip {
       // The shortcut is not translated: ⌃⏎ is the key, not a word.

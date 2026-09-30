@@ -1,4 +1,6 @@
 import QtQuick
+import QtQuick.Controls as Controls
+import "UiLabels.js" as Labels
 import QtQuick.Layouts
 import qs.Commons
 import qs.Ui
@@ -23,6 +25,9 @@ Item {
 
   property var strings: null
   property var takes: []
+  property bool hasMore: false
+  property bool loading: false
+  signal loadMore()
   // Bound from the console and never written here: assigning to a bound
   // property removes the binding, so one click would have cut this view off
   // from every later change to the console's own index.
@@ -187,7 +192,9 @@ Item {
       ListView {
         id: list
         anchors.fill: parent
+        anchors.bottomMargin: historyFooter.height
         clip: true
+        Controls.ScrollBar.vertical: Controls.ScrollBar {}
         model: view.takes
         delegate: Rectangle {
           width: list.width
@@ -218,7 +225,7 @@ Item {
               OmText {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                text: (modelData.mode && modelData.mode.name) || "?"
+                text: Labels.mode((modelData.mode && modelData.mode.name) || "?", view.strings)
                 color: Qt.darker(Color.muted, 1.15)
               }
               OmText {
@@ -261,6 +268,21 @@ Item {
         }
       }
 
+      RowLayout {
+        id: historyFooter
+        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+        anchors.margins: Style.space(10)
+        height: view.takes.length > 0 ? implicitHeight + Style.space(10) : 0
+        visible: view.takes.length > 0
+        OmText { Layout.fillWidth: true; text: view.tf("hist.showing", view.takes.length); color: Color.muted }
+        Button {
+          visible: view.hasMore
+          text: view.t("hist.more"); bordered: true; fontSize: Style.font.caption
+          enabled: !view.loading
+          onClicked: view.loadMore()
+        }
+      }
+
       Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -288,6 +310,7 @@ Item {
       Layout.fillWidth: true
       Layout.fillHeight: true
       clip: true
+      Controls.ScrollBar.vertical: Controls.ScrollBar {}
       contentHeight: detail.implicitHeight + view.pad * 2
       visible: view.take !== null
 
@@ -315,7 +338,7 @@ Item {
             wrapMode: Text.Wrap
             text: {
               if (!view.take) return ""
-              var parts = [(view.take.mode && view.take.mode.name) || "?",
+              var parts = [Labels.mode((view.take.mode && view.take.mode.name) || "?", view.strings),
                            ((view.take.audio && view.take.audio.seconds) || 0).toFixed(1) + "s"]
               var w = view.when(view.take.ts)
               if (w !== "") parts.push(w)
@@ -443,7 +466,7 @@ Item {
         RowLayout {
           // Not there at all for a dropped take, which has neither: an empty
           // row still costs the column's spacing on both sides.
-          visible: !!(view.take && (view.take.text || view.take.wav))
+          visible: !!view.take
           spacing: Style.space(8)
           // Copy used to run `omavoi last --raw`, which is two takes away
           // from this one: the last take rather than the selected one, and
@@ -463,6 +486,17 @@ Item {
             visible: !!(view.take && view.take.wav)
             onClicked: view.runArgs(["pw-play", String(view.take.wav)])
           }
+          Button {
+            text: "⋯"; bordered: true; fontSize: Style.font.caption
+            Accessible.name: view.t("word.more")
+            onClicked: view.openMenu(view.take, view.selected, mapToItem(view, 0, height))
+          }
+        }
+
+        OmText {
+          visible: !!view.take && !view.take.wav
+          Layout.fillWidth: true; wrapMode: Text.Wrap
+          text: view.t("hist.noaudio"); color: Color.muted
         }
 
         // ---- the numbers ------------------------------------------------

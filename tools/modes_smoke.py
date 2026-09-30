@@ -200,6 +200,26 @@ Window {
             break
           case 16:
             check(!modes.byWindow, "Picking here was not saved")
+            find(modes, "rewritePrompt:default#0").editor.text = "Unsaved rewrite draft"
+            break
+          case 17:
+            check(modes.hasDrafts("default"), "typed instructions were not retained as a draft")
+            modes.selected = "code"
+            break
+          case 18:
+            modes.selected = "default"
+            break
+          case 19:
+            check(find(modes, "rewritePrompt:default#0").editor.text === "Unsaved rewrite draft", "mode switch lost draft")
+            modes.commandArgs(["omavoi", "mode", "set", "default", "script", "zh-Hant"])
+            break
+          case 20:
+            check(find(modes, "rewritePrompt:default#0").editor.text === "Unsaved rewrite draft", "config refresh lost draft")
+            find(modes, "rewritePrompt:default#0").commit()
+            break
+          case 21:
+            check(modes.mode.steps[0].prompt === "Unsaved rewrite draft", "explicit Save did not commit the draft")
+            if (modes.hasDrafts("default")) return
             console.log("MODES_SMOKE_OK")
             Qt.quit()
         }

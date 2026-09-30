@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Controls
+import Quickshell.Io
+import "UiLabels.js" as Labels
 import QtQuick.Layouts
 import qs.Commons
 import qs.Ui
@@ -104,6 +106,35 @@ Item {
   // "+ add a rewrite step" has asked which LLM. A pick, Cancel or another
   // mode closes the question.
   property bool adding: false
+  property var promptDrafts: ({})
+  function rememberDraft(key, value) {
+    var next = Object.assign({}, root.promptDrafts)
+    if (value === undefined) delete next[key]
+    else next[key] = value
+    root.promptDrafts = next
+  }
+  function hasDrafts(name) {
+    return Object.keys(root.promptDrafts).some(function(k) { return JSON.parse(k)[0] === name })
+  }
+  property var apps: []
+  property string removeMode: ""
+  Process {
+    id: appReader
+    command: ["hyprctl", "clients", "-j"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try {
+          var seen = ({})
+          root.apps = JSON.parse(text).filter(function(w) {
+            if (!w.class || seen[w.class]) return false
+            seen[w.class] = true; return true
+          }).map(function(w) { return { value: w.class, label: w.class } })
+        } catch(e) { root.apps = [] }
+      }
+    }
+  }
+  onVisibleChanged: if (visible) appReader.running = true
+  Component.onCompleted: appReader.running = true
   onCurrentChanged: root.adding = false
 
   signal command(string cmd)
@@ -117,15 +148,8 @@ Item {
   function tf(k, a) { return root.strings ? root.strings.tf(k, a) : k }
 
   readonly property var modes: payload.modes || []
-  // Window matching is hidden for now. It wants tuning per application before
-  // it earns its keep, and until then every surface it owns is a control that
-  // is configured and inert — worse than no control, because it invites you
-  // to set it and then quietly does nothing with it.
-  //
-  // Nothing behind the UI is touched: `mode.match` still lives in the config,
-  // `omavoi mode match/unmatch/auto` still work, and the daemon still follows
-  // the focused window if it was switched on. This is the whole switch.
-  readonly property bool showWindowMatch: false
+  // Application matching is editable when automatic selection is enabled.
+  readonly property bool showWindowMatch: true
 
   readonly property var switching: payload.switching || ({ by_window: false, mode: "default" })
   readonly property bool byWindow: switching.by_window === true
@@ -249,18 +273,6 @@ Item {
 
         // How the mode gets picked at all, and the switch for it.
         //
-        // The matching controls are hidden until they are finished, and the
-        // switch was one of them -- so a machine left following the window
-        // had a mode list whose clicks did nothing, a line of orange text
-        // saying so, and no way back except `omavoi mode auto off` at a
-        // terminal. The switch is the one part of that UI that works without
-        // the rest: the match lists are already in the config whether or not
-        // they can be edited here.
-        //
-        // Above the list, because "which of these two is deciding" is the
-        // question a mode list cannot answer on its own. It sat above the
-        // detail pane first, where it read as a setting of whichever mode was
-        // open, and as a chip whose label was its own state.
         ColumnLayout {
           Layout.fillWidth: true
           Layout.margins: Style.space(11)
@@ -324,7 +336,7 @@ Item {
               RowLayout {
                 Layout.fillWidth: true
                 OmText {
-                  text: m.name
+                  text: Labels.mode(m.name, root.strings)
                   size: "body"
                   color: Color.foreground
                 }
@@ -342,11 +354,11 @@ Item {
                 color: (m.steps || []).length ? Color.accent : Color.muted
               }
               OmText {
-                visible: root.showWindowMatch
+                visible: root.showWindowMatch && root.byWindow
                 Layout.fillWidth: true
                 elide: Text.ElideRight
                 text: (m.match || []).join(", ") || root.t("modes.fallback")
-                color: Qt.darker(Color.muted, 1.1)
+                color: Color.muted
               }
               // A mode that cannot load its model is not a mode you can be in.
               OmText {
@@ -390,14 +402,14 @@ Item {
           TextField {
             id: newName
             Layout.fillWidth: true
-            placeholderText: root.t("modes.newname")
+            placeholderText: root.tf("modes.newname", Labels.mode(root.current, root.strings))
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             onAccepted: makeMode.click()
           }
           Button {
             id: makeMode
-            text: "+"
+            text: root.t("modes.copy")
             bordered: true
             function click() {
               var name = newName.text.trim()
@@ -433,6 +445,7 @@ Item {
       Layout.fillWidth: true
       Layout.fillHeight: true
       clip: true
+      ScrollBar.vertical: ScrollBar {}
       contentHeight: detail.implicitHeight + root.pad * 2
       visible: root.mode !== null
 
@@ -448,7 +461,7 @@ Item {
           Layout.fillWidth: true
           spacing: Style.space(10)
           OmText {
-            text: root.current
+            text: Labels.mode(root.current, root.strings)
             size: "heading"
             color: Color.foreground
           }
@@ -470,14 +483,21 @@ Item {
             text: root.t("modes.delete")
             foreground: Color.urgent
             fontSize: Style.font.caption
-            onClicked: root.commandArgs(["omavoi", "mode", "rm", root.current])
+            onClicked: root.removeMode = root.current
           }
         }
 
-        // What window matching would say about the mode, once it is shown.
+        OmText {
+          Layout.fillWidth: true; wrapMode: Text.Wrap
+          visible: Object.keys(root.promptDrafts).length > 0
+          text: root.t("edit.draftkept")
+          color: tones.warn
+        }
+
+        // Applications assigned to this mode.
         // The switch itself lives above the list.
         Rectangle {
-          visible: root.showWindowMatch
+          visible: root.showWindowMatch && root.byWindow
           Layout.fillWidth: true
           implicitHeight: pick.implicitHeight + Style.space(18)
           color: root.byWindow
@@ -516,7 +536,7 @@ Item {
 
         // -- triggers --
         ColumnLayout {
-          visible: root.showWindowMatch
+          visible: root.showWindowMatch && root.byWindow && root.current !== "default"
           Layout.fillWidth: true
           spacing: Style.space(6)
           opacity: root.byWindow ? 1 : 0.5
@@ -530,8 +550,20 @@ Item {
             OmText {
               visible: !root.byWindow
               text: root.t("modes.notinuse")
-              color: Qt.darker(Color.muted, 1.1)
+              color: Color.muted
             }
+          }
+          RowLayout {
+            Layout.fillWidth: true
+            Dropdown {
+              objectName: "applicationPicker"
+              Layout.preferredWidth: Style.space(280)
+              showLabel: false
+              value: ""
+              options: [{ value: "", label: root.t("modes.pickapp") }].concat(root.apps)
+              onChanged: function(v) { if (v !== "") root.commandArgs(["omavoi", "mode", "match", root.current, v]); value = "" }
+            }
+            Button { text: root.t("mic.refresh"); bordered: true; fontSize: Style.font.caption; onClicked: appReader.running = true }
           }
           Flow {
             Layout.fillWidth: true
@@ -577,7 +609,7 @@ Item {
               Layout.fillWidth: true
               wrapMode: Text.Wrap
               text: root.t("modes.matchhint")
-              color: Qt.darker(Color.muted, 1.1)
+              color: Color.muted
             }
           }
         }
@@ -636,7 +668,7 @@ Item {
             wrapMode: Text.Wrap
             text: !inputLanguagePicker.enabled ? root.t("modes.langupgrade")
                   : root.language !== "auto" ? root.t("modes.langfixed") : ""
-            color: Qt.darker(Color.muted, 1.1)
+            color: Color.muted
           }
           RowLayout {
             objectName: "scriptRow"
@@ -687,22 +719,20 @@ Item {
                 { k: "fillers", label: root.t("modes.r.fillers") },
                 { k: "cjk_spacing", label: root.t("modes.r.cjk") }
               ]
-              OmChip {
+              OmToggle {
                 readonly property var rule: modelData
                 label: rule.label
                 on: root.rules[rule.k] !== false
                 onClicked: root.commandArgs(
-                  ["omavoi", "config", "set",
-                   "modes." + root.current + ".rules." + rule.k,
+                  ["omavoi", "mode", "set", root.current, "rules." + rule.k,
                    on ? "false" : "true"])
               }
             }
-            OmChip {
+            OmToggle {
               label: root.t("modes.droppunct")
               on: root.rules.punctuation === "strip"
               onClicked: root.commandArgs(
-                ["omavoi", "config", "set",
-                 "modes." + root.current + ".rules.punctuation",
+                ["omavoi", "mode", "set", root.current, "rules.punctuation",
                  on ? "keep" : "strip"])
             }
           }
@@ -756,6 +786,8 @@ Item {
                   Item { Layout.fillWidth: true }
                   Button {
                     text: root.t("modes.remove")
+                    enabled: !root.hasDrafts(root.current)
+                    tooltipText: root.hasDrafts(root.current) ? root.t("edit.savefirst") : ""
                     foreground: Color.urgent
                     fontSize: Style.font.caption
                     onClicked: root.commandArgs(
@@ -803,11 +835,15 @@ Item {
                   Item { Layout.fillWidth: true }
                 }
 
+                OmText { text: root.t("modes.instructions"); color: Color.muted }
                 OmTextArea {
+                  objectName: "rewritePrompt:" + root.current + "#" + idx
                   Layout.fillWidth: true
                   strings: root.strings
                   minLines: 3
-                  key: root.current + "#" + idx
+                  key: JSON.stringify([root.current, "rewrite", idx])
+                  drafts: root.promptDrafts
+                  onDraftEdited: function(key, value) { root.rememberDraft(key, value) }
                   text: step.prompt || ""
                   placeholder: root.t("modes.stepph")
                   onCommitted: function (v) {
@@ -955,7 +991,7 @@ Item {
                         ? root.t("modes.speechreload")
                       : root.speechChoices.length === 1 ? root.t("modes.speechonly1")
                       : ""
-                color: Qt.darker(Color.muted, 1.1)
+                color: Color.muted
               }
             }
 
@@ -978,10 +1014,13 @@ Item {
                   color: Color.muted
                 }
                 OmTextArea {
+                  objectName: "recognitionPrompt"
                   Layout.fillWidth: true
                   strings: root.strings
                   minLines: 2
-                  key: root.current
+                  key: JSON.stringify([root.current, "recognition"])
+                  drafts: root.promptDrafts
+                  onDraftEdited: function(key, value) { root.rememberDraft(key, value) }
                   text: (root.mode && root.mode.prompt) || ""
                   placeholder: root.t("modes.promptph")
                   onCommitted: function (v) {
@@ -996,7 +1035,7 @@ Item {
                 wrapMode: Text.Wrap
                 text: root.mode && root.mode.prompt_inherited === true
                       ? root.t("modes.promptinherited") : root.t("modes.prompthint")
-                color: Qt.darker(Color.muted, 1.1)
+                color: Color.muted
               }
             }
 
@@ -1019,15 +1058,14 @@ Item {
                 // switching it off never kept one: a segment measured as
                 // silence is dropped whatever it says. What the flag decides
                 // is whether "好的。好的。好的。" collapses to one.
-                OmChip {
+                OmToggle {
                   label: root.t("modes.r.hallucinations")
                   on: root.rules.hallucinations !== false
                   onClicked: root.commandArgs(
-                    ["omavoi", "config", "set",
-                     "modes." + root.current + ".rules.hallucinations",
+                    ["omavoi", "mode", "set", root.current, "rules.hallucinations",
                      on ? "false" : "true"])
                 }
-                OmChip {
+                OmToggle {
                   visible: root.payload.vocabulary_supported === true
                   label: root.t("word.use") + (root.dictCorrections !== root.dictNames
                                                ? " · " + root.t("word.partial") : "")
@@ -1040,11 +1078,11 @@ Item {
                     { k: "dictionary", label: root.t("modes.r.dictionary") },
                     { k: "names", label: root.t("modes.r.names") }
                   ]
-                  OmChip {
+                  OmToggle {
                     readonly property var rule: modelData
                     label: rule.label
                     on: root.rules[rule.k] !== false
-                    onClicked: root.commandArgs(["omavoi", "config", "set", "modes." + root.current + ".rules." + rule.k, on ? "false" : "true"])
+                    onClicked: root.commandArgs(["omavoi", "mode", "set", root.current, "rules." + rule.k, on ? "false" : "true"])
                   }
                 }
               }
@@ -1093,7 +1131,7 @@ Item {
                       : root.inject === "wtype" ? root.t("modes.inject.hint.type")
                       : root.inject === "clipboard" ? root.t("modes.inject.hint.paste")
                       : ""
-                color: Qt.darker(Color.muted, 1.1)
+                color: Color.muted
               }
             }
           }
@@ -1101,4 +1139,21 @@ Item {
       }
     }
   }
+  function handleKey(event) { return modeConfirmation.handleKey(event) }
+  Keys.onPressed: function(event) { if (root.handleKey(event)) event.accepted = true }
+  ConfirmDialog {
+    id: modeConfirmation
+    anchors.fill: parent
+    z: 100
+    opened: root.removeMode !== ""
+    message: root.tf("modes.deleteconfirm", Labels.mode(root.removeMode, root.strings))
+    confirmText: root.t("modes.delete")
+    cancelText: root.t("word.cancel")
+    onCanceled: root.removeMode = ""
+    onConfirmed: {
+      root.commandArgs(["omavoi", "mode", "rm", root.removeMode])
+      root.removeMode = ""
+    }
+  }
+
 }

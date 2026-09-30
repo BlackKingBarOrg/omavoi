@@ -1,4 +1,5 @@
 import QtQuick
+import "UiLabels.js" as Labels
 import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import Quickshell.Io
@@ -24,6 +25,7 @@ Item {
   property bool discardPrompt: false
   property var original: ({})
   property var selectedModes: []
+  property bool allModes: true
   property string draftBaseline: ""
   property string note: ""
   property string error: ""
@@ -65,6 +67,7 @@ Item {
     caseOn = original.normalize_case !== false
     soundOn = !!(original.phonetic && original.phonetic.enabled)
     selectedModes = (original.modes || []).slice()
+    allModes = selectedModes.length === 0
     aliases.clear()
     ;(original.aliases || []).forEach(function(a) { aliases.append({value: a}) })
     corrections = aliases.count > 0
@@ -85,7 +88,7 @@ Item {
       enabled: original.enabled !== false, recognition_hint: hintOn,
       normalize_case: caseOn,
       phonetic: {enabled: soundOn, method: original.phonetic ? original.phonetic.method : "auto"},
-      modes: selectedModes.slice() }
+      modes: allModes ? [] : selectedModes.slice() }
   }
   function closeEditor() {
     if (busy) return
@@ -101,7 +104,10 @@ Item {
     writer.stdinEnabled = true
     writer.running = true
   }
-  function save() { if (spelling.text.trim() && !busy) send("save", {entry: draft()}) }
+  function save() {
+    if (!allModes && !selectedModes.length) { error = t("word.selectmode"); return }
+    if (spelling.text.trim() && !busy) send("save", {entry: draft()})
+  }
   function toggleEntry(entry) {
     var next = JSON.parse(JSON.stringify(entry))
     next.enabled = !next.enabled
@@ -377,15 +383,15 @@ Item {
   //
   // The three options and the modes were QtQuick.Controls check boxes in the
   // platform's style: grey squares, and labels in a proportional font among
-  // monospaced ones. They are chips, as every on/off choice in this console
-  // is, lit when the thing happens.
+  // monospaced ones. Use the same toggles as the settings view.
   Rectangle {
     anchors.fill: parent
     visible: root.editing
     color: Color.popups.background
     Flickable {
       id: editorScroll
-      anchors.fill: parent; anchors.margins: root.pad
+      anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+      anchors.bottom: editorFooter.top; anchors.margins: root.pad
       clip: true; contentHeight: editorColumn.implicitHeight
       Controls.ScrollBar.vertical: Controls.ScrollBar {}
       ColumnLayout {
@@ -404,7 +410,7 @@ Item {
           onAccepted: root.save()
           onTextEdited: root.previewText = ""
         }
-        OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.spaces"); color: Qt.darker(Color.muted, 1.1) }
+        OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.spaces"); color: Color.muted }
 
         // -- misspellings --
         Button {
@@ -439,7 +445,7 @@ Item {
           Button { text: "+ " + root.t("word.another"); bordered: true; fontSize: Style.font.caption; focusable: true; onClicked: aliases.append({value: ""}) }
           OmText {
             Layout.fillWidth: true; wrapMode: Text.Wrap
-            text: root.tf("word.replacehelp", spelling.text || "…"); color: Qt.darker(Color.muted, 1.1)
+            text: root.tf("word.replacehelp", spelling.text || "…"); color: Color.muted
           }
         }
 
@@ -455,37 +461,41 @@ Item {
           Layout.fillWidth: true
           Layout.leftMargin: Style.space(18)
           spacing: Style.space(6)
-          OmChip {
+          OmToggle {
             objectName: "dictionaryHint"
             label: root.t("word.hint"); on: root.hintOn
             onClicked: root.hintOn = !root.hintOn
           }
-          OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.hinthelp"); color: Qt.darker(Color.muted, 1.1) }
-          OmChip {
+          OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.hinthelp"); color: Color.muted }
+          OmToggle {
             Layout.topMargin: Style.space(4)
             visible: spelling.text.toUpperCase() !== spelling.text.toLowerCase()
             label: root.t("word.case"); on: root.caseOn
             onClicked: { root.caseOn = !root.caseOn; root.previewText = "" }
           }
-          OmChip {
+          OmToggle {
             Layout.topMargin: Style.space(4)
             label: root.t("word.sound"); on: root.soundOn
             onClicked: { root.soundOn = !root.soundOn; root.previewText = "" }
           }
-          OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.soundhelp"); color: Qt.darker(Color.muted, 1.1) }
+          OmText { Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.soundhelp"); color: Color.muted }
 
           OmText { Layout.topMargin: Style.space(8); text: root.t("word.scope"); size: "body"; color: Color.muted }
+          ButtonGroup {
+            objectName: "dictionaryScope"
+            options: [{value: "all", label: root.t("word.allmodes")}, {value: "selected", label: root.t("word.selectedmodes")}]
+            value: root.allModes ? "all" : "selected"
+            fontSize: Style.font.caption
+            onChanged: function(v) { root.allModes = v === "all"; root.previewText = "" }
+          }
           Flow {
+            visible: !root.allModes
             Layout.fillWidth: true; spacing: Style.space(6)
-            OmChip {
-              label: root.t("word.allmodes"); on: root.selectedModes.length === 0
-              onClicked: root.selectedModes = on ? [root.payload.active_mode || "default"] : []
-            }
             Repeater {
               model: root.payload.modes || []
-              OmChip {
+              OmToggle {
                 required property string modelData
-                label: modelData
+                label: Labels.mode(modelData, root.strings)
                 on: root.selectedModes.indexOf(modelData) >= 0
                 onClicked: {
                   var next = root.selectedModes.filter(function(m) { return m !== modelData })
@@ -495,8 +505,16 @@ Item {
               }
             }
           }
-
-          OmText { Layout.topMargin: Style.space(8); text: root.t("word.previewhelp"); Layout.fillWidth: true; wrapMode: Text.Wrap; color: Qt.darker(Color.muted, 1.1) }
+          OmText {
+            visible: !root.allModes && !root.selectedModes.length
+            text: root.t("word.selectmode"); color: tones.warn
+          }
+        }
+        // Preview is part of the ordinary correction workflow, outside More.
+        ColumnLayout {
+          Layout.fillWidth: true
+          spacing: Style.space(6)
+          OmText { Layout.topMargin: Style.space(8); text: root.t("word.previewhelp"); Layout.fillWidth: true; wrapMode: Text.Wrap; color: Color.muted }
           Controls.TextArea {
             id: sample
             onTextChanged: root.previewText = ""
@@ -515,10 +533,11 @@ Item {
           }
           Button {
             text: root.t("word.preview"); bordered: true; fontSize: Style.font.caption; focusable: true
-            enabled: !root.busy && sample.text.trim() !== "" && spelling.text.trim() !== ""
+            enabled: !root.busy && (root.allModes || root.selectedModes.length > 0) && sample.text.trim() !== "" && spelling.text.trim() !== ""
             onClicked: root.send("preview", {entry: root.draft(), text: sample.text,
-              mode: root.selectedModes.length ? root.selectedModes[0] : root.payload.active_mode})
+              mode: !root.allModes && root.selectedModes.length ? root.selectedModes[0] : root.payload.active_mode})
           }
+          OmText { visible: root.previewText !== ""; text: root.t("word.previewresult"); color: Color.muted }
           OmText { visible: root.previewText !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.previewText; size: "body"; color: Color.foreground }
         }
         OmText {
@@ -527,23 +546,30 @@ Item {
           text: root.tf("word.casewarning", spelling.text.toLowerCase() + " → " + spelling.text)
           color: tones.warn
         }
-        OmText { visible: root.error !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.error; color: Color.urgent }
-        OmText { visible: root.error !== "" && root.detail !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.detail; color: Color.muted }
-        Button { visible: root.error !== ""; text: root.t("word.refresh"); bordered: true; fontSize: Style.font.caption; focusable: true; enabled: !root.busy; onClicked: root.refresh() }
-        RowLayout {
-          Layout.topMargin: Style.space(8)
-          visible: !root.discardPrompt
-          spacing: Style.space(8)
-          Button { objectName: "dictionarySave"; text: root.t("word.save"); bordered: true; fontSize: Style.font.caption; focusable: true; enabled: !root.busy && spelling.text.trim() !== ""; onClicked: root.save() }
-          Button { text: root.t("word.cancel"); fontSize: Style.font.caption; focusable: true; enabled: !root.busy; onClicked: root.closeEditor() }
-        }
-        OmText { visible: root.discardPrompt; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.discardhelp"); size: "body"; color: Color.foreground }
-        RowLayout {
-          visible: root.discardPrompt
-          spacing: Style.space(8)
-          Button { text: root.t("word.keepediting"); bordered: true; fontSize: Style.font.caption; focusable: true; onClicked: root.discardPrompt = false }
-          Button { text: root.t("word.discard"); foreground: Color.urgent; fontSize: Style.font.caption; focusable: true; onClicked: { root.editing = false; root.discardPrompt = false } }
-        }
+
+      }
+    }
+    ColumnLayout {
+      id: editorFooter
+      anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+      anchors.margins: root.pad
+      spacing: Style.space(8)
+      OmText { visible: root.error !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.error; color: Color.urgent }
+      OmText { visible: root.error !== "" && root.detail !== ""; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.detail; color: Color.muted }
+      Button { visible: root.error !== ""; text: root.t("word.refresh"); bordered: true; fontSize: Style.font.caption; focusable: true; enabled: !root.busy; onClicked: root.refresh() }
+      RowLayout {
+        Layout.topMargin: Style.space(8)
+        visible: !root.discardPrompt
+        spacing: Style.space(8)
+        Button { objectName: "dictionarySave"; text: root.t("word.save"); bordered: true; fontSize: Style.font.caption; focusable: true; enabled: !root.busy && spelling.text.trim() !== ""; onClicked: root.save() }
+        Button { text: root.t("word.cancel"); fontSize: Style.font.caption; focusable: true; enabled: !root.busy; onClicked: root.closeEditor() }
+      }
+      OmText { visible: root.discardPrompt; Layout.fillWidth: true; wrapMode: Text.Wrap; text: root.t("word.discardhelp"); size: "body"; color: Color.foreground }
+      RowLayout {
+        visible: root.discardPrompt
+        spacing: Style.space(8)
+        Button { text: root.t("word.keepediting"); bordered: true; fontSize: Style.font.caption; focusable: true; onClicked: root.discardPrompt = false }
+        Button { text: root.t("word.discard"); foreground: Color.urgent; fontSize: Style.font.caption; focusable: true; onClicked: { root.editing = false; root.discardPrompt = false } }
       }
     }
   }

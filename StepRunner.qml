@@ -21,7 +21,9 @@ ColumnLayout {
 
   property var strings: null
   property var steps: []
+  property bool showHeading: true
   property bool showPlan: true
+  property bool detailsOpen: false
 
   // -1 idle, 0..n-1 running that step, n done.
   property int at: -1
@@ -102,10 +104,18 @@ ColumnLayout {
   }
 
   OmText {
-    visible: root.showPlan && !root.done && (root.steps || []).length > 0
+    visible: root.showHeading && root.showPlan && !root.done && (root.steps || []).length > 0
     text: root.t("first.willrun")
     font.letterSpacing: 1
     color: Color.muted
+  }
+
+  FoldHeader {
+    visible: root.showPlan && !root.done && (root.steps || []).length > 0
+    title: root.t("setup.commands")
+    rule: false
+    open: root.detailsOpen
+    onToggled: root.detailsOpen = !root.detailsOpen
   }
 
   Repeater {
@@ -127,6 +137,7 @@ ColumnLayout {
         // beside it — the label grew by three words and nothing here was
         // sized to notice.
         Layout.preferredWidth: Style.space(232)
+        Layout.fillWidth: !root.detailsOpen
         elide: Text.ElideRight
         text: step.label
         color: root.at >= idx ? Color.foreground : Color.muted
@@ -134,6 +145,7 @@ ColumnLayout {
       OmText {
         Layout.fillWidth: true
         elide: Text.ElideRight
+        visible: root.detailsOpen
         text: "$ " + step.argv.join(" ")
         color: Qt.darker(Color.muted, 1.15)
       }

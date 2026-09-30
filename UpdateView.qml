@@ -180,7 +180,7 @@ ColumnLayout {
     Layout.maximumWidth: Style.space(760)
     wrapMode: Text.Wrap
     text: root.t("up.daemon.blind")
-    color: Qt.darker(Color.muted, 1.15)
+    color: Color.muted
   }
 
   // Said before the button, because the button cannot fix it and the message
@@ -189,11 +189,7 @@ ColumnLayout {
     visible: root.pluginDirty
     Layout.fillWidth: true
     wrapMode: Text.Wrap
-    // The advice has to name the repository, and "checkout -- ." was wrong
-    // anyway: it restores modified files and leaves untracked ones behind,
-    // which still blocks the fast-forward.
-    text: root.tf("up.dirty",
-                  "https://github.com/BlackKingBarOrg/omavoi")
+    text: root.t("up.dirty")
     color: Color.urgent
   }
 
@@ -229,6 +225,13 @@ ColumnLayout {
         if (plan.done) { plan.reset(); root.refresh() }
         else { plan.reset(); plan.begin() }
       }
+    }
+    Button {
+      visible: root.pluginDirty && !plan.running
+      text: root.t("up.again")
+      bordered: true
+      fontSize: Style.font.caption
+      onClicked: root.refresh()
     }
     OmText {
       visible: plan.running
