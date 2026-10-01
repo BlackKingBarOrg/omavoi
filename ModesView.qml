@@ -97,6 +97,67 @@ Item {
       if (l[i].name === name) return String(l[i].model || "")
     return ""
   }
+
+  // ---- the AI rewrite as one choice -------------------------------------
+  //
+  // A mode rewrites once or not at all far more often than it chains, so
+  // that case is one question with four answers, asked like the Chinese-
+  // characters row: no rewrite, or which of the three routes. A mode that
+  // chains several steps is shown step by step instead.
+  readonly property var aiSteps: (root.mode && root.mode.steps) || []
+  readonly property bool aiChained: root.aiSteps.length > 1
+  // "" for no rewrite, else the configuration the one step names.
+  readonly property string aiChoice: root.aiSteps.length === 1
+                                     ? String(root.aiSteps[0].llm || "") : ""
+  // On this machine first, then the two that send the words away.
+  readonly property var aiRoutes: ["local", "agent", "api"].filter(function (n) {
+    return root.llms.indexOf(n) >= 0
+  })
+  function routeOf(name) {
+    var l = catalogue.llm || []
+    for (var i = 0; i < l.length; i++)
+      if (l[i].name === name) return l[i]
+    return null
+  }
+  // What the chosen answer means, and what it has cost on this machine —
+  // the one fact that says a route is too slow to put on every take.
+  function aiNote(name) {
+    var text = name === "" ? root.t("modes.ai.none.sub")
+             : name === "local" ? root.t("modes.ai.local.sub")
+             : name === "agent" ? root.t("models.k.agent.sub")
+             : root.t("models.k.api.sub")
+    var r = name === "" ? null : root.routeOf(name)
+    if (r && r.recent_seconds)
+      text += " " + root.tf("models.k.recent", String(r.recent_seconds))
+    return text
+  }
+  readonly property string aiProblem: {
+    var r = root.aiChoice === "" ? null : root.routeOf(root.aiChoice)
+    return r && r.live_problem ? String(r.live_problem) : ""
+  }
+  // No rewrite removes the one step; a route adds it, with the default
+  // instructions the command fills, or points the step at that route.
+  //
+  // Removing it takes its instructions too. A shipped prompt is what the next
+  // route chosen brings back, so that goes at once; instructions somebody
+  // wrote are asked about first, because four answers in a row invite trying
+  // one and going back, and the way back would restore the shipped text in
+  // place of theirs. A daemon that does not say which is which is asked about
+  // every time.
+  function chooseAi(name) {
+    if (root.aiChained) return
+    if (name === "") {
+      if (root.aiSteps.length !== 1) return
+      if (root.aiSteps[0].prompt_edited === false)
+        root.commandArgs(["omavoi", "mode", "step", root.current, "rm", "0"])
+      else
+        root.dropAiFor = root.current
+    } else if (root.aiSteps.length === 0) {
+      root.commandArgs(["omavoi", "mode", "step", root.current, "add", name])
+    } else if (root.aiChoice !== name) {
+      root.commandArgs(["omavoi", "mode", "step", root.current, "llm", "0", name])
+    }
+  }
   // The mode a click just refused to enter, so the reason appears next to the
   // mode rather than only in a log the user will never open.
   property string blocked: ""
@@ -118,6 +179,8 @@ Item {
   }
   property var apps: []
   property string removeMode: ""
+  // The mode whose own rewrite instructions "no rewrite" is waiting to delete.
+  property string dropAiFor: ""
   Process {
     id: appReader
     command: ["hyprctl", "clients", "-j"]
@@ -220,6 +283,10 @@ Item {
       for (var i = 0; i < steps.length; i++)
         names.push(root.llmLabel(steps[i].llm, false))
       parts.push(root.tf("modes.sum.ai", names.join(" → ")))
+    } else {
+      // Said outright: "AI: local model" on one line and nothing on the
+      // next left the plain one to be inferred from an absence.
+      parts.push(root.t("modes.sum.noai"))
     }
     var lang = m.language || "auto"
     if (lang !== "auto" && own(lang, "language")) parts.push(root.languageLabel(m, lang))
@@ -739,21 +806,73 @@ Item {
         }
 
         // ---- ai rewrite -------------------------------------------------
+        //
+        // It was a list of steps, so a mode with none showed only "+ add a
+        // rewrite step": an action rather than the place the AI is chosen,
+        // with no way to say "type what was heard" but removing a step. Now
+        // the choice comes first, one row of four, and a single step's model
+        // and instructions sit under it.
         ColumnLayout {
           Layout.fillWidth: true
           spacing: Style.space(10)
           SectionTitle { title: root.t("modes.s3"); note: root.t("modes.llmsub") }
 
+          Flow {
+            objectName: "aiChoice"
+            visible: !root.aiChained && root.llms.length > 0
+            Layout.fillWidth: true
+            spacing: Style.space(6)
+            Repeater {
+              model: [""].concat(root.aiRoutes)
+              OmChip {
+                readonly property string route: modelData
+                objectName: "aiRoute:" + (route || "none")
+                label: route === "" ? root.t("modes.ai.none") : root.llmLabel(route, false)
+                on: root.aiChoice === route
+                // No rewrite removes the step and its instructions with it, so
+                // an unsaved edit to them is saved or dropped first, as the
+                // per-step Remove has always asked.
+                enabled: on || route !== "" || !root.hasDrafts(root.current)
+                onClicked: if (!on) root.chooseAi(route)
+              }
+            }
+          }
+          OmText {
+            objectName: "aiNote"
+            visible: !root.aiChained && root.llms.length > 0
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.aiNote(root.aiChoice)
+            color: Color.muted
+          }
+          OmText {
+            visible: !root.aiChained && root.aiProblem !== ""
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.aiProblem
+            color: Color.urgent
+          }
+          OmText {
+            visible: root.aiChained
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: root.tf("modes.ai.chain", root.aiSteps.length)
+            color: Color.muted
+          }
+
           Repeater {
-            model: (root.mode && root.mode.steps) || []
+            model: root.aiSteps
             Rectangle {
               readonly property var step: modelData
               readonly property int idx: index
               Layout.fillWidth: true
-              implicitHeight: stepBody.implicitHeight + Style.space(18)
+              implicitHeight: stepBody.implicitHeight + (root.aiChained ? Style.space(18) : 0)
               color: "transparent"
-              border.width: 1
-              border.color: Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.55)
+              // A frame only round each of several steps, to keep them apart,
+              // and a plain one: a frame in the accent says "chosen" on this
+              // console, and a step is not a choice made among its siblings.
+              border.width: root.aiChained ? 1 : 0
+              border.color: Qt.rgba(Color.foreground.r, Color.foreground.g, Color.foreground.b, 0.2)
               radius: Style.cornerRadius
 
               ColumnLayout {
@@ -761,10 +880,13 @@ Item {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: Style.space(10)
+                anchors.margins: root.aiChained ? Style.space(10) : 0
                 spacing: Style.space(6)
 
+                // Each step's own route and Remove, where there are several;
+                // a single step's are the row of four above.
                 RowLayout {
+                  visible: root.aiChained
                   Layout.fillWidth: true
                   spacing: Style.space(7)
                   OmText {
@@ -794,7 +916,6 @@ Item {
                       ["omavoi", "mode", "step", root.current, "rm", String(idx)])
                   }
                 }
-
                 // Which weights this step runs. Downloading a model made it
                 // appear in the Models tab and nowhere else: a step named a
                 // configuration and inherited whatever that configuration
@@ -855,12 +976,10 @@ Item {
             }
           }
 
-          // An action, and drawn as one. It was a row of chips under a row of
-          // chips: the same three names, the same shape, a hundred pixels
-          // below the ones that choose a step's LLM — and a click on the
-          // wrong row added a step, prompt and all.
+          // Another rewrite after the one above, for a mode that chains —
+          // the rare case, so it comes after the choice, as an action.
           RowLayout {
-            visible: root.llms.length > 0
+            visible: root.llms.length > 0 && root.aiSteps.length > 0
             Layout.fillWidth: true
             spacing: Style.space(8)
             Button {
@@ -1139,8 +1258,25 @@ Item {
       }
     }
   }
-  function handleKey(event) { return modeConfirmation.handleKey(event) }
+  function handleKey(event) {
+    return modeConfirmation.handleKey(event) || aiConfirmation.handleKey(event)
+  }
   Keys.onPressed: function(event) { if (root.handleKey(event)) event.accepted = true }
+  ConfirmDialog {
+    id: aiConfirmation
+    objectName: "aiDropConfirm"
+    anchors.fill: parent
+    z: 100
+    opened: root.dropAiFor !== ""
+    message: root.tf("modes.ai.none.confirm", Labels.mode(root.dropAiFor, root.strings))
+    confirmText: root.t("modes.ai.none.drop")
+    cancelText: root.t("word.cancel")
+    onCanceled: root.dropAiFor = ""
+    onConfirmed: {
+      root.commandArgs(["omavoi", "mode", "step", root.dropAiFor, "rm", "0"])
+      root.dropAiFor = ""
+    }
+  }
   ConfirmDialog {
     id: modeConfirmation
     anchors.fill: parent

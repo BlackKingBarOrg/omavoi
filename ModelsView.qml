@@ -63,10 +63,10 @@ Item {
   readonly property var llmResident: (engines.llm || []).filter(function (l) {
     return l.live === true
   })
-  // The mode every take uses now, or "" while it follows the window. A route
-  // card is framed only when this mode's step uses it: several routes are in
-  // use at once, one per mode's step, and framing every one in use asked a
-  // single-choice question this section does not have.
+  // The mode every take uses now, or "" while it follows the window, so a
+  // route card can say it is the one the next take goes through. Said in its
+  // note and never by a frame: a frame on this console marks a choice made on
+  // this page, and which route a mode uses is chosen on the Modes page.
   readonly property string currentMode: String(payload.current_mode || "")
   readonly property bool daemonUp: payload.daemon === true
   readonly property bool speechLive: root.speechNow.live === true
@@ -431,10 +431,7 @@ Item {
             readonly property bool current: root.currentMode !== ""
                                             && users.indexOf(root.currentMode) >= 0
             selectable: false
-            selected: current
-            // A process of ours holding weights. A coding agent has none —
-            // it starts afresh on each take — so it is ready, never running.
-            running: !!(l && l.live_resident === true)
+            selected: false
             name: kind.name
             // What it is actually set to: the weights, or the agent's own
             // name when it has no model of ours. Not both — the detail line
@@ -453,6 +450,10 @@ Item {
             // llama.cpp wants no key, so the card was sending people to
             // look for a field that does not exist. The reason itself is
             // printed in full under the catalogue below either way.
+            //
+            // "Running" is a process of ours holding weights. A coding agent
+            // has none — it starts afresh on each take — so it is ready,
+            // never running.
             status: !l ? root.t("models.k.unset")
                     : l.live_problem
                       ? (l.remote === true && l.has_key !== true

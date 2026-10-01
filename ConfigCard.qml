@@ -17,16 +17,22 @@ import qs.Ui
 // squeezing them onto one line elides the explanation. The speech column has
 // spare room underneath, so it costs nothing there.
 //
-// Six slots, and both columns fill all six:
+// Six slots:
 //
 //                 speech                        LLM
-//   selected      the chosen engine             a configuration in use
-//   running       the engine actually up        a server actually up
+//   selected      the chosen engine             —
+//   running       the engine actually up        —
 //   name          本地 · Vulkan                 系统 agent
 //   secondary     whisper.cpp                   claude
 //   detail        ggml weights, which GPUs      what this route is
 //   status        running                       running / not started / no key
 //   note          package size                  which modes use it
+//
+// A frame is a choice made on this page, and nowhere else in the console
+// means anything different by one. The speech engine is chosen here. Which
+// route an LLM step takes is chosen on the Modes page, one mode at a time, so
+// an LLM card is never framed — framing "in use" had two cards lit at once
+// and no way to tell from either which one the next take would go through.
 Rectangle {
   id: card
 
@@ -78,6 +84,10 @@ Rectangle {
     // The dot is the choice; the ▶ beside it is whether the choice is what is
     // actually up. They coincide most of the time, and the times they do not
     // are the ones worth seeing.
+    //
+    // Both go with the choice. A card with nothing to choose says "running"
+    // in its status column already, and an empty ▶ column held its name off
+    // the edge every other name on the page starts from.
     Rectangle {
       Layout.alignment: Qt.AlignVCenter
       visible: card.selectable
@@ -90,6 +100,7 @@ Rectangle {
     OmText {
       Layout.alignment: Qt.AlignVCenter
       Layout.preferredWidth: Style.space(12)
+      visible: card.selectable
       text: card.running ? "▶" : ""
       color: Color.accent
     }

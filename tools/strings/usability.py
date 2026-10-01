@@ -5,6 +5,13 @@ preserved unless an override is explicitly supplied.
 """
 LANGS = ('en', 'zh', 'th', 'de', 'fr', 'es', 'ja', 'vi')
 NEW = {
+'modes.ai.none': ('No rewrite', '不改写', 'ไม่เขียนใหม่', 'Nicht überarbeiten', 'Pas de réécriture', 'Sin reescritura', '書き直さない', 'Không viết lại'),
+'modes.ai.none.sub': ('Typed as the speech model heard it, after the rules above. The fastest.', '识别结果经过上面的规则整理后直接输出，最快。', 'พิมพ์ตามที่โมเดลเสียงได้ยิน หลังผ่านกฎด้านบน เร็วที่สุด', 'So getippt, wie das Sprachmodell es gehört hat, nach den Regeln oben. Am schnellsten.', 'Tapé tel que le modèle vocal l’a entendu, après les règles ci-dessus. Le plus rapide.', 'Se escribe tal como lo oyó el modelo de voz, tras las reglas de arriba. Lo más rápido.', '音声モデルが聞き取った内容を、上のルールで整えてそのまま入力します。最速です。', 'Gõ đúng như mô hình giọng nói nghe được, sau các quy tắc ở trên. Nhanh nhất.'),
+'modes.ai.local.sub': ('Runs on this computer; your words do not leave it.', '在这台电脑上运行，文字不会离开本机。', 'ทำงานบนคอมพิวเตอร์เครื่องนี้ ข้อความไม่ออกไปนอกเครื่อง', 'Läuft auf diesem Computer; deine Worte verlassen ihn nicht.', 'Tourne sur cet ordinateur ; vos mots ne le quittent pas.', 'Se ejecuta en este equipo; tus palabras no salen de él.', 'このコンピューターで動作し、テキストは外に出ません。', 'Chạy trên máy tính này; lời bạn không rời khỏi máy.'),
+'modes.ai.chain': ('This mode rewrites in %1 steps, one after another.', '这个模式按顺序改写 %1 次。', 'โหมดนี้เขียนใหม่ %1 ขั้น ทีละขั้น', 'Dieser Modus überarbeitet in %1 Schritten nacheinander.', 'Ce mode réécrit en %1 étapes, l’une après l’autre.', 'Este modo reescribe en %1 pasos, uno tras otro.', 'このモードは %1 段階で順に書き直します。', 'Chế độ này viết lại qua %1 bước, lần lượt.'),
+'modes.ai.none.confirm': ('The rewrite instructions in “%1” are ones you wrote. No rewrite deletes them; choosing an AI again brings back the built-in ones.', '“%1”的改写要求是你自己写的。选“不改写”会把它删掉；之后再选 AI，会换回系统自带的改写要求。', 'คำสั่งแก้ไขใน “%1” เป็นของที่คุณเขียนเอง การเลือก “ไม่เขียนใหม่” จะลบคำสั่งนี้ และเมื่อเลือก AI อีกครั้งจะได้คำสั่งที่มีมาในตัวแทน', 'Die Überarbeitungsanweisungen in „%1“ hast du selbst geschrieben. „Nicht überarbeiten“ löscht sie; wählst du danach wieder eine KI, kommen die mitgelieferten zurück.', 'Les instructions de réécriture de « %1 » sont les vôtres. « Pas de réécriture » les supprime ; si vous choisissez à nouveau une IA, ce sont celles fournies d’origine qui reviennent.', 'Las instrucciones de reescritura de «%1» las escribiste tú. «Sin reescritura» las elimina; si vuelves a elegir una IA, vuelven las que trae de serie.', '「%1」の書き換え指示はあなたが書いたものです。「書き直さない」を選ぶと削除され、あとで AI を選び直すと組み込みの指示に戻ります。', 'Hướng dẫn viết lại trong “%1” là do bạn tự viết. “Không viết lại” sẽ xóa chúng; khi chọn lại AI, hướng dẫn có sẵn sẽ được dùng thay thế.'),
+'modes.ai.none.drop': ('Delete the instructions', '删除改写要求', 'ลบคำสั่งแก้ไข', 'Anweisungen löschen', 'Supprimer les instructions', 'Eliminar las instrucciones', '指示を削除', 'Xóa hướng dẫn'),
+'modes.sum.noai': ('no AI', '不经过 AI','ไม่ผ่าน AI', 'ohne KI', 'sans IA', 'sin IA', 'AI なし', 'không qua AI'),
 'models.k.current': ('used by the current mode, %1', '当前模式「%1」在用', 'โหมดปัจจุบัน %1 ใช้อยู่', 'vom aktuellen Modus %1 genutzt', 'utilisé par le mode actuel, %1', 'lo usa el modo actual, %1', '現在のモード「%1」が使用中', 'chế độ hiện tại %1 đang dùng'),
 'models.k.recent': ('usually %1 s here', '本机一般约 %1 秒', 'ปกติราว %1 วินาทีบนเครื่องนี้', 'hier meist etwa %1 s', 'ici en général environ %1 s', 'aquí suele tardar unos %1 s', 'この端末では通常約 %1 秒', 'trên máy này thường khoảng %1 giây'),
 'first.m.qwen': ('Recommended: the most accurate in Chinese and English, and the fastest. 30 languages.', '推荐：中文和英文识别最准，速度也最快，支持 30 种语言。', 'แนะนำ: แม่นที่สุดทั้งภาษาจีนและภาษาอังกฤษ และเร็วที่สุด รองรับ 30 ภาษา', 'Empfohlen: am genauesten für Chinesisch und Englisch und am schnellsten. 30 Sprachen.', 'Recommandé : le plus précis en chinois et en anglais, et le plus rapide. 30 langues.', 'Recomendado: el más preciso en chino e inglés, y el más rápido. 30 idiomas.', '推奨：中国語と英語で最も正確で、最も速い。30 言語に対応。', 'Đề xuất: chính xác nhất với tiếng Trung và tiếng Anh, và nhanh nhất. 30 ngôn ngữ.'),
@@ -137,7 +144,9 @@ UPDATES.update({
 'models.k.agent.sub': ('Uses the coding assistant selected in Omarchy. It starts afresh for every rewrite, so each takes several seconds; text is sent to its signed-in service, and no API key is needed.', '使用 Omarchy 中选择的编程助手。每次改写都要重新启动它，所以每次要好几秒；文字会发送至它登录的服务，无需另填 API 密钥。'),
 'models.use': ('Set as default', '设为默认模型'),
 'models.coldshort': ('Starts when needed', '首次使用时启动'),
-'models.llmsub': ('Each mode’s AI rewrite step uses one of these. The framed one is what the current mode uses.', '每个模式的「AI 改写」步骤各用其中一种；框出的是当前模式正在用的。'),
+'modes.addstep': ('+ Add another rewrite step', '+ 再加一步改写', '+ เพิ่มขั้นเขียนใหม่อีกขั้น', '+ Weiteren Überarbeitungsschritt hinzufügen', '+ Ajouter une autre étape de réécriture', '+ Añadir otro paso de reescritura', '+ 書き直しをもう 1 段階追加', '+ Thêm một bước viết lại nữa'),
+'models.llmsub': ('Whether each one works here, and how fast it is. Which one a mode uses is chosen on the Modes page.', '这里显示每种方式能不能用、在本机有多快；每个模式用哪一种，在「模式」页里选。'),
+'modes.llmsub': ('Whether this mode’s text goes through an AI before it is typed. If the AI fails, what was recognized is typed as it was.', '说完话后是否交给 AI 改写一遍。AI 出错时，照样输出识别结果。'),
 'models.list.speech.sub': ('Choose a default model for local recognition. Downloading a model does not select it.', '选择本机识别默认使用的模型。下载后需点击“设为默认模型”才会切换。'),
 'models.list.llm.sub': ('Models for local AI rewriting. Set a default here, or choose a different model for an individual rewrite step.', '本地 AI 改写使用的模型。在这里设置默认模型，也可在某个改写步骤中单独选择。'),
 })
@@ -213,12 +222,19 @@ SEMANTIC_TRANSLATIONS = {
     # Not a choice among three: each mode's step has its own, and the frame
     # marks the current mode's.
     'models.llmsub': (
-        'ขั้น AI เขียนใหม่ของแต่ละโหมดใช้หนึ่งในนี้ อันที่มีกรอบคืออันที่โหมดปัจจุบันใช้',
-        'Der KI-Schritt jedes Modus nutzt eines davon. Das umrahmte nutzt der aktuelle Modus.',
-        'L’étape IA de chaque mode utilise l’un d’eux. Celui encadré est celui du mode actuel.',
-        'El paso de IA de cada modo usa uno de estos. El enmarcado es el que usa el modo actual.',
-        '各モードの AI 書き直しはこのうち 1 つを使います。枠で囲んだものが現在のモードで使われています。',
-        'Bước AI viết lại của mỗi chế độ dùng một trong số này. Mục có khung là mục chế độ hiện tại đang dùng.'),
+        'แสดงว่าแต่ละแบบใช้ได้หรือไม่และเร็วแค่ไหนบนเครื่องนี้ โหมดไหนใช้แบบใดเลือกได้ที่หน้าโหมด',
+        'Ob jede davon hier funktioniert und wie schnell sie ist. Welche ein Modus nutzt, wählst du auf der Seite Modi.',
+        'Si chacune fonctionne ici, et à quelle vitesse. Celle qu’utilise un mode se choisit sur la page Modes.',
+        'Si cada una funciona aquí y lo rápida que es. Cuál usa un modo se elige en la página Modos.',
+        'それぞれがここで使えるか、どのくらい速いかを示します。モードごとにどれを使うかは「モード」ページで選びます。',
+        'Mỗi cách có dùng được ở đây không và nhanh thế nào. Chế độ dùng cách nào thì chọn ở trang Chế độ.'),
+    'modes.llmsub': (
+        'ส่งข้อความของโหมดนี้ให้ AI เขียนใหม่ก่อนพิมพ์หรือไม่ ถ้า AI ผิดพลาด จะพิมพ์ผลที่ฟังได้ตามเดิม',
+        'Ob der Text dieses Modus vor dem Tippen durch eine KI geht. Scheitert sie, wird das Erkannte unverändert getippt.',
+        'Si le texte de ce mode passe par une IA avant d’être tapé. Si l’IA échoue, ce qui a été reconnu est tapé tel quel.',
+        'Si el texto de este modo pasa por una IA antes de escribirse. Si la IA falla, se escribe lo reconocido tal cual.',
+        '入力の前にこのモードのテキストを AI に書き直させるかどうか。AI が失敗したときは認識結果をそのまま入力します。',
+        'Văn bản của chế độ này có qua AI trước khi gõ hay không. Nếu AI lỗi, kết quả nhận dạng được gõ nguyên như cũ.'),
     # No longer the default: every language must stop saying it is.
     'first.m.turbo': (
         'whisper ที่สมดุลระหว่างคุณภาพกับความเร็ว รองรับ 99 ภาษา เลือกเมื่อโมเดลที่แนะนำไม่รองรับภาษาของคุณ',

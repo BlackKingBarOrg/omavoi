@@ -110,7 +110,7 @@ Window {
             case 0:
               check(modes.payload.script_supported !== true, "This daemon has the script setting")
               check(!showing("scriptRow"), "Chinese characters shown to a daemon that cannot use it")
-              check(showing("addStep"), "No add-step action")
+              check(showing("aiRoute:none"), "No AI choice")
               modes.advancedOpen = true
               break
             case 1:
@@ -131,7 +131,8 @@ Window {
             check(showing("scriptRow"), "Chinese characters row hidden on auto")
             check(!showing("advancedBody"), "Advanced is open before anyone opened it")
             check(summary() === "", "A fresh default reports changed settings: " + summary())
-            check(showing("addStep"), "No add-step action")
+            check(showing("aiChoice") && find(modes, "aiRoute:none").on, "A mode with no step does not show No rewrite chosen")
+            check(!showing("addStep"), "A mode with no step offers to add a second one")
             window.shot("basic.png")
             break
           case 1:
@@ -172,19 +173,23 @@ Window {
             check(summary().indexOf(strings.t("modes.inject.clipboard")) >= 0,
                   "code pastes and the fold does not say so: " + summary())
             modes.selected = "default"
-            modes.adding = true
             break
           case 10:
-            check(!showing("addStep") && showing("addStep:agent"), "Add did not ask which LLM")
-            window.shot("adding.png")
+            check(find(modes, "aiRoute:none").on, "default does not start with No rewrite")
+            check(find(modes, "aiNote").text === strings.t("modes.ai.none.sub"), "No rewrite does not say what it means")
+            find(modes, "aiRoute:agent").clicked()
             break
           case 11:
-            find(modes, "addStep:agent").clicked()
+            check((modes.mode.steps || []).length === 1 && modes.mode.steps[0].llm === "agent",
+                  "Choosing a route did not add its step")
+            check(find(modes, "aiRoute:agent").on && !find(modes, "aiRoute:none").on, "The choice did not move")
+            check(showing("addStep"), "No way to add a second step")
+            modes.adding = true
             break
           case 12:
-            check(!modes.adding, "Picking an LLM left the question open")
-            check((modes.mode.steps || []).length === 1 && modes.mode.steps[0].llm === "agent",
-                  "The step was not added")
+            check(!showing("addStep") && showing("addStep:local"), "Add did not ask which LLM")
+            window.shot("adding.png")
+            modes.adding = false
             modes.commandArgs(["omavoi", "mode", "set", "default", "language", "th"])
             break
           case 13:
@@ -220,6 +225,49 @@ Window {
           case 21:
             check(modes.mode.steps[0].prompt === "Unsaved rewrite draft", "explicit Save did not commit the draft")
             if (modes.hasDrafts("default")) return
+            find(modes, "aiRoute:local").clicked()
+            break
+          case 22:
+            check(modes.mode.steps.length === 1 && modes.mode.steps[0].llm === "local"
+                  && modes.mode.steps[0].prompt === "Unsaved rewrite draft", "Changing the route lost the instructions")
+            check(modes.mode.steps[0].prompt_edited === true, "The daemon does not report written instructions as edited")
+            find(modes, "aiRoute:none").clicked()
+            break
+          case 23:
+            // Written instructions: asked about, and kept on Cancel. The
+            // picture is taken a tick before Cancel, since a grab lands on a
+            // later frame.
+            check(find(modes, "aiDropConfirm").opened && modes.mode.steps.length === 1,
+                  "No rewrite deleted instructions somebody wrote without asking")
+            window.shot("confirm.png")
+            break
+          case 24:
+            find(modes, "aiDropConfirm").canceled()
+            break
+          case 25:
+            check(!find(modes, "aiDropConfirm").opened && modes.mode.steps.length === 1
+                  && find(modes, "aiRoute:local").on, "Cancel did not keep the step")
+            find(modes, "aiRoute:none").clicked()
+            break
+          case 26:
+            check(find(modes, "aiDropConfirm").opened, "The question did not come back")
+            find(modes, "aiDropConfirm").confirmed()
+            break
+          case 27:
+            check((modes.mode.steps || []).length === 0 && find(modes, "aiRoute:none").on
+                  && !find(modes, "aiDropConfirm").opened, "Confirming did not remove the step")
+            find(modes, "aiRoute:local").clicked()
+            break
+          case 28:
+            // The shipped prompt: what choosing a route brings back, so it
+            // goes without a question.
+            check(modes.mode.steps.length === 1 && modes.mode.steps[0].prompt_edited === false,
+                  "A route added with the shipped prompt reports it as edited")
+            find(modes, "aiRoute:none").clicked()
+            break
+          case 29:
+            check((modes.mode.steps || []).length === 0 && !find(modes, "aiDropConfirm").opened,
+                  "No rewrite asked about the shipped prompt, or did not remove it")
             console.log("MODES_SMOKE_OK")
             Qt.quit()
         }
@@ -289,6 +337,8 @@ def main():
         print('Pictures taken of the copied modes.' if args.preview else
               'Modes UI passed against an older daemon: no script row, nothing broken.' if args.legacy else
               'Modes UI passed: basic and advanced halves, fold summary, script, inherited hint, '
+              'the AI choice from none to a route and back, '
+              'asking before it deletes instructions somebody wrote and not before a shipped prompt, '
               'add-step question, switching.')
         print(f'Screenshots: {args.output}')
     return 0
