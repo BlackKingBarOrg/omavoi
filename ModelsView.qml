@@ -64,6 +64,23 @@ Item {
   })
   readonly property bool daemonUp: payload.daemon === true
   readonly property bool speechLive: root.speechNow.live === true
+  // The engines that run weights here. Which of them a take uses is the
+  // weights' business — whisper.cpp for whisper, llama.cpp for Qwen3-ASR — so
+  // the one "on this computer" card stands for both.
+  function localSpeech(backend) {
+    var b = String(backend || "")
+    return b === "local-whispercpp" || b === "local-llama-asr"
+  }
+  function engineIs(id, backend) {
+    return id === "api" ? String(backend || "") === "api" : root.localSpeech(backend)
+  }
+  // The local engine the chosen weights need, for leaving the API: writing
+  // whisper.cpp's name over Qwen3-ASR's weights is what the daemon would then
+  // have to second-guess.
+  function localEngineForActive() {
+    var rows = root.speechModels.filter(function (m) { return m.key === root.payload.active })
+    return rows.length && root.localSpeech(rows[0].backend) ? rows[0].backend : "local-whispercpp"
+  }
   readonly property bool stale: root.daemonUp && root.speechLive
       && (String(root.speechNow.model || "") !== String(root.payload.active || "")
           || String(root.speechNow.backend || "") !== String(root.payload.backend || ""))
@@ -202,9 +219,9 @@ Item {
           ConfigCard {
             readonly property var eng: modelData
             readonly property bool up: root.daemonUp && root.speechLive
-                                       && String(root.speechNow.backend || "") === eng.id
+                                       && root.engineIs(eng.id, root.speechNow.backend)
             selectable: true
-            selected: root.payload.backend === eng.id
+            selected: root.engineIs(eng.id, root.payload.backend)
             running: up
             name: eng.name
             // The weights, not the engine: the detail line below already
@@ -217,14 +234,20 @@ Item {
             // Selected and not up is a fault here, unlike an LLM server,
             // which is cold until a take reaches it.
             status: up ? root.t("models.running")
-                    : (root.payload.backend === eng.id && root.daemonUp
+                    : (root.engineIs(eng.id, root.payload.backend) && root.daemonUp
                        ? root.t("models.notloaded") : "")
             statusColor: up ? Color.accent : Color.urgent
             note: eng.note
             noteColor: eng.id === "api" ? tones.warn : Color.muted
             onChosen: {
               if (eng.id === "api") { root.speechDraft = true; root.speechApiOpen = true }
-              else { root.speechDraft = false; root.command("omavoi config set speech.backend " + eng.id) }
+              else {
+                root.speechDraft = false
+                // Already local: the weights' Use button is how one local
+                // engine gives way to the other, not this card.
+                if (!root.localSpeech(root.payload.backend))
+                  root.command("omavoi config set speech.backend " + root.localEngineForActive())
+              }
             }
           }
         }
