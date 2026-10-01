@@ -5,6 +5,7 @@ preserved unless an override is explicitly supplied.
 """
 LANGS = ('en', 'zh', 'th', 'de', 'fr', 'es', 'ja', 'vi')
 NEW = {
+'first.m.qwen': ('Recommended: the most accurate in Chinese and English, and the fastest. 30 languages.', '推荐：中文和英文识别最准，速度也最快，支持 30 种语言。', 'แนะนำ: แม่นที่สุดทั้งภาษาจีนและภาษาอังกฤษ และเร็วที่สุด รองรับ 30 ภาษา', 'Empfohlen: am genauesten für Chinesisch und Englisch und am schnellsten. 30 Sprachen.', 'Recommandé : le plus précis en chinois et en anglais, et le plus rapide. 30 langues.', 'Recomendado: el más preciso en chino e inglés, y el más rápido. 30 idiomas.', '推奨：中国語と英語で最も正確で、最も速い。30 言語に対応。', 'Đề xuất: chính xác nhất với tiếng Trung và tiếng Anh, và nhanh nhất. 30 ngôn ngữ.'),
 'feedback.saving': ('Saving…', '正在保存……', 'กำลังบันทึก…', 'Wird gespeichert…', 'Enregistrement…', 'Guardando…', '保存中…', 'Đang lưu…'),
 'feedback.saved': ('Saved and applied.', '已保存并生效。', 'บันทึกและใช้แล้ว', 'Gespeichert und angewendet.', 'Enregistré et appliqué.', 'Guardado y aplicado.', '保存して適用しました。', 'Đã lưu và áp dụng.'),
 'feedback.failed': ('The change could not be completed. Your previous settings may still apply; see details.', '修改未完成，部分设置可能仍保持原样。请查看详细原因。', 'เปลี่ยนแปลงไม่สำเร็จ การตั้งค่าเดิมอาจยังมีผล ดูรายละเอียด', 'Änderung nicht abgeschlossen. Frühere Einstellungen können noch gelten; siehe Details.', 'Modification incomplète. Les anciens réglages peuvent encore s’appliquer ; voir les détails.', 'No se completó el cambio. Puede que sigan vigentes los ajustes anteriores; consulta los detalles.', '変更を完了できませんでした。以前の設定が有効な場合があります。詳細を確認してください。', 'Chưa hoàn tất thay đổi. Cài đặt cũ có thể vẫn có hiệu lực; hãy xem chi tiết.'),
@@ -148,7 +149,7 @@ UPDATES.update({
     'Tệp giao diện có chỉnh sửa cục bộ nên tạm dừng cập nhật tự động. Sao lưu và xử lý các thay đổi, rồi kiểm tra lại.'),
 'first.blurb': ('Recommended settings are selected. Adjust them if needed, then install.', '已选好推荐配置，可按需要调整，然后开始安装。'),
 'first.m.light': ('Smaller download and lower memory use; recognition may be less accurate.', '下载较小、占用内存较少，识别准确率可能有所下降。'),
-'first.m.turbo': ('Recommended for everyday dictation: a balance of recognition quality and speed.', '推荐用于日常听写，兼顾识别效果和速度。'),
+'first.m.turbo': ('Whisper, balancing quality and speed in 99 languages; for a language the recommended model does not cover.', 'whisper 中兼顾识别效果和速度的一个，支持 99 种语言；推荐模型不支持你的语言时选它。'),
 'first.m.large': ('Larger download and slower recognition; includes a speech-versus-silence check.', '下载较大、识别较慢，支持检测录音是否包含说话声。'),
 'first.hotkey.note': ('The key keeps its original function. Right Ctrl is recommended; Right Alt is used for typing on some keyboard layouts.', '这个键仍会触发原来的功能。推荐右 Ctrl；部分键盘布局会用右 Alt 输入字符。'),
 'first.group.needed': ('Setup will request keyboard access so your shortcut can work immediately.', '安装时会请求键盘访问权限，完成后即可使用快捷键。'),
@@ -198,6 +199,14 @@ SEMANTIC_TRANSLATIONS = {
         'Nombre de la copia de %1', '%1 のコピー名', 'Tên bản sao của %1'),
     'models.use': (
         'ตั้งเป็นค่าเริ่มต้น', 'Als Standard festlegen', 'Définir par défaut', 'Usar por defecto', '既定に設定', 'Đặt làm mặc định'),
+    # No longer the default: every language must stop saying it is.
+    'first.m.turbo': (
+        'whisper ที่สมดุลระหว่างคุณภาพกับความเร็ว รองรับ 99 ภาษา เลือกเมื่อโมเดลที่แนะนำไม่รองรับภาษาของคุณ',
+        'Whisper, ausgewogen zwischen Qualität und Tempo, 99 Sprachen; für eine Sprache, die das empfohlene Modell nicht abdeckt.',
+        'Whisper, équilibré entre qualité et vitesse, 99 langues ; pour une langue que le modèle recommandé ne couvre pas.',
+        'Whisper, equilibrado entre calidad y velocidad, 99 idiomas; para un idioma que el modelo recomendado no cubre.',
+        'whisper の中で品質と速度のバランスが良いモデル。99 言語に対応。推奨モデルが対応しない言語のときに。',
+        'Whisper cân bằng chất lượng và tốc độ, 99 ngôn ngữ; dùng khi mô hình đề xuất không hỗ trợ ngôn ngữ của bạn.'),
     'models.f.testok': (
         'เชื่อมต่อแล้ว ได้รับ %1 โมเดล', 'Verbunden; %1 Modelle abgerufen.',
         'Connecté ; %1 modèles récupérés.', 'Conectado; se obtuvieron %1 modelos.',

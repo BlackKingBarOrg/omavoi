@@ -88,7 +88,12 @@ Window {
         switch(window.step) {
           case 0:
             check(picker.value === "auto", "Initial choice is not auto")
-            check(picker.options.length === 101, "Wrong language count: " + picker.options.length)
+            // A fresh config runs Qwen3-ASR, which hears the 30 languages on its
+            // card: those and auto, and none of whisper's other seventy. The
+            // daemon's tests cover whisper's 101.
+            check(picker.options.length === 31, "Wrong language count: " + picker.options.length)
+            check(!picker.options.some(function(o) { return o.value === "sw" }),
+                  "A language the default model does not hear is offered")
             check(!picker.options.some(function(o) { return o.value === "zh-Hans" || o.value === "zh-Hant" }),
                   "Scripts are still listed as languages")
             check(picker.mapToItem(window.contentItem, 0, 0).x + picker.width <= window.width, "Popup exceeds window width")

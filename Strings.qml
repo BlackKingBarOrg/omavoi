@@ -66,7 +66,7 @@ Item {
       "first.reuse.label": "use what is here",
       "first.m.large": "Larger download and slower recognition; includes a speech-versus-silence check.",
       "first.m.light": "Smaller download and lower memory use; recognition may be less accurate.",
-      "first.m.turbo": "Recommended for everyday dictation: a balance of recognition quality and speed.",
+      "first.m.turbo": "Whisper, balancing quality and speed in 99 languages; for a language the recommended model does not cover.",
       "first.willrun": "WHAT WILL RUN",
       "first.needspassword": "asks for your password",
       "first.install": "Install",
@@ -538,6 +538,7 @@ Item {
       "word.restart": "Restart the speech service to use the new dictionary. Your existing words are unchanged.",
 
       // ---- usability
+      "first.m.qwen": "Recommended: the most accurate in Chinese and English, and the fastest. 30 languages.",
       "feedback.saving": "Saving…",
       "feedback.saved": "Saved and applied.",
       "feedback.failed": "The change could not be completed. Your previous settings may still apply; see details.",
@@ -601,7 +602,7 @@ Item {
       "first.reuse.label": "用已有的",
       "first.m.large": "下载较大、识别较慢，支持检测录音是否包含说话声。",
       "first.m.light": "下载较小、占用内存较少，识别准确率可能有所下降。",
-      "first.m.turbo": "推荐用于日常听写，兼顾识别效果和速度。",
+      "first.m.turbo": "whisper 中兼顾识别效果和速度的一个，支持 99 种语言；推荐模型不支持你的语言时选它。",
       "first.willrun": "将要执行的操作",
       "first.needspassword": "会要求输入密码",
       "first.install": "开始安装",
@@ -1073,6 +1074,7 @@ Item {
       "word.restart": "请先重启语音服务，再使用新版词典。现有词语尚未修改。",
 
       // ---- usability
+      "first.m.qwen": "推荐：中文和英文识别最准，速度也最快，支持 30 种语言。",
       "feedback.saving": "正在保存……",
       "feedback.saved": "已保存并生效。",
       "feedback.failed": "修改未完成，部分设置可能仍保持原样。请查看详细原因。",
@@ -1136,7 +1138,7 @@ Item {
       "first.reuse.label": "ใช้ของที่มีอยู่",
       "first.m.large": "รุ่น turbo แยกความเงียบจากเสียงพูดไม่ได้ ตัวนี้ได้",
       "first.m.light": "ตัวที่เบาที่สุดที่ยังคุ้มจะใช้",
-      "first.m.turbo": "ค่าเริ่มต้น ดาวน์โหลดครึ่งเดียวและเร็วกว่า",
+      "first.m.turbo": "whisper ที่สมดุลระหว่างคุณภาพกับความเร็ว รองรับ 99 ภาษา เลือกเมื่อโมเดลที่แนะนำไม่รองรับภาษาของคุณ",
       "first.willrun": "สิ่งที่จะทำงาน",
       "first.needspassword": "จะขอรหัสผ่านของคุณ",
       "first.install": "ติดตั้ง",
@@ -1608,6 +1610,7 @@ Item {
       "word.restart": "โปรดเริ่มบริการเสียงใหม่เพื่อใช้พจนานุกรมใหม่ คำเดิมยังไม่เปลี่ยน",
 
       // ---- usability
+      "first.m.qwen": "แนะนำ: แม่นที่สุดทั้งภาษาจีนและภาษาอังกฤษ และเร็วที่สุด รองรับ 30 ภาษา",
       "feedback.saving": "กำลังบันทึก…",
       "feedback.saved": "บันทึกและใช้แล้ว",
       "feedback.failed": "เปลี่ยนแปลงไม่สำเร็จ การตั้งค่าเดิมอาจยังมีผล ดูรายละเอียด",
@@ -1671,7 +1674,7 @@ Item {
       "first.reuse.label": "Vorhandene nutzen",
       "first.m.large": "die Turbo-Modelle können Stille nicht von Sprache unterscheiden, dieses kann es",
       "first.m.light": "das Leichteste, das sich noch lohnt",
-      "first.m.turbo": "die Vorgabe; halber Download und schneller",
+      "first.m.turbo": "Whisper, ausgewogen zwischen Qualität und Tempo, 99 Sprachen; für eine Sprache, die das empfohlene Modell nicht abdeckt.",
       "first.willrun": "WAS AUSGEFÜHRT WIRD",
       "first.needspassword": "fragt nach deinem Passwort",
       "first.install": "Installieren",
@@ -2143,6 +2146,7 @@ Item {
       "word.restart": "Starte den Sprachdienst neu, um das neue Wörterbuch zu verwenden. Die bisherigen Wörter bleiben erhalten.",
 
       // ---- usability
+      "first.m.qwen": "Empfohlen: am genauesten für Chinesisch und Englisch und am schnellsten. 30 Sprachen.",
       "feedback.saving": "Wird gespeichert…",
       "feedback.saved": "Gespeichert und angewendet.",
       "feedback.failed": "Änderung nicht abgeschlossen. Frühere Einstellungen können noch gelten; siehe Details.",
@@ -2206,7 +2210,7 @@ Item {
       "first.reuse.label": "Utiliser l'existant",
       "first.m.large": "les modèles turbo ne distinguent pas le silence de la parole ; celui-ci le fait",
       "first.m.light": "le plus léger qui vaille encore la peine",
-      "first.m.turbo": "le choix par défaut ; moitié du téléchargement, et plus rapide",
+      "first.m.turbo": "Whisper, équilibré entre qualité et vitesse, 99 langues ; pour une langue que le modèle recommandé ne couvre pas.",
       "first.willrun": "CE QUI VA S'EXÉCUTER",
       "first.needspassword": "demande ton mot de passe",
       "first.install": "Installer",
@@ -2678,6 +2682,7 @@ Item {
       "word.restart": "Redémarrez le service vocal pour utiliser le nouveau dictionnaire. Les mots existants sont inchangés.",
 
       // ---- usability
+      "first.m.qwen": "Recommandé : le plus précis en chinois et en anglais, et le plus rapide. 30 langues.",
       "feedback.saving": "Enregistrement…",
       "feedback.saved": "Enregistré et appliqué.",
       "feedback.failed": "Modification incomplète. Les anciens réglages peuvent encore s’appliquer ; voir les détails.",
@@ -2741,7 +2746,7 @@ Item {
       "first.reuse.label": "Usar los que hay",
       "first.m.large": "los modelos turbo no distinguen el silencio del habla; este sí",
       "first.m.light": "lo más ligero que aún vale la pena",
-      "first.m.turbo": "el valor por defecto; la mitad de descarga y más rápido",
+      "first.m.turbo": "Whisper, equilibrado entre calidad y velocidad, 99 idiomas; para un idioma que el modelo recomendado no cubre.",
       "first.willrun": "LO QUE SE EJECUTARÁ",
       "first.needspassword": "pedirá tu contraseña",
       "first.install": "Instalar",
@@ -3213,6 +3218,7 @@ Item {
       "word.restart": "Reinicia el servicio de voz para usar el nuevo diccionario. Las palabras existentes no han cambiado.",
 
       // ---- usability
+      "first.m.qwen": "Recomendado: el más preciso en chino e inglés, y el más rápido. 30 idiomas.",
       "feedback.saving": "Guardando…",
       "feedback.saved": "Guardado y aplicado.",
       "feedback.failed": "No se completó el cambio. Puede que sigan vigentes los ajustes anteriores; consulta los detalles.",
@@ -3276,7 +3282,7 @@ Item {
       "first.reuse.label": "既にあるものを使う",
       "first.m.large": "turbo 系は無音と発話を区別できませんが、これはできます",
       "first.m.light": "まだ使う価値のある最軽量のもの",
-      "first.m.turbo": "既定値。ダウンロードは半分で、より高速",
+      "first.m.turbo": "whisper の中で品質と速度のバランスが良いモデル。99 言語に対応。推奨モデルが対応しない言語のときに。",
       "first.willrun": "実行される内容",
       "first.needspassword": "パスワードを尋ねます",
       "first.install": "インストール",
@@ -3748,6 +3754,7 @@ Item {
       "word.restart": "新しい辞書を使うには音声サービスを再起動してください。既存の単語は変更されていません。",
 
       // ---- usability
+      "first.m.qwen": "推奨：中国語と英語で最も正確で、最も速い。30 言語に対応。",
       "feedback.saving": "保存中…",
       "feedback.saved": "保存して適用しました。",
       "feedback.failed": "変更を完了できませんでした。以前の設定が有効な場合があります。詳細を確認してください。",
@@ -3811,7 +3818,7 @@ Item {
       "first.reuse.label": "Dùng cái đang có",
       "first.m.large": "các bản turbo không phân biệt được im lặng với lời nói; bản này thì được",
       "first.m.light": "cái nhẹ nhất mà vẫn đáng dùng",
-      "first.m.turbo": "mặc định; tải về một nửa và nhanh hơn",
+      "first.m.turbo": "Whisper cân bằng chất lượng và tốc độ, 99 ngôn ngữ; dùng khi mô hình đề xuất không hỗ trợ ngôn ngữ của bạn.",
       "first.willrun": "NHỮNG GÌ SẼ CHẠY",
       "first.needspassword": "sẽ hỏi mật khẩu của bạn",
       "first.install": "Cài đặt",
@@ -4283,6 +4290,7 @@ Item {
       "word.restart": "Khởi động lại dịch vụ giọng nói để dùng từ điển mới. Các từ hiện có chưa thay đổi.",
 
       // ---- usability
+      "first.m.qwen": "Đề xuất: chính xác nhất với tiếng Trung và tiếng Anh, và nhanh nhất. 30 ngôn ngữ.",
       "feedback.saving": "Đang lưu…",
       "feedback.saved": "Đã lưu và áp dụng.",
       "feedback.failed": "Chưa hoàn tất thay đổi. Cài đặt cũ có thể vẫn có hiệu lực; hãy xem chi tiết.",

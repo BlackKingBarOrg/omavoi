@@ -9,9 +9,9 @@
 - **An omarchy-shell plugin, not an app in a window.** The bar module, the
   recording overlay and the five-tab console are drawn by the shell itself,
   from its own QML kit in your own theme. Switch theme and they switch with it.
-- **The speech model runs here.** whisper.cpp on your own GPU — one Vulkan
-  build for NVIDIA, AMD and Intel, no CUDA to install — or on the CPU when
-  there is none, with large-v3-turbo by default: no account, no subscription.
+- **The speech model runs here.** Qwen3-ASR by default, or whisper, on your
+  own GPU — one Vulkan build for NVIDIA, AMD and Intel, no CUDA to install —
+  or whisper on the CPU when there is none: no account, no subscription.
   A machine that cannot carry 3 GB of weights can use the whisper.cpp server
   on another machine of yours, or a hosted endpoint (OpenAI, Groq,
   SiliconFlow, DeepInfra). One setting, not a different install.

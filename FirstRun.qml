@@ -28,8 +28,9 @@ Flickable {
   // never moved.
   property string foundWeights: ""
 
-  // The catalogue's speech keys, written out because this screen runs before
-  // `omavoi` exists and cannot ask for them.
+  // The catalogue's whisper keys, written out because this screen runs before
+  // `omavoi` exists and cannot ask for them. Only whisper's: what another
+  // tool leaves behind is a ggml-*.bin, and Qwen3-ASR's weights are not one.
   //
   // "Use what is here" has to name a key that `omavoi model use` will accept,
   // and it has to be the key for the file that was actually found. It used to
@@ -67,7 +68,10 @@ Flickable {
 
   // -- the three answers --------------------------------------------------
   property string lang: ""
-  property string model: root.reuse.key ? "reuse" : "ggml:large-v3-turbo"
+  // Qwen3-ASR even where whisper weights were found. Reusing them used to be
+  // the default because they were the default model, already downloaded;
+  // they are a different and weaker model now, still offered, not chosen.
+  property string model: "ggml:qwen3-asr-1.7b"
   property string hotkey: "RIGHTCTRL"
 
   // evdev needs group membership, and the group only takes effect at the next
@@ -124,7 +128,10 @@ Flickable {
                  note: root.t("first.reuse") })
     // The default first, and the sizes are the catalogue's real ones — this
     // screen runs before omavoi is installed, so it cannot ask, and 3.0G was
-    // a decimal-megabyte figure for a 2.9 GiB file.
+    // a decimal-megabyte figure for a 2.9 GiB file. Qwen3-ASR's 2.3G is both
+    // of its files, the model and its audio encoder, which `model pull`
+    // fetches together.
+    out.unshift({ key: "ggml:qwen3-asr-1.7b", size: "2.3G", note: root.t("first.m.qwen") })
     out.push({ key: "ggml:large-v3-turbo", size: "1.5G", note: root.t("first.m.turbo") })
     out.push({ key: "ggml:large-v3-turbo-q5_0", size: "0.5G", note: root.t("first.m.light") })
     out.push({ key: "ggml:large-v3", size: "2.9G", note: root.t("first.m.large") })
@@ -139,10 +146,10 @@ Flickable {
   // Pinned to one commit, in one place. See DaemonSource.qml.
   DaemonSource { id: daemonSource }
   readonly property string repo: daemonSource.spec
-  // llama-cpp is here because a shipped mode already needs it: `prose` has a
-  // local LLM step out of the box, and adding one is the first thing anyone
-  // does. Without the binary the step falls through silently and the take
-  // looks like plain dictation with no clue why. 7 MB to download.
+  // llama-cpp runs the default speech model, Qwen3-ASR, as well as every
+  // local LLM step — `prose` has one out of the box, and adding one is the
+  // first thing anyone does. Without the binary the daemon cannot start on
+  // its default weights. 7 MB to download.
   // `ggml`, not `ggml-cpu`. Arch once shipped the CPU backend as its own
   // optional package; it is folded into `ggml` now, which declares both
   // `provides ggml-cpu` and `conflicts ggml-cpu`. Asking for the old name

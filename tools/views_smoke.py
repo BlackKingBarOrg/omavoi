@@ -134,12 +134,13 @@ Window {
         check(!window.failure, window.failure)
         switch (window.step) {
           case 0:
-            check(window.models.backend === "local-whispercpp", "starts on the local engine")
+            check(window.models.backend !== "api" && window.models.backend !== "", "starts on a local engine")
+            window.localBackend = window.models.backend
             check(texts(modelsView).indexOf(tr.t("models.speechapi")) < 0, "the remote endpoint shows with the local engine selected")
             cards(modelsView)[1].chosen()                       // the remote engine card
             break
           case 1:
-            check(window.models.backend === "local-whispercpp", "opening the form changed the active engine")
+            check(window.models.backend === window.localBackend, "opening the form changed the active engine")
             check(texts(modelsView).indexOf(tr.t("models.speechapi")) >= 0, "the remote endpoint is missing with the remote engine selected")
             var endpoint = all(modelsView, function(i) { return i.objectName === "speechEndpoint" })[0]
             check(endpoint && endpoint.activateOnSave, "missing staged endpoint form")
@@ -148,7 +149,7 @@ Window {
             check(endpoint.checkNote === tr.t("api.invalid") && !window.busy, "invalid endpoint was saved")
             endpoint.draftUrl = "https://example.invalid/v1"
             endpoint.draftModel = "test-model"
-            check(window.models.backend === "local-whispercpp" && !window.busy, "editing the form saved it")
+            check(window.models.backend === window.localBackend && !window.busy, "editing the form saved it")
             endpoint.save()
             break
           case 2:
@@ -156,7 +157,7 @@ Window {
             cards(modelsView)[0].chosen()
             break
           case 3:
-            check(window.models.backend === "local-whispercpp", "the local card did not switch back")
+            check(window.models.backend === window.localBackend, "the local card did not switch back to the engine the chosen weights need")
             // A downloaded voice model that is not in use: Use must reach the config.
             var spare = (window.models.models || []).filter(function(m) { return m.kind === "speech" && m.downloaded && !m.active })[0]
             if (!spare) { window.step = 5; return }
@@ -215,7 +216,12 @@ Window {
             firstRun.visible = true
             break
           case 23:
-            check(firstRun.model === "ggml:large-v3-turbo" && firstRun.hotkey === "RIGHTCTRL", "first run has no recommended defaults")
+            check(firstRun.model === "ggml:qwen3-asr-1.7b" && firstRun.hotkey === "RIGHTCTRL", "first run has no recommended defaults")
+            check(firstRun.modelChoices[0].key === firstRun.model, "the default is not the first choice offered")
+            var defaultPlan = firstRun.steps.map(function(s) { return s.argv.join(" ") })
+            check(defaultPlan.indexOf("omavoi model pull ggml:qwen3-asr-1.7b") >= 0
+                  && defaultPlan.indexOf("omavoi model use ggml:qwen3-asr-1.7b") >= 0, "the default plan does not fetch and use Qwen3-ASR")
+            check(firstRun.packages.indexOf("llama-cpp") >= 0, "the default speech model needs llama-cpp and the plan does not install it")
             check(firstRun.lang === tr.active, "first-run language was not preselected")
             firstRun.lang = "zh"; firstRun.model = "ggml:large-v3-turbo-q5_0"; firstRun.hotkey = "RIGHTCTRL"
             var plan = firstRun.steps.map(function(s) { return s.argv.join(" ") })
@@ -250,6 +256,9 @@ Window {
     }
   }
   property string spareKey: ""
+  // The local engine a fresh config starts on, which is the one its default
+  // weights need; the local card has to bring that one back.
+  property string localBackend: ""
 }
 '''
 
