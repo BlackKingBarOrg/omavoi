@@ -5,6 +5,8 @@ preserved unless an override is explicitly supplied.
 """
 LANGS = ('en', 'zh', 'th', 'de', 'fr', 'es', 'ja', 'vi')
 NEW = {
+'models.k.current': ('used by the current mode, %1', '当前模式「%1」在用', 'โหมดปัจจุบัน %1 ใช้อยู่', 'vom aktuellen Modus %1 genutzt', 'utilisé par le mode actuel, %1', 'lo usa el modo actual, %1', '現在のモード「%1」が使用中', 'chế độ hiện tại %1 đang dùng'),
+'models.k.recent': ('usually %1 s here', '本机一般约 %1 秒', 'ปกติราว %1 วินาทีบนเครื่องนี้', 'hier meist etwa %1 s', 'ici en général environ %1 s', 'aquí suele tardar unos %1 s', 'この端末では通常約 %1 秒', 'trên máy này thường khoảng %1 giây'),
 'first.m.qwen': ('Recommended: the most accurate in Chinese and English, and the fastest. 30 languages.', '推荐：中文和英文识别最准，速度也最快，支持 30 种语言。', 'แนะนำ: แม่นที่สุดทั้งภาษาจีนและภาษาอังกฤษ และเร็วที่สุด รองรับ 30 ภาษา', 'Empfohlen: am genauesten für Chinesisch und Englisch und am schnellsten. 30 Sprachen.', 'Recommandé : le plus précis en chinois et en anglais, et le plus rapide. 30 langues.', 'Recomendado: el más preciso en chino e inglés, y el más rápido. 30 idiomas.', '推奨：中国語と英語で最も正確で、最も速い。30 言語に対応。', 'Đề xuất: chính xác nhất với tiếng Trung và tiếng Anh, và nhanh nhất. 30 ngôn ngữ.'),
 'feedback.saving': ('Saving…', '正在保存……', 'กำลังบันทึก…', 'Wird gespeichert…', 'Enregistrement…', 'Guardando…', '保存中…', 'Đang lưu…'),
 'feedback.saved': ('Saved and applied.', '已保存并生效。', 'บันทึกและใช้แล้ว', 'Gespeichert und angewendet.', 'Enregistré et appliqué.', 'Guardado y aplicado.', '保存して適用しました。', 'Đã lưu và áp dụng.'),
@@ -132,9 +134,10 @@ UPDATES.update({
 'models.e.vulkan.sub': ('Recognize speech locally using the GPU or CPU. Recordings stay on this computer.', '在本机使用显卡或 CPU 识别，录音无需上传。'),
 'models.k.agent': ('Your coding assistant', '已登录的编程助手'),
 'models.k.api': ('Online AI service', '在线 AI 服务'),
-'models.k.agent.sub': ('Uses the coding assistant selected in Omarchy. Text is sent to its signed-in service; no extra API key is needed.', '使用 Omarchy 中选择的编程助手。文字会发送至它登录的服务，无需另填 API 密钥。'),
+'models.k.agent.sub': ('Uses the coding assistant selected in Omarchy. It starts afresh for every rewrite, so each takes several seconds; text is sent to its signed-in service, and no API key is needed.', '使用 Omarchy 中选择的编程助手。每次改写都要重新启动它，所以每次要好几秒；文字会发送至它登录的服务，无需另填 API 密钥。'),
 'models.use': ('Set as default', '设为默认模型'),
 'models.coldshort': ('Starts when needed', '首次使用时启动'),
+'models.llmsub': ('Each mode’s AI rewrite step uses one of these. The framed one is what the current mode uses.', '每个模式的「AI 改写」步骤各用其中一种；框出的是当前模式正在用的。'),
 'models.list.speech.sub': ('Choose a default model for local recognition. Downloading a model does not select it.', '选择本机识别默认使用的模型。下载后需点击“设为默认模型”才会切换。'),
 'models.list.llm.sub': ('Models for local AI rewriting. Set a default here, or choose a different model for an individual rewrite step.', '本地 AI 改写使用的模型。在这里设置默认模型，也可在某个改写步骤中单独选择。'),
 })
@@ -199,6 +202,23 @@ SEMANTIC_TRANSLATIONS = {
         'Nombre de la copia de %1', '%1 のコピー名', 'Tên bản sao của %1'),
     'models.use': (
         'ตั้งเป็นค่าเริ่มต้น', 'Als Standard festlegen', 'Définir par défaut', 'Usar por defecto', '既定に設定', 'Đặt làm mặc định'),
+    # Saying how slow it is again, which the shorter wording had dropped.
+    'models.k.agent.sub': (
+        'ใช้ผู้ช่วยเขียนโค้ดที่เลือกไว้ใน Omarchy เริ่มใหม่ทุกครั้งที่เขียนใหม่ จึงใช้เวลาหลายวินาทีต่อครั้ง ข้อความจะถูกส่งไปยังบริการที่ล็อกอินไว้ ไม่ต้องใช้คีย์ API',
+        'Nutzt den in Omarchy gewählten Coding-Assistenten. Er startet für jede Überarbeitung neu und braucht daher jedes Mal mehrere Sekunden; der Text geht an seinen angemeldeten Dienst, ein API-Schlüssel ist nicht nötig.',
+        'Utilise l’assistant de code choisi dans Omarchy. Il redémarre à chaque réécriture, donc plusieurs secondes à chaque fois ; le texte part vers son service connecté, sans clé d’API.',
+        'Usa el asistente de programación elegido en Omarchy. Arranca de nuevo en cada reescritura, así que tarda varios segundos cada vez; el texto va a su servicio con sesión iniciada y no hace falta clave de API.',
+        'Omarchy で選んだコーディングアシスタントを使います。書き直しのたびに起動し直すため毎回数秒かかります。テキストはログイン先のサービスに送られ、API キーは不要です。',
+        'Dùng trợ lý lập trình đã chọn trong Omarchy. Mỗi lần viết lại đều phải khởi động lại nên mất vài giây; văn bản được gửi tới dịch vụ đã đăng nhập, không cần khóa API.'),
+    # Not a choice among three: each mode's step has its own, and the frame
+    # marks the current mode's.
+    'models.llmsub': (
+        'ขั้น AI เขียนใหม่ของแต่ละโหมดใช้หนึ่งในนี้ อันที่มีกรอบคืออันที่โหมดปัจจุบันใช้',
+        'Der KI-Schritt jedes Modus nutzt eines davon. Das umrahmte nutzt der aktuelle Modus.',
+        'L’étape IA de chaque mode utilise l’un d’eux. Celui encadré est celui du mode actuel.',
+        'El paso de IA de cada modo usa uno de estos. El enmarcado es el que usa el modo actual.',
+        '各モードの AI 書き直しはこのうち 1 つを使います。枠で囲んだものが現在のモードで使われています。',
+        'Bước AI viết lại của mỗi chế độ dùng một trong số này. Mục có khung là mục chế độ hiện tại đang dùng.'),
     # No longer the default: every language must stop saying it is.
     'first.m.turbo': (
         'whisper ที่สมดุลระหว่างคุณภาพกับความเร็ว รองรับ 99 ภาษา เลือกเมื่อโมเดลที่แนะนำไม่รองรับภาษาของคุณ',

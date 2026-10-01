@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
+import "UiLabels.js" as Labels
 
 // Two model families side by side, because they are not the same kind of
 // thing. Exactly one speech engine runs; any number of LLMs can be defined,
@@ -62,6 +63,11 @@ Item {
   readonly property var llmResident: (engines.llm || []).filter(function (l) {
     return l.live === true
   })
+  // The mode every take uses now, or "" while it follows the window. A route
+  // card is framed only when this mode's step uses it: several routes are in
+  // use at once, one per mode's step, and framing every one in use asked a
+  // single-choice question this section does not have.
+  readonly property string currentMode: String(payload.current_mode || "")
   readonly property bool daemonUp: payload.daemon === true
   readonly property bool speechLive: root.speechNow.live === true
   // The engines that run weights here. Which of them a take uses is the
@@ -421,10 +427,14 @@ Item {
           ConfigCard {
             readonly property var kind: modelData
             readonly property var l: root.entryNamed(kind.key)
-            readonly property bool inUse: l && (l.used_by || []).length > 0
+            readonly property var users: l ? (l.used_by || []) : []
+            readonly property bool current: root.currentMode !== ""
+                                            && users.indexOf(root.currentMode) >= 0
             selectable: false
-            selected: inUse
-            running: !!(l && l.live_running === true)
+            selected: current
+            // A process of ours holding weights. A coding agent has none —
+            // it starts afresh on each take — so it is ready, never running.
+            running: !!(l && l.live_resident === true)
             name: kind.name
             // What it is actually set to: the weights, or the agent's own
             // name when it has no model of ours. Not both — the detail line
@@ -447,16 +457,31 @@ Item {
                     : l.live_problem
                       ? (l.remote === true && l.has_key !== true
                          ? root.t("models.nokey") : root.t("models.notready"))
-                    : l.live_running === true ? root.t("models.running")
+                    : l.live_resident === true ? root.t("models.running")
                     : (l.remote ? root.t("models.ready") : root.t("models.coldshort"))
             statusColor: !l ? Qt.darker(Color.muted, 1.2)
                          : l.live_problem ? Color.urgent
-                         : l.live_running === true ? Color.accent
+                         : l.live_resident === true ? Color.accent
                          : Qt.darker(Color.muted, 1.1)
-            // Which modes use it, which is the question a card is looked at
-            // for: "can I take this away".
-            note: (l && (l.used_by || []).length) ? root.tf("models.usedby", (l.used_by || []).join(root.t("word.sep"))) : ""
-            noteColor: inUse ? Color.accent : Qt.darker(Color.muted, 1.2)
+            // Whether the next take goes through it, which other modes use
+            // it — the question a card is looked at for: "can I take this
+            // away" — and how long its steps have taken on this machine, the
+            // one thing that says a route is too slow for every take.
+            note: {
+              var parts = []
+              var rest = users
+              if (current) {
+                parts.push(root.tf("models.k.current", Labels.mode(root.currentMode, root.strings)))
+                rest = users.filter(function (m) { return m !== root.currentMode })
+              }
+              if (rest.length)
+                parts.push(root.tf("models.usedby", rest.map(function (m) {
+                  return Labels.mode(m, root.strings) }).join(root.t("word.sep"))))
+              if (l && l.recent_seconds)
+                parts.push(root.tf("models.k.recent", String(l.recent_seconds)))
+              return parts.join(" · ")
+            }
+            noteColor: current ? Color.accent : Qt.darker(Color.muted, 1.2)
             actionLabel: kind.key === "api"
                          ? (root.editingApi ? root.t("models.f.close")
                                             : root.t("models.f.edit"))
