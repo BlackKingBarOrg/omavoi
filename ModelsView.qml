@@ -398,6 +398,8 @@ Item {
             strings: root.strings
             pulling: root.pulling
             useCommand: root.payload.backend === "api" ? "" : "omavoi model use " + modelData.key
+            useLabel: root.t("models.usespeech")
+            activeLabel: root.t("models.chosenspeech")
             onCommand: function (c) { root.command(c) }
           }
         }

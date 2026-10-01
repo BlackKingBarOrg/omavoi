@@ -81,6 +81,18 @@ Window {
   function shot(name) { window.contentItem.grabToImage(function(result) { result.saveToFile(__OUT__ + "/" + name) }) }
   function showing(name) { var item = find(modes, name); return !!item && item.visible }
   function summary() { var s = find(modes, "foldSummary"); return s && s.visible ? s.text : "" }
+  // Every visible text under an item, the Flickable's content included.
+  function texts(item, out, seen) {
+    out = out || []; seen = seen || []
+    if (!item || seen.indexOf(item) >= 0) return out
+    seen.push(item)
+    if (typeof item.text === "string" && item.font !== undefined && item.visible) out.push(item.text)
+    var nodes = []
+    if (item.children) for (var i = 0; i < item.children.length; i++) nodes.push(item.children[i])
+    if (item.contentItem) nodes.push(item.contentItem)
+    for (var k = 0; k < nodes.length; k++) texts(nodes[k], out, seen)
+    return out
+  }
   Timer {
     interval: 200; repeat: true; running: true
     onTriggered: {
@@ -164,6 +176,16 @@ Window {
             check(modes.mode.prompt === __PROMPT__ && modes.mode.prompt_inherited === true,
                   "code does not show the hint it inherits from default")
             check(modes.mode.script === "zh-Hans", "code does not inherit default's script")
+            // One voice model for every mode: none to choose here, and the
+            // hint says which one reads it.
+            check(modes.mode.speech_model === undefined, "a mode still reports a voice model of its own")
+            check(modes.speechName !== "", "the page does not know which voice model is in use")
+            var note = strings.t("modes.promptinherited") + " " + strings.tf("modes.prompthint", modes.speechName)
+            // The name itself, not only whatever the string makes of it: an
+            // override without the slot passed the line below and named nothing.
+            check(note.indexOf(modes.speechName) >= 0, "the hint's text has no place for the voice model")
+            check(texts(find(modes, "advancedBody")).indexOf(note) >= 0,
+                  "the hint does not say which voice model reads it")
             window.shot("inherited.png")
             break
           case 8:
@@ -336,7 +358,7 @@ def main():
             return 1
         print('Pictures taken of the copied modes.' if args.preview else
               'Modes UI passed against an older daemon: no script row, nothing broken.' if args.legacy else
-              'Modes UI passed: basic and advanced halves, fold summary, script, inherited hint, '
+              'Modes UI passed: basic and advanced halves, fold summary, script, inherited hint naming the voice model, '
               'the AI choice from none to a route and back, '
               'asking before it deletes instructions somebody wrote and not before a shipped prompt, '
               'add-step question, switching.')

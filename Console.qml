@@ -301,10 +301,11 @@ Item {
   }
   function applyBatch(commands) {
     if (!commands || !commands.length) return
+    // Recording settings only: the microphone is opened once, at start. The
+    // voice model is switched by the reload that follows every job, and the
+    // reload says so when it could not.
     var needsRestart = commands.some(function(a) {
-      var line = a.join(" ")
-      return /omavoi config set (audio\.|speech\.)/.test(line)
-             || /omavoi model use /.test(line)
+      return /omavoi config set audio\./.test(a.join(" "))
     })
     var restarts = commands.some(function(a) { return a.join(" ").indexOf("systemctl --user restart omavoid") >= 0 })
     root.jobs = root.jobs.concat([{ owner: root.tab, commands: commands,
@@ -337,7 +338,10 @@ Item {
     onExited: function(code, status) {
       var why = String(mutationErr.text || "").replace(/\x1b\[[0-9;]*m/g, "").trim()
       if (root.reloading) {
-        root.finishJob(code === 0 ? "saved" : "pending", why)
+        // 2 is a voice model that was tried and would not load: the previous
+        // one is still in use, and `why` says what went wrong. 1 is a
+        // daemon that is not running.
+        root.finishJob(code === 0 ? "saved" : code === 2 ? "failed" : "pending", why)
         return
       }
       if (code !== 0) {

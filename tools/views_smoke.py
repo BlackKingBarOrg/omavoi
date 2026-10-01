@@ -162,7 +162,10 @@ Window {
             var spare = (window.models.models || []).filter(function(m) { return m.kind === "speech" && m.downloaded && !m.active })[0]
             if (!spare) { window.step = 5; return }
             window.spareKey = spare.key
-            buttonsLabelled(modelsView, tr.t("models.use"))[0].clicked()
+            // The voice model's own button: "set as default" is the local AI
+            // models', and the voice model is not a default for anything.
+            check(buttonsLabelled(modelsView, tr.t("models.usespeech")).length > 0, "no voice model offers to be used")
+            buttonsLabelled(modelsView, tr.t("models.usespeech"))[0].clicked()
             break
           case 4:
             check(speech(window.spareKey).active === true, "Use did not make " + window.spareKey + " the voice model")

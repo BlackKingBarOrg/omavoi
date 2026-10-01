@@ -299,6 +299,9 @@ section("hud", {
  "hud.nospeech": ("no speech heard",
     "没听到说话",
     "ไม่ได้ยินเสียงพูด"),
+ "hud.stage.loading": ("loading the voice model",
+    "正在加载语音模型",
+    "กำลังโหลดโมเดลเสียง"),
 })
 
 section("setup", {
@@ -637,20 +640,6 @@ section("modes", {
  "modes.adv.changed":("changed: %1", "已改：%1", "เปลี่ยนแล้ว: %1"),
  "modes.adv.sep":    (", ", "、", ", "),
  "modes.adv.kv":     ("%1: %2", "%1：%2", "%1: %2"),
- "modes.speechmodel": ("voice model", "语音模型", "โมเดลเสียง"),
- "modes.speechglobal": ("use the default", "用默认的", "ใช้ค่าเริ่มต้น"),
- "modes.speechglobalnamed": ("use the default (%1)", "用默认的（%1）", "ใช้ค่าเริ่มต้น (%1)"),
- "modes.speechonly1": ("Only one voice model is downloaded. The Models tab has smaller ones, for a "
-                       "mode where speed matters more than accuracy.",
-                       "只下载了一个语音模型。「模型」页有更小的，适合速度比准确率更重要的模式。",
-                       "ดาวน์โหลดโมเดลเสียงไว้ตัวเดียว แท็บโมเดลมีตัวที่เล็กกว่า "
-                       "เหมาะกับโหมดที่เน้นความเร็วมากกว่าความแม่น"),
- "modes.speechnone": ("No voice model is downloaded yet — the Models tab has them.",
-                      "还没有下载语音模型——到「模型」页下载。",
-                      "ยังไม่ได้ดาวน์โหลดโมเดลเสียง — ดาวน์โหลดได้ที่แท็บโมเดล"),
- "modes.speechreload": ("Switching to this mode loads that model first, which takes a few seconds.",
-                        "切换到这个模式时要先加载这个模型，需要几秒钟。",
-                        "เมื่อสลับมาโหมดนี้ต้องโหลดโมเดลนี้ก่อน ใช้เวลาไม่กี่วินาที"),
  # The decoder prompt. "vocabulary" asked for a list of words, which is what
  # My dictionary now feeds the decoder on its own; what is left for this box
  # is the context a mode is spoken in.
@@ -658,15 +647,12 @@ section("modes", {
  "modes.promptph":   ("e.g. A meeting about Hyprland, Quickshell and PipeWire.",
                       "例如：关于 Hyprland、Quickshell 和 PipeWire 的技术讨论。",
                       "เช่น การประชุมเรื่อง Hyprland, Quickshell และ PipeWire"),
- "modes.prompthint": ("Read by the recognizer before it listens — a nudge, not a guarantee. Words "
-                      "in My dictionary are added to it on their own.",
-                      "识别模型开始听之前会先读这段话，只是提示，不保证生效。「我的词典」里的词会自动加进来。",
-                      "โมเดลจะอ่านข้อความนี้ก่อนเริ่มฟัง เป็นแค่คำใบ้ ไม่รับประกันผล "
-                      "คำใน พจนานุกรมของฉัน จะถูกเพิ่มเข้าไปเอง"),
- "modes.promptinherited": ("This mode has no hint of its own, so it uses default's. Saving here "
-                           "gives it one.",
-                           "这个模式没有自己的识别提示，用的是 default 的；在这里保存，就成了它自己的。",
-                           "โหมดนี้ไม่มีคำใบ้ของตัวเอง จึงใช้ของ default บันทึกที่นี่แล้วจะเป็นของโหมดนี้เอง"),
+ "modes.prompthint": ("Read by the voice model, %1, before it listens — a nudge, not a guarantee. Words in My dictionary are added on their own. Every mode uses this voice model; change it on the Models tab.",
+    "语音模型（%1）开始听之前会先读这段话，只是提示，不保证生效；「我的词典」里的词会自动加进来。所有模式共用这一个语音模型，在「模型」页更换。",
+    "โมเดลเสียง (%1) จะอ่านข้อความนี้ก่อนเริ่มฟัง เป็นแค่คำใบ้ ไม่รับประกันผล คำใน พจนานุกรมของฉัน จะถูกเพิ่มเข้าไปเอง ทุกโหมดใช้โมเดลเสียงตัวเดียวกัน เปลี่ยนได้ที่แท็บโมเดล"),
+ "modes.promptinherited": ("This mode has none of its own and uses default's; saving here gives it its own.",
+    "这个模式没有自己的，用的是 default 的；在这里保存就成了它自己的。",
+    "โหมดนี้ไม่มีของตัวเอง จึงใช้ของ default บันทึกที่นี่เพื่อให้เป็นของโหมดนี้"),
  "modes.adv.cleanup":("cleanup", "整理", "จัดข้อความ"),
  # What the flag does: collapse "好的。好的。好的。". It was called "made-up
  # phrases", and switching it off kept none — a segment measured as silence
@@ -695,15 +681,18 @@ section("modes", {
                              "are typed with xdotool.",
                              "总是粘贴，粘贴后恢复你原来的剪贴板；X11 程序例外，改用 xdotool 逐字输入。",
                              "วางเสมอ แล้วคืนค่าคลิปบอร์ดเดิมให้ ยกเว้นแอป X11 ที่พิมพ์ด้วย xdotool"),
+ "modes.prompthint0": ("Topics or special terms to help recognition, not instructions to translate or summarize. My dictionary is included automatically.",
+    "填写话题或专有名词，帮助识别；不用于要求翻译或总结。“我的词典”中的词会自动加入。",
+    "ใส่หัวข้อหรือคำเฉพาะเพื่อช่วยการรู้จำ ไม่ใช่คำสั่งให้แปลหรือสรุป คำใน พจนานุกรมของฉัน จะถูกเพิ่มเอง"),
 })
 
 section("models", {
  "models.speech": ("VOICE RECOGNITION",
     "语音识别",
     "การรู้จำเสียง"),
- "models.speechsub": ("Turns what you say into text. One way at a time.",
-    "把你说的话转成文字，同一时间只用一种方式。",
-    "แปลงเสียงพูดเป็นข้อความ ใช้ได้ทีละแบบ"),
+ "models.speechsub": ("Turns what you say into text. Every mode uses the one chosen here, and a change applies at once.",
+    "把你说的话转成文字。所有模式共用这里选的，换了立刻生效。",
+    "แปลงเสียงพูดเป็นข้อความ ทุกโหมดใช้ตัวที่เลือกที่นี่ เปลี่ยนแล้วมีผลทันที"),
  "models.e.vulkan": ("On this machine",
     "本机",
     "ในเครื่องนี้"),
@@ -800,9 +789,9 @@ section("models", {
     "你指定的在线模型，需要填地址和密钥。你的话会发到那里。",
     "โมเดลออนไลน์ที่คุณกำหนด ต้องใส่ที่อยู่และคีย์ ข้อความของคุณจะถูกส่งไปที่นั่น"),
  "models.k.unset":     ("not configured", "未配置", "ยังไม่ได้ตั้งค่า"),
- "models.stale": ("The background service is still running the model it started with",
-    "后台服务还在用启动时加载的模型",
-    "บริการเบื้องหลังยังใช้โมเดลที่โหลดตอนเริ่ม"),
+ "models.stale": ("The background service is still on the previous voice model",
+    "后台服务还在用之前的语音模型",
+    "บริการเบื้องหลังยังใช้โมเดลเสียงตัวก่อนหน้า"),
  "models.loaded":    ("loaded ", "已加载 ", "โหลดแล้ว "),
  "models.configured":("configured ", "已配置 ", "ตั้งค่าไว้ "),
  "models.restart": ("Restart the background service",
@@ -859,6 +848,12 @@ section("models", {
  "models.seg.llm": ("AI model",
     "AI 模型",
     "โมเดล AI"),
+ "models.usespeech": ("Use this one",
+    "改用这个",
+    "ใช้ตัวนี้"),
+ "models.chosenspeech": ("selected",
+    "已选用",
+    "เลือกไว้"),
 })
 
 section("dictionary", {
@@ -1250,7 +1245,7 @@ _ROOT = os.path.join(_HERE, "..", "..")
 # was a string nothing could ever reach.
 DYNAMIC = {f"mode.name.{v}" for v in ("default", "code", "prose", "terminal")} | {f"modes.inject.{v}" for v in ("auto", "clipboard")} | {
     f"state.{v}" for v in ("idle", "recording", "transcribing", "stopped")} | {
-    f"hud.stage.{v}" for v in ("decoding", "llm", "injecting")}
+    f"hud.stage.{v}" for v in ("decoding", "llm", "injecting", "loading")}
 # Conservative on purpose. An earlier version of this check looked only for
 # a literal immediately after `t(`, which misses
 #     root.t(root.unifiedMem ? "models.shared" : "models.vram")

@@ -35,12 +35,6 @@ Item {
   // `omavoi model list --json`: what is on disk, and which llm entries exist.
   property var catalogue: ({ models: [], llm: [] })
 
-  // Only what is downloaded — a mode changes the model, never the engine.
-  // The format test that used to be here chose between ggml and ct2, and
-  // ct2 was the faster-whisper engine's; there is one local format now.
-  readonly property var speechChoices: (catalogue.models || []).filter(function (m) {
-    return m.kind === "speech" && m.downloaded && m.fmt === "ggml"
-  })
   // A catalogue key without its format prefix. `ggml:large-v3-turbo` is how
   // the CLI names the file and what is written to the config; the half after
   // the colon is the part someone is choosing between, and `ggml` is a file
@@ -48,14 +42,17 @@ Item {
   function plain(key) {
     return String(key || "").replace("ggml:", "").replace("llm:", "")
   }
-  // Which model the global setting points at, so the chip that means "no
-  // override" can name it rather than only say that it follows something.
-  readonly property string defaultSpeech: {
+  // The voice model every mode hears through, named under the recognition
+  // hint written for it. Chosen on the Models tab and nowhere else: a mode's
+  // own only ever swapped weights inside the engine already running, so one
+  // asking for Turbo while Qwen3-ASR ran went on with Qwen.
+  readonly property string speechName: {
+    if (catalogue.backend === "api") return root.t("models.e.api")
     var all = catalogue.models || []
     for (var i = 0; i < all.length; i++)
       if (all[i].kind === "speech" && all[i].active === true)
         return root.plain(all[i].key)
-    return ""
+    return root.plain(catalogue.active)
   }
   // `withModel` is false wherever a weights row sits directly underneath: the
   // model shown here comes from the *configuration*, so a step pinned to
@@ -313,7 +310,6 @@ Item {
     if (!m) return []
     function kv(k, v) { return root.t("modes.adv.kv").replace("%1", k).replace("%2", v) }
     var out = []
-    if (m.speech_model) out.push(kv(root.t("modes.speechmodel"), root.plain(m.speech_model)))
     if (m.prompt) out.push(root.t("modes.decoderhint"))
     if (root.rules.hallucinations === false)
       out.push(kv(root.t("modes.r.hallucinations"), root.t("set.off")))
@@ -1047,73 +1043,6 @@ Item {
             Layout.fillWidth: true
             spacing: Style.space(12)
 
-            // A mode names its own weights, or takes whatever is loaded. The
-            // switch costs one reload — measured at 3.7 s for large-v3 — and
-            // it is paid when the mode changes, not when you dictate.
-            ColumnLayout {
-              Layout.fillWidth: true
-              spacing: Style.space(6)
-              RowLayout {
-                Layout.fillWidth: true
-                spacing: Style.space(10)
-                OmText {
-                  Layout.preferredWidth: root.labelWidth
-                  Layout.alignment: Qt.AlignTop
-                  wrapMode: Text.Wrap
-                  text: root.t("modes.speechmodel")
-                  size: "body"
-                  color: Color.muted
-                }
-                Flow {
-                  Layout.fillWidth: true
-                  spacing: Style.space(6)
-                  // The absence of an override, saying what it will follow —
-                  // the same shape as the LLM step's inherit chip, which had
-                  // it first. "whatever is loaded" named no model at all.
-                  OmChip {
-                    label: root.defaultSpeech === ""
-                           ? root.t("modes.speechglobal")
-                           : root.tf("modes.speechglobalnamed", root.defaultSpeech)
-                    on: !(root.mode && root.mode.speech_model)
-                    onClicked: root.commandArgs(
-                      ["omavoi", "mode", "set", root.current, "speech_model", ""])
-                  }
-                  // Not the default's own weights beside the chip that
-                  // already names them — "use the default (large-v3-turbo)"
-                  // next to "large-v3-turbo" read as one model twice. It
-                  // stays for a mode that pinned them.
-                  Repeater {
-                    model: root.speechChoices
-                    OmChip {
-                      readonly property var entry: modelData
-                      visible: on || root.plain(entry.key) !== root.defaultSpeech
-                      label: root.plain(entry.key)
-                      on: root.mode && String(root.mode.speech_model) === String(entry.key)
-                      onClicked: root.commandArgs(
-                        ["omavoi", "mode", "set", root.current, "speech_model", entry.key])
-                    }
-                  }
-                }
-              }
-              // Two different facts, and `<= 1` reported the first one for
-              // both: "only one set is downloaded" over a machine with none.
-              // The third is what choosing one costs.
-              OmText {
-                visible: text !== ""
-                Layout.leftMargin: root.labelWidth + Style.space(10)
-                Layout.fillWidth: true
-                Layout.maximumWidth: root.noteWidth
-                wrapMode: Text.Wrap
-                text: root.speechChoices.length === 0 ? root.t("modes.speechnone")
-                      : root.mode && root.mode.speech_model
-                        && root.plain(root.mode.speech_model) !== root.defaultSpeech
-                        ? root.t("modes.speechreload")
-                      : root.speechChoices.length === 1 ? root.t("modes.speechonly1")
-                      : ""
-                color: Color.muted
-              }
-            }
-
             // The decoder prompt. A mode that states none sends default's,
             // and said so nowhere: terminal, code and prose showed an empty
             // box over a hint they were sending with every take.
@@ -1152,8 +1081,13 @@ Item {
                 Layout.fillWidth: true
                 Layout.maximumWidth: root.noteWidth
                 wrapMode: Text.Wrap
-                text: root.mode && root.mode.prompt_inherited === true
-                      ? root.t("modes.promptinherited") : root.t("modes.prompthint")
+                // Which voice model reads it, and that every mode shares it:
+                // the box sits in a mode's settings and is for a model the
+                // mode does not choose.
+                text: (root.mode && root.mode.prompt_inherited === true
+                       ? root.t("modes.promptinherited") + " " : "")
+                      + (root.speechName !== "" ? root.tf("modes.prompthint", root.speechName)
+                                                : root.t("modes.prompthint0"))
                 color: Color.muted
               }
             }

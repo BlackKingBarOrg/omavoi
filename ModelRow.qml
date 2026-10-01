@@ -33,6 +33,12 @@ Rectangle {
   // Keys with a download in flight, so the button can become a word.
   property var pulling: ({})
   property string useCommand: ""
+  // What choosing it is called. A local AI model is "set as default" -- a
+  // rewrite step can still pick its own -- but the voice model is the one
+  // every mode hears through, and there is nothing it is a default for.
+  property string useLabel: ""
+  // And what having chosen it is called, for the same reason.
+  property string activeLabel: ""
   // What the configuration points at, which is the choice. Whether the
   // daemon has it loaded is the other half, and the right-hand column says
   // that in words.
@@ -117,7 +123,9 @@ Rectangle {
       spacing: Style.space(7)
       OmText {
         visible: m.running === true || m.active === true || (m.downloaded && m.ours)
-        text: row.t(m.running ? "models.running" : m.active ? "models.default" : "models.downloaded")
+        text: m.running ? row.t("models.running")
+              : m.active ? (row.activeLabel !== "" ? row.activeLabel : row.t("models.default"))
+              : row.t("models.downloaded")
         color: Color.accent
       }
       // Found where another tool put it, and used where it lies rather than
@@ -154,7 +162,7 @@ Rectangle {
       }
       Button {
         visible: m.downloaded && !m.active && row.useCommand !== ""
-        text: row.t("models.use")
+        text: row.useLabel !== "" ? row.useLabel : row.t("models.use")
         bordered: true
         fontSize: Style.font.caption
         onClicked: row.command(row.useCommand)
