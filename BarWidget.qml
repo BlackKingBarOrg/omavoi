@@ -22,10 +22,18 @@ BarWidget {
   property int setupDone: 0
   property int setupTotal: 5
 
-  // Whether the command exists, asked once. `link.state === "stopped"` only
-  // means nothing is answering the socket, which is equally true of a daemon
-  // that is restarting -- and reading that as "not installed" put "Setup" on
-  // the bar of a working machine every time the unit bounced.
+  // Whether the command exists. `link.state === "stopped"` only means
+  // nothing is answering the socket, which is equally true of a daemon that
+  // is restarting -- and reading that as "not installed" put "Setup" on the
+  // bar of a working machine every time the unit bounced.
+  //
+  // Asked once at load, and again when the daemon comes up. Once was not
+  // enough: the plugin is reloaded the moment its files change, and
+  // dev/link.sh changes them a second before it puts `omavoi` back on the
+  // PATH -- so the one probe ran into the gap, and "Setup" sat on the bar of
+  // a machine that was dictating fine until the shell was restarted. A
+  // daemon answering the socket is proof the install is there, so that is
+  // when to ask again, and `missing` does not wait for the answer.
   property bool installed: true
   property bool installedKnown: false
   Process {
@@ -43,7 +51,7 @@ BarWidget {
   readonly property bool working: link.state === "transcribing"
   // Three states, not one. Order matters: with nothing installed the socket
   // is dead too, so that has to be answered first.
-  readonly property bool missing: installedKnown && !installed
+  readonly property bool missing: installedKnown && !installed && !link.alive
   readonly property bool serviceDown: installedKnown && installed
                                       && link.state === "stopped"
   readonly property bool needsSetup: installed && setupKnown && !setupReady
@@ -126,7 +134,11 @@ BarWidget {
     // the probe's way in as well as its refresh: the timer above cannot run
     // until something is alive to answer.
     function onStateChanged() { if (link.state === "idle") probe.running = true }
-    function onAliveChanged() { if (link.alive) probe.running = true }
+    function onAliveChanged() {
+      if (!link.alive) return
+      probe.running = true
+      if (!root.installed) probeInstalled.running = true
+    }
   }
 
   // Two buttons rather than one, because they measure differently.
